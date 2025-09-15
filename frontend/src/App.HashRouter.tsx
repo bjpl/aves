@@ -1,5 +1,7 @@
-// import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+// Alternative App.tsx using HashRouter for GitHub Pages
+// This is more reliable but uses URLs like: /aves/#/practice
+
+import { HashRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { HomePage } from './pages/HomePage';
 import { LearnPage } from './pages/LearnPage';
 import { PracticePage } from './pages/PracticePage';
@@ -7,13 +9,13 @@ import { SpeciesPage } from './pages/SpeciesPage';
 import './App.css';
 
 function App() {
-  // PATTERN: Dynamic basename for GitHub Pages compatibility
-  // WHY: GitHub Pages serves from /repository-name/ subdirectory
-  // CONCEPT: Use environment variable or base URL detection
-  const basename = import.meta.env.BASE_URL || '/';
+  // PATTERN: HashRouter for GitHub Pages
+  // WHY: HashRouter works perfectly with static hosting
+  // TRADE-OFF: URLs will have # in them (/aves/#/practice)
+  // BENEFIT: No 404.html hack needed, always works on refresh
 
   return (
-    <Router basename={basename}>
+    <Router>
       <div className="min-h-screen">
         {/* Navigation */}
         <nav className="bg-white shadow-sm border-b">
