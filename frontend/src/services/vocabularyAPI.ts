@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { LearningEvent, VocabularyMastery } from '../../../shared/types/vocabulary.types';
+import { DisclosureLevel } from '../../../shared/types/vocabulary.types';
 
 const API_BASE_URL = '/api';
 
@@ -17,34 +17,27 @@ export const vocabularyAPI = {
     };
   },
 
-  async recordLearningEvent(event: Omit<LearningEvent, 'id' | 'userId'>) {
-    const response = await axios.post(`${API_BASE_URL}/vocabulary/learning-event`, {
-      ...event,
-      userId: localStorage.getItem('userId') || null // Temporary until auth is implemented
-    });
-    return response.data;
+  async trackInteraction(annotationId: string, spanishTerm: string, level: DisclosureLevel) {
+    const sessionId = this.getSessionId();
+    try {
+      await axios.post(`${API_BASE_URL}/vocabulary/track-interaction`, {
+        sessionId,
+        annotationId,
+        spanishTerm,
+        disclosureLevel: level
+      });
+    } catch (error) {
+      console.error('Failed to track interaction:', error);
+    }
   },
 
-  async getMastery(annotationId: string): Promise<VocabularyMastery> {
-    const userId = localStorage.getItem('userId') || 'anonymous';
-    const response = await axios.get(`${API_BASE_URL}/vocabulary/mastery/${userId}/${annotationId}`);
-    return response.data;
-  },
-
-  async submitReview(annotationId: string, quality: number) {
-    const userId = localStorage.getItem('userId') || 'anonymous';
-    const response = await axios.post(`${API_BASE_URL}/vocabulary/review`, {
-      userId,
-      annotationId,
-      quality
-    });
-    return response.data;
-  },
-
-  async getReviewQueue() {
-    const userId = localStorage.getItem('userId') || 'anonymous';
-    const response = await axios.get(`${API_BASE_URL}/vocabulary/review-queue/${userId}`);
-    return response.data;
+  getSessionId(): string {
+    let sessionId = localStorage.getItem('sessionId');
+    if (!sessionId) {
+      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem('sessionId', sessionId);
+    }
+    return sessionId;
   },
 
   async generatePronunciationAudio(text: string): Promise<string> {

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { VocabularyDisclosure, DisclosureLevel } from '../../../../shared/types/vocabulary.types';
 import { Annotation } from '../../../../shared/types/annotation.types';
 import { PronunciationPlayer } from './PronunciationPlayer';
-import { MasteryIndicator } from './MasteryIndicator';
+import { ProgressIndicator } from './ProgressIndicator';
 
 interface DisclosurePopoverProps {
   annotation: Annotation;
@@ -218,7 +218,6 @@ export const DisclosurePopover: React.FC<DisclosurePopoverProps> = ({
               </div>
             )}
 
-            <MasteryIndicator masteryScore={0.95} />
           </div>
         );
 
@@ -257,20 +256,8 @@ export const DisclosurePopover: React.FC<DisclosurePopoverProps> = ({
 
       {getLevelContent()}
 
-      <div className="mt-3 pt-3 border-t flex justify-between items-center">
-        <div className="flex gap-1">
-          {[1, 2, 3, 4].map(level => (
-            <div
-              key={level}
-              className={`w-2 h-2 rounded-full ${
-                level <= disclosure.level ? 'bg-blue-500' : 'bg-gray-300'
-              }`}
-            />
-          ))}
-        </div>
-        <span className="text-xs text-gray-500">
-          Level {disclosure.level}/4
-        </span>
+      <div className="mt-3 pt-3 border-t">
+        <ProgressIndicator currentLevel={disclosure.level} />
       </div>
     </div>
   );

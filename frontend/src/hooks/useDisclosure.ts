@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
-import { VocabularyDisclosure, DisclosureLevel, LearningEvent } from '../../../shared/types/vocabulary.types';
+import { useState, useCallback } from 'react';
+import { VocabularyDisclosure, DisclosureLevel } from '../../../shared/types/vocabulary.types';
 import { Annotation } from '../../../shared/types/annotation.types';
 import { vocabularyAPI } from '../services/vocabularyAPI';
 
@@ -8,7 +8,6 @@ export const useDisclosure = (annotation: Annotation) => {
     annotationId: annotation.id,
     level: 0,
   });
-  const [interactionStartTime, setInteractionStartTime] = useState<number>(0);
 
   const generateHint = useCallback((annotation: Annotation, level: DisclosureLevel): string => {
     const hints = {
@@ -16,7 +15,7 @@ export const useDisclosure = (annotation: Annotation) => {
       1: `This ${annotation.type} term starts with "${annotation.spanishTerm[0]}"`,
       2: 'Click to hear pronunciation',
       3: 'Explore etymology and related terms',
-      4: 'You\'ve mastered this term!'
+      4: 'View examples and common phrases'
     };
     return hints[level];
   }, []);
@@ -59,51 +58,32 @@ export const useDisclosure = (annotation: Annotation) => {
     return content;
   }, [annotation, generateHint]);
 
-  const recordInteraction = useCallback(async (
-    eventType: LearningEvent['eventType'],
-    level: DisclosureLevel
-  ) => {
-    const duration = interactionStartTime ? Date.now() - interactionStartTime : 0;
-
-    const event: Omit<LearningEvent, 'id' | 'userId'> = {
-      annotationId: annotation.id,
-      eventType,
-      disclosureLevel: level,
-      interactionDuration: duration,
-      timestamp: new Date(),
-    };
-
-    try {
-      await vocabularyAPI.recordLearningEvent(event);
-    } catch (error) {
-      console.error('Failed to record interaction:', error);
-    }
-  }, [annotation.id, interactionStartTime]);
-
   const handleHover = useCallback(async () => {
     if (disclosure.level === 0) {
-      setInteractionStartTime(Date.now());
       const content = await fetchEnrichedContent(1);
       setDisclosure({
         ...disclosure,
         ...content,
         level: 1,
       });
-      recordInteraction('hover', 1);
+
+      // Simple tracking
+      vocabularyAPI.trackInteraction(annotation.id, annotation.spanishTerm, 1);
     }
-  }, [disclosure, fetchEnrichedContent, recordInteraction]);
+  }, [disclosure, fetchEnrichedContent, annotation]);
 
   const handleClick = useCallback(async () => {
     const newLevel = Math.min(disclosure.level + 1, 4) as DisclosureLevel;
-    setInteractionStartTime(Date.now());
     const content = await fetchEnrichedContent(newLevel);
     setDisclosure({
       ...disclosure,
       ...content,
       level: newLevel,
     });
-    recordInteraction('click', newLevel);
-  }, [disclosure, fetchEnrichedContent, recordInteraction]);
+
+    // Simple tracking
+    vocabularyAPI.trackInteraction(annotation.id, annotation.spanishTerm, newLevel);
+  }, [disclosure, fetchEnrichedContent, annotation]);
 
   const setLevel = useCallback(async (level: DisclosureLevel) => {
     const content = await fetchEnrichedContent(level);
@@ -119,16 +99,7 @@ export const useDisclosure = (annotation: Annotation) => {
       annotationId: annotation.id,
       level: 0,
     });
-    setInteractionStartTime(0);
   }, [annotation.id]);
-
-  useEffect(() => {
-    return () => {
-      if (interactionStartTime) {
-        recordInteraction('hover', disclosure.level);
-      }
-    };
-  }, []);
 
   return {
     disclosure,

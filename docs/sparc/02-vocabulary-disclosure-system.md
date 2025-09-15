@@ -10,13 +10,11 @@ Create a progressive vocabulary disclosure system that reveals Spanish terms, pr
    - Progressive disclosure levels (hover → click → deep dive)
    - Audio pronunciation playback
    - Contextual hints and mnemonics
-   - Vocabulary mastery tracking
-   - Spaced repetition scheduling
+   - Simple interaction tracking
    - Multi-modal learning (visual, audio, text)
 
 2. **Non-Functional Requirements**
    - Instant feedback (<50ms interaction response)
-   - Offline capability for learned vocabulary
    - Accessibility: Screen reader support
    - Mobile-responsive interactions
 
