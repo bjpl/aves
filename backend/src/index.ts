@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import annotationsRouter from './routes/annotations';
+import vocabularyRouter from './routes/vocabulary';
 import { testConnection } from './database/connection';
 
 dotenv.config();
@@ -36,6 +37,7 @@ app.get('/health', (req, res) => {
 
 // API routes
 app.use('/api', annotationsRouter);
+app.use('/api', vocabularyRouter);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

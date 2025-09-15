@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { AnnotationCanvas } from './components/annotation/AnnotationCanvas';
+import { DisclosurePopover } from './components/vocabulary/DisclosurePopover';
 import { Annotation } from '../../shared/types/annotation.types';
+import { VocabularyDisclosure, DisclosureLevel } from '../../shared/types/vocabulary.types';
+import { useDisclosure } from './hooks/useDisclosure';
 import './App.css';
 
 function App() {
