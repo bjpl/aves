@@ -10,11 +10,12 @@ export const PronunciationPlayer: React.FC<PronunciationPlayerProps> = ({
   size = 'small'
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handlePlay = async () => {
     if (!audioRef.current) {
-      audioRef.current = new Audio(audioUrl);
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
     }
 
     try {

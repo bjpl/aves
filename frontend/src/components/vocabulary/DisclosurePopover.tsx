@@ -13,14 +13,13 @@ interface DisclosurePopoverProps {
 }
 
 export const DisclosurePopover: React.FC<DisclosurePopoverProps> = ({
-  annotation,
   disclosure,
   position,
   onClose,
   onLevelChange
 }) => {
   const popoverRef = useRef<HTMLDivElement>(null);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [, setIsExpanded] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

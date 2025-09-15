@@ -11,8 +11,7 @@ interface ExerciseContainerProps {
 }
 
 export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
-  annotations,
-  onComplete
+  annotations
 }) => {
   const [currentExercise, setCurrentExercise] = useState<Exercise | null>(null);
   const [generator] = useState(() => new ExerciseGenerator(annotations));

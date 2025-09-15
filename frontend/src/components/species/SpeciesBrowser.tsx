@@ -39,11 +39,11 @@ export const SpeciesBrowser: React.FC = () => {
     }
 
     if (filters.habitat) {
-      result = result.filter(s => s.habitats.includes(filters.habitat));
+      result = result.filter(s => s.habitats.includes(filters.habitat as string));
     }
 
     if (filters.primaryColor) {
-      result = result.filter(s => s.primaryColors.includes(filters.primaryColor));
+      result = result.filter(s => s.primaryColors.includes(filters.primaryColor as string));
     }
 
     return result;

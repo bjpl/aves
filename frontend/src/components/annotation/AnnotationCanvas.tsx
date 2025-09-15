@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Annotation, BoundingBox, Coordinate } from '../../../../shared/types/annotation.types';
+import { Annotation, Coordinate } from '../../../../shared/types/annotation.types';
 
 interface AnnotationCanvasProps {
   imageUrl: string;
