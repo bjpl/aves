@@ -1,0 +1,28 @@
+{
+  "name": "aves-content-ingestion",
+  "version": "1.0.0",
+  "description": "Content ingestion pipeline for Aves learning platform",
+  "main": "orchestrator.ts",
+  "scripts": {
+    "ingest:demo": "tsx orchestrator.ts demo",
+    "ingest:full": "tsx orchestrator.ts full",
+    "ingest:incremental": "tsx orchestrator.ts incremental",
+    "ingest:sync": "tsx orchestrator.ts sync",
+    "validate": "tsx validator.ts",
+    "export": "tsx exporter.ts",
+    "backup": "tsx backup.ts"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "csv-parse": "^5.5.2",
+    "dotenv": "^16.3.1",
+    "form-data": "^4.0.0",
+    "pg": "^8.11.3",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "tsx": "^4.6.2",
+    "typescript": "^5.3.3"
+  }
+}
