@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import annotationsRouter from './routes/annotations';
 import vocabularyRouter from './routes/vocabulary';
 import exercisesRouter from './routes/exercises';
+import speciesRouter from './routes/species';
 import { testConnection } from './database/connection';
 
 dotenv.config();
@@ -40,6 +41,7 @@ app.get('/health', (req, res) => {
 app.use('/api', annotationsRouter);
 app.use('/api', vocabularyRouter);
 app.use('/api', exercisesRouter);
+app.use('/api', speciesRouter);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
