@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Exercise, ExerciseType, SessionProgress } from '../../../../shared/types/exercise.types';
+import { SessionProgress } from '../../../../shared/types/exercise.types';
 import { Annotation } from '../../../../shared/types/annotation.types';
+import { EnhancedExercise } from '../../../../shared/types/enhanced-exercise.types';
 import { VisualDiscrimination } from './VisualDiscrimination';
 import { ContextualFill } from './ContextualFill';
-import { ExerciseGenerator } from '../../services/exerciseGenerator';
+import { VisualIdentification } from './VisualIdentification';
+import { EnhancedExerciseGenerator } from '../../services/enhancedExerciseGenerator';
 
 interface ExerciseContainerProps {
   annotations: Annotation[];
@@ -13,8 +15,8 @@ interface ExerciseContainerProps {
 export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
   annotations
 }) => {
-  const [currentExercise, setCurrentExercise] = useState<Exercise | null>(null);
-  const [generator] = useState(() => new ExerciseGenerator(annotations));
+  const [currentExercise, setCurrentExercise] = useState<EnhancedExercise | null>(null);
+  const [generator] = useState(() => new EnhancedExerciseGenerator(annotations));
   const [progress, setProgress] = useState<SessionProgress>({
     sessionId: `session_${Date.now()}`,
     exercisesCompleted: 0,
@@ -30,9 +32,8 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
   }, []);
 
   const generateNewExercise = () => {
-    const types: ExerciseType[] = ['visual_discrimination', 'contextual_fill'];
-    const randomType = types[Math.floor(Math.random() * types.length)];
-    const exercise = generator.generateExercise(randomType);
+    // Use adaptive exercise generation for better learning progression
+    const exercise = generator.generateAdaptiveExercise();
 
     if (exercise) {
       setCurrentExercise(exercise);
@@ -44,8 +45,8 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
   const handleAnswer = (answer: any) => {
     if (!currentExercise) return;
 
-    const isCorrect = ExerciseGenerator.checkAnswer(currentExercise, answer);
-    const feedback = ExerciseGenerator.generateFeedback(isCorrect, currentExercise);
+    const isCorrect = EnhancedExerciseGenerator.checkAnswer(currentExercise, answer);
+    const feedback = EnhancedExerciseGenerator.generateFeedback(isCorrect, currentExercise);
 
     const newProgress = {
       ...progress,
@@ -58,35 +59,85 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
     setLastResult({ correct: isCorrect, feedback });
     setShowFeedback(true);
 
+    // Update generator level based on performance
+    generator.updateLevel({ correct: newProgress.correctAnswers, total: newProgress.exercisesCompleted });
+
     // Auto-advance after delay
     setTimeout(() => {
       generateNewExercise();
-    }, 2500);
+    }, 3000);
   };
 
   const renderExercise = () => {
     if (!currentExercise) return null;
 
+    // Show pre-teaching if available
+    const preTeaching = currentExercise.preTeaching && !showFeedback ? (
+      <div className="mb-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-700">
+        <strong>📚 Learning Tip:</strong> {currentExercise.preTeaching}
+      </div>
+    ) : null;
+
+    // Render appropriate exercise component
+    let exerciseComponent = null;
+
     switch (currentExercise.type) {
+      case 'visual_identification':
+        exerciseComponent = (
+          <VisualIdentification
+            exercise={currentExercise}
+            onAnswer={handleAnswer}
+            disabled={showFeedback}
+          />
+        );
+        break;
       case 'visual_discrimination':
-        return (
+        exerciseComponent = (
           <VisualDiscrimination
-            exercise={currentExercise}
+            exercise={currentExercise as any}
             onAnswer={handleAnswer}
             disabled={showFeedback}
           />
         );
+        break;
       case 'contextual_fill':
-        return (
+        exerciseComponent = (
           <ContextualFill
-            exercise={currentExercise}
+            exercise={currentExercise as any}
             onAnswer={handleAnswer}
             disabled={showFeedback}
           />
         );
+        break;
       default:
-        return null;
+        // Fallback for new exercise types
+        exerciseComponent = (
+          <div className="text-center py-8">
+            <h3 className="text-xl font-semibold mb-4">{currentExercise.prompt}</h3>
+            <p className="text-gray-600">{currentExercise.instructions}</p>
+            <button
+              onClick={() => handleAnswer(null)}
+              className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Continue
+            </button>
+          </div>
+        );
     }
+
+    return (
+      <>
+        {preTeaching}
+        {exerciseComponent}
+        {currentExercise.culturalNote && showFeedback && (
+          <div className="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+            <p className="text-sm text-yellow-700">
+              <strong>🌍 Cultural Note:</strong> {currentExercise.culturalNote}
+            </p>
+          </div>
+        )}
+      </>
+    );
   };
 
   const accuracyPercentage = progress.exercisesCompleted > 0
@@ -98,7 +149,15 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
       {/* Progress Header */}
       <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
         <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-semibold text-gray-900">Practice Session</h2>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Practice Session</h2>
+            {currentExercise && (
+              <p className="text-xs text-gray-500 mt-1">
+                Level: {currentExercise.pedagogicalLevel} •
+                Objective: {currentExercise.learningObjective}
+              </p>
+            )}
+          </div>
           <button
             onClick={() => generateNewExercise()}
             className="text-sm text-blue-600 hover:text-blue-800"

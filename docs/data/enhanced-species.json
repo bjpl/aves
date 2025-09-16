@@ -1,0 +1,244 @@
+[
+  {
+    "id": "sp-001",
+    "scientificName": "Phoenicopterus roseus",
+    "commonNameEnglish": "Greater Flamingo",
+    "commonNameSpanish": "Flamenco Común",
+    "pronunciation": "flah-MEN-koh koh-MOON",
+    "syllables": "fla-men-co co-mún",
+    "gender": "masculine",
+    "article": "el",
+    "pluralForm": "los flamencos",
+    "difficulty": "beginner",
+    "cognateNote": "Similar to English 'flamingo' - easy to remember!",
+    "etymology": "From Spanish 'flama' (flame) referring to its pink-red color",
+    "culturalNote": "The flamingo is an iconic symbol of Spanish wetlands, especially in Doñana National Park",
+    "habitat": {
+      "spanish": "humedales y lagunas salinas",
+      "english": "wetlands and salt lagoons",
+      "pronunciation": "oo-meh-DAH-les ee lah-GOO-nahs sah-LEE-nahs"
+    },
+    "characteristics": {
+      "size": {
+        "spanish": "grande",
+        "english": "large",
+        "measurement": "110-150 cm"
+      },
+      "color": {
+        "spanish": "rosa",
+        "english": "pink",
+        "detail": "El color rosa viene de su dieta"
+      },
+      "distintiveFeatures": [
+        {
+          "spanish": "patas largas",
+          "english": "long legs",
+          "pronunciation": "PAH-tahs LAHR-gahs"
+        },
+        {
+          "spanish": "cuello largo",
+          "english": "long neck",
+          "pronunciation": "KWEH-yoh LAHR-goh"
+        },
+        {
+          "spanish": "pico curvado",
+          "english": "curved beak",
+          "pronunciation": "PEE-koh koor-VAH-doh"
+        }
+      ]
+    },
+    "behavior": {
+      "feeding": {
+        "spanish": "filtrar el agua",
+        "english": "filter water",
+        "description": "Usa su pico especial para filtrar pequeños organismos del agua"
+      },
+      "social": {
+        "spanish": "vive en colonias",
+        "english": "lives in colonies",
+        "description": "Puede formar grupos de miles de individuos"
+      }
+    },
+    "commonPhrases": [
+      {
+        "spanish": "Rosa como un flamenco",
+        "english": "Pink as a flamingo",
+        "usage": "Expression for something very pink"
+      },
+      {
+        "spanish": "Pararse en una pata como un flamenco",
+        "english": "Standing on one leg like a flamingo",
+        "usage": "Describing someone's posture"
+      }
+    ],
+    "funFacts": [
+      "Los flamencos nacen grises y se vuelven rosados por su dieta",
+      "Pueden vivir hasta 40 años en la naturaleza",
+      "Duermen de pie sobre una sola pata para conservar calor"
+    ],
+    "conservationStatus": "LC",
+    "rangeInSpain": ["Andalucía", "Murcia", "Cataluña", "Baleares"],
+    "bestTimeToSee": "Primavera y verano",
+    "similarSpecies": ["Flamenco Enano"],
+    "imageUrl": "https://images.unsplash.com/photo-1551031895-7f8e06d714f8?w=800",
+    "audioUrl": "/audio/flamingo-call.mp3"
+  },
+  {
+    "id": "sp-002",
+    "scientificName": "Aquila adalberti",
+    "commonNameEnglish": "Spanish Imperial Eagle",
+    "commonNameSpanish": "Águila Imperial Ibérica",
+    "pronunciation": "AH-gee-lah eem-peh-ree-AHL ee-BEH-ree-kah",
+    "syllables": "á-gui-la im-pe-rial i-bé-ri-ca",
+    "gender": "feminine",
+    "article": "el/la",
+    "pluralForm": "las águilas imperiales",
+    "difficulty": "intermediate",
+    "cognateNote": "Águila is not similar to 'eagle' - requires memorization",
+    "etymology": "Águila from Latin 'aquila', Imperial refers to its majestic nature",
+    "culturalNote": "Endemic to Iberian Peninsula, symbol of Spanish wildlife conservation success",
+    "habitat": {
+      "spanish": "bosques mediterráneos y dehesas",
+      "english": "Mediterranean forests and dehesas",
+      "pronunciation": "BOHS-kehs meh-dee-teh-RRAH-neh-ohs ee DEH-eh-sahs"
+    },
+    "characteristics": {
+      "size": {
+        "spanish": "muy grande",
+        "english": "very large",
+        "measurement": "75-85 cm, envergadura 180-220 cm"
+      },
+      "color": {
+        "spanish": "marrón oscuro",
+        "english": "dark brown",
+        "detail": "Con manchas blancas en los hombros"
+      },
+      "distintiveFeatures": [
+        {
+          "spanish": "garras poderosas",
+          "english": "powerful talons",
+          "pronunciation": "GAH-rrahs poh-deh-ROH-sahs"
+        },
+        {
+          "spanish": "vista aguda",
+          "english": "sharp vision",
+          "pronunciation": "VEES-tah ah-GOO-dah"
+        },
+        {
+          "spanish": "vuelo majestuoso",
+          "english": "majestic flight",
+          "pronunciation": "VWEH-loh mah-hehs-TWOH-soh"
+        }
+      ]
+    },
+    "behavior": {
+      "feeding": {
+        "spanish": "caza conejos",
+        "english": "hunts rabbits",
+        "description": "Su dieta principal son los conejos, hasta 90% de su alimentación"
+      },
+      "nesting": {
+        "spanish": "anida en árboles altos",
+        "english": "nests in tall trees",
+        "description": "Construye nidos enormes que pueden pesar hasta 250 kg"
+      }
+    },
+    "commonPhrases": [
+      {
+        "spanish": "Tener vista de águila",
+        "english": "To have eagle eyes",
+        "usage": "Someone with very good vision or attention to detail"
+      },
+      {
+        "spanish": "Volar como un águila",
+        "english": "To soar like an eagle",
+        "usage": "To achieve great success"
+      }
+    ],
+    "funFacts": [
+      "Es endémica de la Península Ibérica",
+      "Forma parejas de por vida",
+      "Puede vivir hasta 20 años en libertad"
+    ],
+    "conservationStatus": "VU",
+    "rangeInSpain": ["Andalucía", "Castilla-La Mancha", "Extremadura", "Madrid"],
+    "bestTimeToSee": "Todo el año",
+    "similarSpecies": ["Águila Real", "Águila Perdicera"],
+    "imageUrl": "https://example.com/aguila-imperial.jpg",
+    "audioUrl": "/audio/imperial-eagle-call.mp3"
+  },
+  {
+    "id": "sp-003",
+    "scientificName": "Passer domesticus",
+    "commonNameEnglish": "House Sparrow",
+    "commonNameSpanish": "Gorrión Común",
+    "pronunciation": "goh-rree-OHN koh-MOON",
+    "syllables": "go-rrión co-mún",
+    "gender": "masculine",
+    "article": "el",
+    "pluralForm": "los gorriones",
+    "difficulty": "beginner",
+    "cognateNote": "No cognate - unique Spanish word",
+    "etymology": "Possibly from Latin 'garrulus' meaning chattering",
+    "culturalNote": "One of the most common urban birds in Spain, featured in many Spanish poems and songs",
+    "habitat": {
+      "spanish": "zonas urbanas y pueblos",
+      "english": "urban areas and towns",
+      "pronunciation": "SOH-nahs oor-BAH-nahs ee PWEH-blohs"
+    },
+    "characteristics": {
+      "size": {
+        "spanish": "pequeño",
+        "english": "small",
+        "measurement": "14-16 cm"
+      },
+      "color": {
+        "spanish": "marrón y gris",
+        "english": "brown and gray",
+        "detail": "Los machos tienen una mancha negra en el pecho"
+      },
+      "distintiveFeatures": [
+        {
+          "spanish": "pico corto y fuerte",
+          "english": "short strong beak",
+          "pronunciation": "PEE-koh KOHR-toh ee FWEHR-teh"
+        },
+        {
+          "spanish": "cola corta",
+          "english": "short tail",
+          "pronunciation": "KOH-lah KOHR-tah"
+        }
+      ]
+    },
+    "behavior": {
+      "feeding": {
+        "spanish": "come semillas",
+        "english": "eats seeds",
+        "description": "Se alimenta principalmente de semillas y restos de comida humana"
+      },
+      "social": {
+        "spanish": "muy sociable",
+        "english": "very social",
+        "description": "Forma bandadas y vive cerca de los humanos"
+      }
+    },
+    "commonPhrases": [
+      {
+        "spanish": "Más vale pájaro en mano que ciento volando",
+        "english": "A bird in the hand is worth two in the bush",
+        "usage": "It's better to have something certain than risk it for more"
+      }
+    ],
+    "funFacts": [
+      "Han convivido con humanos durante más de 10,000 años",
+      "Son monógamos durante la temporada de cría",
+      "Pueden tener hasta 4 nidadas por año"
+    ],
+    "conservationStatus": "LC",
+    "rangeInSpain": ["Toda España"],
+    "bestTimeToSee": "Todo el año",
+    "similarSpecies": ["Gorrión Molinero", "Gorrión Chillón"],
+    "imageUrl": "https://example.com/gorrion.jpg",
+    "audioUrl": "/audio/sparrow-chirp.mp3"
+  }
+]

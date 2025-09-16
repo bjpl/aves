@@ -1,0 +1,392 @@
+{
+  "exercises": [
+    {
+      "id": "ex-001",
+      "type": "recognition",
+      "level": "beginner",
+      "bloomLevel": "remember",
+      "skill": "vocabulary",
+      "question": "What is this bird called in Spanish?",
+      "image": "flamingo.jpg",
+      "options": [
+        {
+          "text": "El flamenco",
+          "correct": true,
+          "pronunciation": "el flah-MEN-koh"
+        },
+        {
+          "text": "El águila",
+          "correct": false,
+          "pronunciation": "el AH-gee-lah"
+        },
+        {
+          "text": "El gorrión",
+          "correct": false,
+          "pronunciation": "el goh-rree-OHN"
+        },
+        {
+          "text": "El búho",
+          "correct": false,
+          "pronunciation": "el BOO-oh"
+        }
+      ],
+      "feedback": {
+        "correct": "¡Excelente! 'El flamenco' is correct. Notice it's masculine (el) and similar to English 'flamingo'.",
+        "incorrect": "Not quite. This pink bird is 'el flamenco'. The word comes from 'flama' (flame) referring to its color.",
+        "hint": "Think about the bird's pink color - like a flame (flama)."
+      },
+      "teachingPoint": "Cognates like flamenco/flamingo make learning easier!",
+      "culturalNote": "Flamencos are iconic in Andalusian wetlands."
+    },
+    {
+      "id": "ex-002",
+      "type": "comprehension",
+      "level": "beginner",
+      "bloomLevel": "understand",
+      "skill": "reading",
+      "question": "Read this sentence and answer: '¿De qué color es el flamenco?'",
+      "context": "El flamenco es un pájaro rosa que vive en las lagunas.",
+      "options": [
+        {
+          "text": "Rosa (Pink)",
+          "correct": true
+        },
+        {
+          "text": "Azul (Blue)",
+          "correct": false
+        },
+        {
+          "text": "Verde (Green)",
+          "correct": false
+        },
+        {
+          "text": "Negro (Black)",
+          "correct": false
+        }
+      ],
+      "feedback": {
+        "correct": "¡Perfecto! You understood that 'rosa' means pink. The sentence says 'El flamenco es un pájaro rosa' (The flamingo is a pink bird).",
+        "incorrect": "Look for the color word after 'pájaro' (bird). The sentence says 'pájaro rosa' (pink bird).",
+        "hint": "The color word comes right after 'pájaro' in the sentence."
+      },
+      "vocabularyHelp": {
+        "pájaro": "bird",
+        "vive": "lives",
+        "lagunas": "lagoons"
+      }
+    },
+    {
+      "id": "ex-003",
+      "type": "application",
+      "level": "intermediate",
+      "bloomLevel": "apply",
+      "skill": "grammar",
+      "question": "Complete the sentence with the correct article and plural form:",
+      "prompt": "___ flamenco___ son aves rosadas.",
+      "correctAnswer": "Los flamencos",
+      "options": [
+        {
+          "text": "Los flamencos",
+          "correct": true,
+          "explanation": "Masculine plural: el → los, flamenco → flamencos"
+        },
+        {
+          "text": "Las flamencas",
+          "correct": false,
+          "explanation": "Flamenco doesn't change gender for the animal"
+        },
+        {
+          "text": "El flamencos",
+          "correct": false,
+          "explanation": "Article must agree: plural needs 'los' not 'el'"
+        },
+        {
+          "text": "Los flamenco",
+          "correct": false,
+          "explanation": "Noun must be plural: add -s to flamenco"
+        }
+      ],
+      "feedback": {
+        "correct": "¡Muy bien! 'Los flamencos' is correct. You properly made both the article (el→los) and noun (flamenco→flamencos) plural.",
+        "incorrect": "Remember: for masculine plural, 'el' becomes 'los' and add '-s' to words ending in -o.",
+        "teachingPoint": "Spanish plurals: el flamenco → los flamencos (add -s to words ending in vowels)"
+      }
+    },
+    {
+      "id": "ex-004",
+      "type": "analysis",
+      "level": "intermediate",
+      "bloomLevel": "analyze",
+      "skill": "vocabulary_context",
+      "question": "Why might Spanish speakers say 'Rosa como un flamenco'?",
+      "context": "María llegó a la fiesta con un vestido rosa como un flamenco.",
+      "options": [
+        {
+          "text": "To describe something very pink",
+          "correct": true,
+          "explanation": "Flamingos are famously pink, making them a perfect comparison"
+        },
+        {
+          "text": "To say someone is tall",
+          "correct": false,
+          "explanation": "This would be 'alto como...' not about color"
+        },
+        {
+          "text": "To describe fast movement",
+          "correct": false,
+          "explanation": "This phrase focuses on color, not speed"
+        },
+        {
+          "text": "To say something is beautiful",
+          "correct": false,
+          "explanation": "While flamingos are beautiful, this phrase specifically refers to pink color"
+        }
+      ],
+      "feedback": {
+        "correct": "¡Exacto! This simile compares something to a flamingo's distinctive pink color. María's dress was 'as pink as a flamingo'.",
+        "incorrect": "Think about the flamingo's most distinctive feature - its pink color. The phrase uses this for comparison.",
+        "culturalInsight": "Spanish uses many animal comparisons: 'negro como un cuervo' (black as a crow), 'blanco como la nieve' (white as snow)"
+      }
+    },
+    {
+      "id": "ex-005",
+      "type": "listening",
+      "level": "beginner",
+      "bloomLevel": "remember",
+      "skill": "pronunciation",
+      "question": "Listen and select the correct pronunciation of 'águila':",
+      "audioOptions": [
+        {
+          "file": "aguila_correct.mp3",
+          "text": "AH-gee-lah",
+          "correct": true
+        },
+        {
+          "file": "aguila_wrong1.mp3",
+          "text": "ah-GWEE-lah",
+          "correct": false
+        },
+        {
+          "file": "aguila_wrong2.mp3",
+          "text": "AH-goo-lah",
+          "correct": false
+        }
+      ],
+      "feedback": {
+        "correct": "¡Perfecto! The stress is on the first syllable: AH-gee-lah. The 'gui' sounds like 'gee' in Spanish.",
+        "incorrect": "Listen again for the stress on the FIRST syllable: AH-gee-lah.",
+        "tip": "The accent mark (á) tells you where to stress the word: Águila"
+      }
+    },
+    {
+      "id": "ex-006",
+      "type": "synthesis",
+      "level": "advanced",
+      "bloomLevel": "create",
+      "skill": "production",
+      "question": "Create a sentence using these words: águila / vuela / montañas",
+      "exampleAnswers": [
+        "El águila vuela sobre las montañas.",
+        "Las águilas vuelan en las montañas altas.",
+        "Un águila imperial vuela entre las montañas."
+      ],
+      "requirements": [
+        "Use correct article (el/la/las/los)",
+        "Conjugate 'vuela' correctly if needed",
+        "Make grammatical sense"
+      ],
+      "vocabularyHelp": {
+        "vuela": "flies (3rd person singular)",
+        "vuelan": "fly (3rd person plural)",
+        "sobre": "over/above",
+        "entre": "between/among"
+      },
+      "feedback": {
+        "checkpoints": [
+          "Did you use the correct article? (el águila / las águilas)",
+          "Does the verb agree with the subject? (singular: vuela, plural: vuelan)",
+          "Did you connect the ideas logically?"
+        ],
+        "model": "Example: 'El águila vuela sobre las montañas' = The eagle flies over the mountains"
+      }
+    },
+    {
+      "id": "ex-007",
+      "type": "contextual",
+      "level": "intermediate",
+      "bloomLevel": "understand",
+      "skill": "cultural",
+      "question": "In which Spanish region would you most likely see flamingos?",
+      "mapImage": "spain_regions.jpg",
+      "options": [
+        {
+          "text": "Andalucía (Doñana National Park)",
+          "correct": true,
+          "details": "Home to Europe's largest flamingo colonies"
+        },
+        {
+          "text": "Galicia (Northwestern coast)",
+          "correct": false,
+          "details": "Too cold and lacks salt lagoons flamingos need"
+        },
+        {
+          "text": "Madrid (Central Spain)",
+          "correct": false,
+          "details": "Inland location without suitable wetlands"
+        },
+        {
+          "text": "Asturias (Northern mountains)",
+          "correct": false,
+          "details": "Mountain region unsuitable for flamingos"
+        }
+      ],
+      "feedback": {
+        "correct": "¡Correcto! Andalucía's wetlands, especially Doñana and Fuente de Piedra, host thousands of flamingos.",
+        "incorrect": "Flamingos need warm salt lagoons and wetlands, found mainly in southern Spain.",
+        "additionalInfo": "Visit Doñana in spring to see flamingo colonies with chicks!"
+      }
+    },
+    {
+      "id": "ex-008",
+      "type": "matching",
+      "level": "beginner",
+      "bloomLevel": "remember",
+      "skill": "vocabulary",
+      "question": "Match the bird parts in Spanish with their English meanings:",
+      "items": [
+        {
+          "spanish": "el pico",
+          "english": "beak",
+          "pronunciation": "PEE-koh"
+        },
+        {
+          "spanish": "las alas",
+          "english": "wings",
+          "pronunciation": "AH-lahs"
+        },
+        {
+          "spanish": "las plumas",
+          "english": "feathers",
+          "pronunciation": "PLOO-mahs"
+        },
+        {
+          "spanish": "las patas",
+          "english": "legs/feet",
+          "pronunciation": "PAH-tahs"
+        },
+        {
+          "spanish": "la cola",
+          "english": "tail",
+          "pronunciation": "KOH-lah"
+        }
+      ],
+      "feedback": {
+        "allCorrect": "¡Excelente! You know all the bird body parts in Spanish.",
+        "partial": "Good progress! Review the ones you missed.",
+        "memoryTip": "Visualize each part on a bird as you say the Spanish word."
+      }
+    },
+    {
+      "id": "ex-009",
+      "type": "scenario",
+      "level": "advanced",
+      "bloomLevel": "evaluate",
+      "skill": "communication",
+      "question": "You're birdwatching in Doñana with a Spanish friend. How would you say: 'Look! There's a flamingo in the lagoon!'",
+      "options": [
+        {
+          "text": "¡Mira! Hay un flamenco en la laguna.",
+          "correct": true,
+          "naturalness": "Most natural"
+        },
+        {
+          "text": "¡Mira! Está un flamenco en la laguna.",
+          "correct": false,
+          "issue": "Should use 'hay' for existence, not 'está'"
+        },
+        {
+          "text": "¡Ves! Un flamenco en la laguna.",
+          "correct": false,
+          "issue": "'Ves' means 'you see' - use 'Mira' for 'Look!'"
+        },
+        {
+          "text": "¡Mira! Tiene un flamenco en la laguna.",
+          "correct": false,
+          "issue": "'Tiene' means 'has' - incorrect verb choice"
+        }
+      ],
+      "feedback": {
+        "correct": "¡Perfecto! This is exactly how a Spanish speaker would express excitement about spotting a bird.",
+        "incorrect": "For expressing existence/presence, use 'hay' (there is/are). 'Mira' is the command form of 'look'.",
+        "usefulPhrases": [
+          "¡Qué bonito! - How beautiful!",
+          "¿Ves ese pájaro? - Do you see that bird?",
+          "¡Increíble! - Incredible!"
+        ]
+      }
+    },
+    {
+      "id": "ex-010",
+      "type": "error_correction",
+      "level": "intermediate",
+      "bloomLevel": "analyze",
+      "skill": "grammar",
+      "question": "Find and correct the error in this sentence:",
+      "sentence": "Los águila imperiales son muy grande.",
+      "errors": [
+        {
+          "error": "águila",
+          "correction": "águilas",
+          "explanation": "Plural noun needs -s"
+        },
+        {
+          "error": "grande",
+          "correction": "grandes",
+          "explanation": "Adjective must agree in number"
+        }
+      ],
+      "correctSentence": "Las águilas imperiales son muy grandes.",
+      "feedback": {
+        "complete": "¡Excelente! You found both errors: noun and adjective must both be plural.",
+        "partial": "Good catch! But check if ALL words agree in number.",
+        "teachingPoint": "In Spanish, adjectives must agree with nouns in both gender and number."
+      }
+    }
+  ],
+  "progressionPaths": {
+    "beginner": {
+      "focus": "Basic vocabulary and recognition",
+      "exercises": ["ex-001", "ex-002", "ex-005", "ex-008"],
+      "goals": [
+        "Recognize common bird names",
+        "Understand basic descriptions",
+        "Learn correct pronunciation"
+      ]
+    },
+    "intermediate": {
+      "focus": "Grammar application and context",
+      "exercises": ["ex-003", "ex-004", "ex-007", "ex-010"],
+      "goals": [
+        "Apply grammar rules",
+        "Understand cultural context",
+        "Analyze language patterns"
+      ]
+    },
+    "advanced": {
+      "focus": "Production and communication",
+      "exercises": ["ex-006", "ex-009"],
+      "goals": [
+        "Create original sentences",
+        "Communicate naturally",
+        "Evaluate language choices"
+      ]
+    }
+  },
+  "feedbackPrinciples": {
+    "immediate": "Provide feedback right after each answer",
+    "specific": "Explain exactly what was right or wrong",
+    "encouraging": "Use positive language even for errors",
+    "educational": "Each feedback teaches something new",
+    "actionable": "Give clear steps for improvement"
+  }
+}

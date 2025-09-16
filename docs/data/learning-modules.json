@@ -1,0 +1,405 @@
+{
+  "modules": [
+    {
+      "id": "mod-001",
+      "title": "First Flight: Basic Bird Names",
+      "level": "beginner",
+      "estimatedTime": "15 minutes",
+      "objectives": [
+        "Recognize 5 common Spanish bird names",
+        "Use correct articles (el/la)",
+        "Pronounce bird names correctly"
+      ],
+      "preLearning": {
+        "activation": "What birds do you see in your neighborhood? Let's learn their Spanish names!",
+        "preview": "You'll learn: flamenco, águila, gorrión, paloma, búho"
+      },
+      "lessons": [
+        {
+          "step": 1,
+          "type": "introduction",
+          "content": {
+            "title": "Meet Your First Spanish Bird",
+            "bird": "El Flamenco",
+            "presentation": {
+              "visual": "Large flamingo image",
+              "audio": "flah-MEN-koh",
+              "text": "El flamenco",
+              "breakdown": "el (the) + flamenco (flamingo)"
+            },
+            "noticing": "Notice: It's similar to English 'flamingo' - this is called a cognate!",
+            "practice": "Say it three times: el flamenco... el flamenco... el flamenco"
+          }
+        },
+        {
+          "step": 2,
+          "type": "guided_practice",
+          "content": {
+            "instruction": "Click on the flamingo in this wetland scene",
+            "feedback": {
+              "correct": "¡Muy bien! That's el flamenco!",
+              "incorrect": "Not quite - look for the pink bird with long legs"
+            }
+          }
+        },
+        {
+          "step": 3,
+          "type": "expansion",
+          "content": {
+            "addDetail": "Color description",
+            "phrase": "El flamenco es rosa",
+            "translation": "The flamingo is pink",
+            "pattern": "[Bird] + es + [color]"
+          }
+        },
+        {
+          "step": 4,
+          "type": "contextual_use",
+          "content": {
+            "situation": "At the nature reserve",
+            "dialogue": [
+              "Guide: ¡Mira! Un flamenco.",
+              "You: ¡Qué bonito! Es rosa.",
+              "Guide: Sí, todos los flamencos son rosados."
+            ],
+            "practice": "Repeat the dialogue, focusing on natural intonation"
+          }
+        }
+      ],
+      "consolidation": {
+        "review": "Today you learned: el flamenco (flamingo) and how to describe its color",
+        "miniQuiz": [
+          {
+            "q": "How do you say 'the flamingo' in Spanish?",
+            "a": "el flamenco"
+          },
+          {
+            "q": "What color is it?",
+            "a": "rosa (pink)"
+          }
+        ],
+        "reflection": "Which was easier - recognizing the word or pronouncing it?"
+      }
+    },
+    {
+      "id": "mod-002",
+      "title": "Bird Habitats: Where They Live",
+      "level": "intermediate",
+      "estimatedTime": "20 minutes",
+      "objectives": [
+        "Learn habitat vocabulary",
+        "Use prepositions of place",
+        "Describe where birds live"
+      ],
+      "preLearning": {
+        "activation": "Think about different places where birds live - trees, water, mountains...",
+        "preview": "Learn to say: forest, lake, mountain, city, beach in Spanish"
+      },
+      "lessons": [
+        {
+          "step": 1,
+          "type": "vocabulary_building",
+          "content": {
+            "title": "Essential Habitat Words",
+            "words": [
+              {
+                "spanish": "el bosque",
+                "english": "forest",
+                "example": "El águila vive en el bosque",
+                "visual": "forest_image.jpg"
+              },
+              {
+                "spanish": "el lago",
+                "english": "lake",
+                "example": "Los patos nadan en el lago",
+                "visual": "lake_image.jpg"
+              },
+              {
+                "spanish": "la montaña",
+                "english": "mountain",
+                "example": "El cóndor vuela sobre la montaña",
+                "visual": "mountain_image.jpg"
+              }
+            ],
+            "pattern": "Notice: 'en' means 'in' and 'sobre' means 'over/above'"
+          }
+        },
+        {
+          "step": 2,
+          "type": "scaffolded_practice",
+          "content": {
+            "level1": "Match bird to habitat (images)",
+            "level2": "Complete: El flamenco vive en _____ (la laguna)",
+            "level3": "Create: Write where your favorite bird lives"
+          }
+        },
+        {
+          "step": 3,
+          "type": "grammar_focus",
+          "content": {
+            "structure": "Using 'vivir' (to live)",
+            "conjugation": {
+              "singular": "vive (lives)",
+              "plural": "viven (live)"
+            },
+            "examples": [
+              "El gorrión vive en la ciudad",
+              "Los flamencos viven en las lagunas"
+            ],
+            "practice": "Transform: El águila/vivir/montaña → El águila vive en la montaña"
+          }
+        }
+      ],
+      "consolidation": {
+        "productiveTask": "Describe where three different birds live using the new vocabulary",
+        "peerLearning": "Share your sentences with a partner or in the app",
+        "selfAssessment": "Can you describe where 3 different birds live?"
+      }
+    },
+    {
+      "id": "mod-003",
+      "title": "Describing Birds: Beyond Basic Names",
+      "level": "intermediate",
+      "estimatedTime": "25 minutes",
+      "objectives": [
+        "Use adjectives to describe birds",
+        "Apply adjective agreement rules",
+        "Create detailed descriptions"
+      ],
+      "preLearning": {
+        "activation": "How would you describe a peacock? Big? Colorful? Beautiful?",
+        "preview": "Learn descriptive adjectives and how to combine them"
+      },
+      "lessons": [
+        {
+          "step": 1,
+          "type": "adjective_introduction",
+          "content": {
+            "basicAdjectives": [
+              {
+                "spanish": "grande/pequeño",
+                "english": "big/small",
+                "rule": "Ending changes with gender: -o/-a"
+              },
+              {
+                "spanish": "bonito/feo",
+                "english": "beautiful/ugly",
+                "rule": "Must agree with noun gender"
+              },
+              {
+                "spanish": "rápido/lento",
+                "english": "fast/slow",
+                "rule": "Describes how they move"
+              }
+            ],
+            "agreement": "Adjectives must match the gender and number of the noun"
+          }
+        },
+        {
+          "step": 2,
+          "type": "pattern_recognition",
+          "content": {
+            "examples": [
+              "El águila es grande",
+              "La paloma es pequeña",
+              "Los flamencos son bonitos",
+              "Las gaviotas son rápidas"
+            ],
+            "analysis": "Notice how adjectives change endings to match the bird's gender/number",
+            "practice": "Complete: Las águilas son _____ (grande)"
+          }
+        },
+        {
+          "step": 3,
+          "type": "creative_application",
+          "content": {
+            "task": "Build a bird description",
+            "scaffold": [
+              "Start with: Es un pájaro... (It's a bird...)",
+              "Add size: Es un pájaro grande...",
+              "Add color: Es un pájaro grande y negro...",
+              "Add habitat: Es un pájaro grande y negro que vive en las montañas"
+            ],
+            "model": "El cóndor es un pájaro muy grande y negro que vive en las montañas altas"
+          }
+        }
+      ],
+      "consolidation": {
+        "synthesis": "Create a 'Bird ID Card' with name, size, color, and habitat",
+        "reflection": "Which adjective agreement rule is most challenging?",
+        "extension": "Learn specialized adjectives: majestuoso, elegante, feroz"
+      }
+    },
+    {
+      "id": "mod-004",
+      "title": "Bird Behaviors: What They Do",
+      "level": "intermediate-advanced",
+      "estimatedTime": "30 minutes",
+      "objectives": [
+        "Learn action verbs for bird behaviors",
+        "Use present tense conjugations",
+        "Describe bird activities"
+      ],
+      "preLearning": {
+        "activation": "Act out: flying, singing, hunting, nesting. Now let's learn these in Spanish!",
+        "preview": "Master verbs: volar, cantar, cazar, anidar"
+      },
+      "lessons": [
+        {
+          "step": 1,
+          "type": "verb_introduction",
+          "content": {
+            "coreVerbs": [
+              {
+                "infinitive": "volar",
+                "english": "to fly",
+                "conjugation": "vuela/vuelan",
+                "example": "El águila vuela alto",
+                "gesture": "Spread arms like wings"
+              },
+              {
+                "infinitive": "cantar",
+                "english": "to sing",
+                "conjugation": "canta/cantan",
+                "example": "El canario canta bonito",
+                "gesture": "Hand to mouth, whistling motion"
+              },
+              {
+                "infinitive": "comer",
+                "english": "to eat",
+                "conjugation": "come/comen",
+                "example": "El gorrión come semillas",
+                "gesture": "Pecking motion"
+              }
+            ]
+          }
+        },
+        {
+          "step": 2,
+          "type": "contextualized_practice",
+          "content": {
+            "scenario": "A day in the life of a bird",
+            "timeline": [
+              "Por la mañana: El pájaro canta",
+              "Durante el día: Busca comida",
+              "Come semillas y insectos",
+              "Por la tarde: Vuela a su nido",
+              "Por la noche: Duerme"
+            ],
+            "practice": "Narrate what the bird does using the verbs"
+          }
+        },
+        {
+          "step": 3,
+          "type": "communicative_task",
+          "content": {
+            "rolePlay": "You're a nature documentary narrator",
+            "script": "Describe what you see: 'Aquí vemos un águila. El águila vuela sobre las montañas. Busca comida. ¡Mira! Ve un conejo. Baja rápidamente...'",
+            "support": "Use provided verb bank and sentence starters"
+          }
+        }
+      ],
+      "consolidation": {
+        "production": "Create a mini-documentary script about a bird's daily routine",
+        "collaboration": "Exchange scripts and provide peer feedback",
+        "realWorld": "Watch a Spanish nature documentary clip - identify verbs you learned"
+      }
+    },
+    {
+      "id": "mod-005",
+      "title": "Cultural Connections: Birds in Spanish Culture",
+      "level": "advanced",
+      "estimatedTime": "30 minutes",
+      "objectives": [
+        "Understand cultural significance of birds",
+        "Learn idioms and expressions",
+        "Connect language to culture"
+      ],
+      "preLearning": {
+        "activation": "Do you know any English expressions with birds? (early bird, eagle eye...)",
+        "preview": "Discover how Spanish uses birds in everyday expressions"
+      },
+      "lessons": [
+        {
+          "step": 1,
+          "type": "cultural_exploration",
+          "content": {
+            "expressions": [
+              {
+                "spanish": "Ser un águila",
+                "literal": "To be an eagle",
+                "meaning": "To be very smart/sharp",
+                "usage": "Mi profesor es un águila - nada se le escapa",
+                "cultural": "Eagles represent keen vision and intelligence"
+              },
+              {
+                "spanish": "Estar como pez en el agua",
+                "literal": "To be like a fish in water",
+                "meaning": "To be in one's element",
+                "usage": "María está como pez en el agua hablando español",
+                "cultural": "Though not a bird, shows how animals express comfort"
+              }
+            ]
+          }
+        },
+        {
+          "step": 2,
+          "type": "literature_connection",
+          "content": {
+            "poem": "Federico García Lorca - Romance sonámbulo",
+            "excerpt": "Verde que te quiero verde / Verde viento. Verdes ramas",
+            "birdReference": "Pájaros de sueño",
+            "analysis": "Birds often symbolize freedom and dreams in Spanish poetry",
+            "activity": "Find bird imagery in the poem"
+          }
+        },
+        {
+          "step": 3,
+          "type": "regional_variations",
+          "content": {
+            "concept": "Same bird, different names",
+            "examples": [
+              {
+                "bird": "Owl",
+                "spain": "búho",
+                "mexico": "tecolote",
+                "argentina": "lechuza"
+              }
+            ],
+            "insight": "Spanish varies across regions - embrace the diversity!"
+          }
+        }
+      ],
+      "consolidation": {
+        "culturalProduct": "Create a visual guide to bird expressions in Spanish",
+        "research": "Find a Spanish song or poem mentioning birds",
+        "reflection": "How do bird metaphors differ between English and Spanish?"
+      }
+    }
+  ],
+  "pedagogicalFramework": {
+    "approach": "Communicative Language Teaching with Visual Support",
+    "progression": "Scaffolded from recognition → production",
+    "bloomsIntegration": {
+      "remember": "Identify and recall vocabulary",
+      "understand": "Comprehend in context",
+      "apply": "Use in new situations",
+      "analyze": "Compare patterns and structures",
+      "evaluate": "Judge appropriateness",
+      "create": "Produce original content"
+    },
+    "multimodalLearning": {
+      "visual": "Images, videos, gestures",
+      "auditory": "Pronunciation, songs, dialogues",
+      "kinesthetic": "Gestures, acting out, games",
+      "reading": "Texts, poems, descriptions",
+      "writing": "Creating sentences, descriptions"
+    },
+    "assessmentPrinciples": {
+      "formative": "Continuous feedback during learning",
+      "authentic": "Real-world communication tasks",
+      "differentiated": "Multiple ways to demonstrate learning",
+      "self-assessment": "Reflection and goal-setting"
+    }
+  }
+}
