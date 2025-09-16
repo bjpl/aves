@@ -1,8 +1,8 @@
 // import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { HomePage } from './pages/HomePage';
-import { LearnPage } from './pages/LearnPage';
-import { PracticePage } from './pages/PracticePage';
+import { EnhancedLearnPage } from './pages/EnhancedLearnPage';
+import { EnhancedPracticePage } from './pages/EnhancedPracticePage';
 import { SpeciesPage } from './pages/SpeciesPage';
 import './App.css';
 
@@ -55,8 +55,8 @@ function App() {
         {/* Routes */}
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/learn" element={<LearnPage />} />
-          <Route path="/practice" element={<PracticePage />} />
+          <Route path="/learn" element={<EnhancedLearnPage />} />
+          <Route path="/practice" element={<EnhancedPracticePage />} />
           <Route path="/species" element={<SpeciesPage />} />
         </Routes>
       </div>
