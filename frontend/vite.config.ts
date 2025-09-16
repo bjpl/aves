@@ -7,7 +7,9 @@ import path from 'path';
 // PATTERN: Environment-based configuration switching
 
 export default defineConfig(({ mode }) => {
-  const isGitHubPages = mode === 'gh-pages';
+  // Always use /aves/ for production builds (GitHub Pages)
+  const isProduction = mode === 'production';
+  const isGitHubPages = mode === 'gh-pages' || isProduction;
 
   return {
     plugins: [react()],
