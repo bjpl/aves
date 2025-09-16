@@ -1,7 +1,7 @@
-import { Exercise, ExerciseType } from './exercise.types';
+import { ExerciseBase, ExerciseType } from './exercise.types';
 
 // Enhanced exercise types extending the base
-export interface EnhancedExercise extends Exercise {
+export interface EnhancedExercise extends ExerciseBase {
   pedagogicalLevel: 'recognition' | 'comprehension' | 'application' | 'analysis' | 'synthesis';
   learningObjective: string;
   preTeaching?: string;

@@ -7,10 +7,10 @@ import { SpeciesPage } from './pages/SpeciesPage';
 import './App.css';
 
 function App() {
-  // PATTERN: Dynamic basename for GitHub Pages compatibility
-  // WHY: GitHub Pages serves from /repository-name/ subdirectory
-  // CONCEPT: Use environment variable or base URL detection
-  const basename = import.meta.env.BASE_URL || '/';
+  // PATTERN: Hardcoded basename for GitHub Pages deployment
+  // WHY: GitHub Pages serves from /aves/ subdirectory
+  // CONCEPT: Explicit path ensures consistent routing behavior
+  const basename = '/aves/';
 
   return (
     <Router basename={basename}>

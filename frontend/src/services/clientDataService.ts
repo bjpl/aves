@@ -38,8 +38,8 @@ class ClientDataService {
 
   private async loadStaticData(): Promise<void> {
     try {
-      // Get the base URL for GitHub Pages
-      const baseUrl = import.meta.env.BASE_URL || '/';
+      // Hardcoded base URL for GitHub Pages deployment at /aves/
+      const baseUrl = '/aves/';
 
       // Load pre-configured annotation data
       const annotationsResponse = await fetch(`${baseUrl}data/annotations.json`);
