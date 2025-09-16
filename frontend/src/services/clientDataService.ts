@@ -38,17 +38,24 @@ class ClientDataService {
 
   private async loadStaticData(): Promise<void> {
     try {
+      // Get the base URL for GitHub Pages
+      const baseUrl = import.meta.env.BASE_URL || '/';
+
       // Load pre-configured annotation data
-      const annotationsResponse = await fetch('/data/annotations.json');
+      const annotationsResponse = await fetch(`${baseUrl}data/annotations.json`);
       this.staticData.annotations = await annotationsResponse.json();
 
       // Load species taxonomy data
-      const speciesResponse = await fetch('/data/species.json');
+      const speciesResponse = await fetch(`${baseUrl}data/species.json`);
       this.staticData.species = await speciesResponse.json();
 
-      // Load exercise templates
-      const exercisesResponse = await fetch('/data/exercises.json');
-      this.staticData.exercises = await exercisesResponse.json();
+      // Load exercise templates (create empty if doesn't exist)
+      try {
+        const exercisesResponse = await fetch(`${baseUrl}data/exercises.json`);
+        this.staticData.exercises = await exercisesResponse.json();
+      } catch {
+        this.staticData.exercises = [];
+      }
     } catch (error) {
       console.error('Failed to load static data:', error);
       // Fall back to embedded sample data
