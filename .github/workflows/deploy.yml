@@ -39,6 +39,30 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
+      - name: Run frontend tests
+        working-directory: ./frontend
+        run: npm test -- --run --reporter=verbose
+        env:
+          CI: true
+        continue-on-error: false
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Run backend tests
+        working-directory: ./backend
+        run: npm test -- --coverage
+        env:
+          CI: true
+          NODE_ENV: test
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          directory: ./backend/coverage
+        continue-on-error: true
+
       - name: Build for GitHub Pages
         working-directory: ./frontend
         run: npm run build:gh-pages

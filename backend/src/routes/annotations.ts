@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { pool } from '../database/connection';
 import { Annotation, AnnotationType } from '../../../shared/types/annotation.types';
+import { error as logError } from '../utils/logger';
 
 const router = Router();
 
@@ -53,8 +54,8 @@ router.get('/annotations/:imageId', async (req: Request, res: Response) => {
     }));
 
     res.json({ annotations });
-  } catch (error) {
-    console.error('Error fetching annotations:', error);
+  } catch (err) {
+    logError('Error fetching annotations', err as Error);
     res.status(500).json({ error: 'Failed to fetch annotations' });
   }
 });
@@ -105,11 +106,11 @@ router.post('/annotations', async (req: Request, res: Response) => {
     };
 
     res.status(201).json({ annotation });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({ error: 'Invalid data', details: error.errors });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: 'Invalid data', details: err.errors });
     } else {
-      console.error('Error creating annotation:', error);
+      logError('Error creating annotation', err as Error);
       res.status(500).json({ error: 'Failed to create annotation' });
     }
   }
@@ -180,8 +181,8 @@ router.put('/annotations/:id', async (req: Request, res: Response) => {
     };
 
     res.json({ annotation });
-  } catch (error) {
-    console.error('Error updating annotation:', error);
+  } catch (err) {
+    logError('Error updating annotation', err as Error);
     res.status(500).json({ error: 'Failed to update annotation' });
   }
 });
@@ -199,8 +200,8 @@ router.delete('/annotations/:id', async (req: Request, res: Response) => {
     }
 
     res.json({ message: 'Annotation deleted successfully', id });
-  } catch (error) {
-    console.error('Error deleting annotation:', error);
+  } catch (err) {
+    logError('Error deleting annotation', err as Error);
     res.status(500).json({ error: 'Failed to delete annotation' });
   }
 });
@@ -229,8 +230,8 @@ router.post('/annotations/:id/interaction', async (req: Request, res: Response) 
       interactionId: result.rows[0].id,
       timestamp: result.rows[0].timestamp
     });
-  } catch (error) {
-    console.error('Error recording interaction:', error);
+  } catch (err) {
+    logError('Error recording interaction', err as Error);
     res.status(500).json({ error: 'Failed to record interaction' });
   }
 });

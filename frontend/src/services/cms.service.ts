@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { debug } from '../utils/logger';
 
 // PATTERN: Service Layer Architecture
 // WHY: Abstracts API communication from components
@@ -172,12 +173,45 @@ export class CMSService {
     // This would normally go to your backend for validation
     // For now, we'll validate on the client side
     const quiz = await this.getQuizById(quizId);
-    const isCorrect = JSON.stringify(answer) === JSON.stringify(quiz.attributes.correctAnswer);
+
+    // Use deep equality check instead of JSON.stringify comparison
+    // Handle both primitive values and objects
+    const isCorrect = this.isAnswerCorrect(answer, quiz.attributes.correctAnswer);
+
     return {
       correct: isCorrect,
       explanation: quiz.attributes.explanation,
       points: isCorrect ? quiz.attributes.points : 0
     };
+  }
+
+  // Helper method for deep equality comparison
+  private static isAnswerCorrect(userAnswer: any, correctAnswer: any): boolean {
+    // Handle null/undefined cases
+    if (userAnswer === correctAnswer) return true;
+    if (userAnswer == null || correctAnswer == null) return false;
+
+    // Handle primitive types (string, number, boolean)
+    if (typeof userAnswer !== 'object' || typeof correctAnswer !== 'object') {
+      // Case-insensitive comparison for strings
+      if (typeof userAnswer === 'string' && typeof correctAnswer === 'string') {
+        return userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
+      }
+      return userAnswer === correctAnswer;
+    }
+
+    // Handle arrays
+    if (Array.isArray(userAnswer) && Array.isArray(correctAnswer)) {
+      if (userAnswer.length !== correctAnswer.length) return false;
+      return userAnswer.every((item, index) => this.isAnswerCorrect(item, correctAnswer[index]));
+    }
+
+    // Handle objects - use JSON comparison as fallback for complex objects
+    try {
+      return JSON.stringify(userAnswer) === JSON.stringify(correctAnswer);
+    } catch {
+      return false;
+    }
   }
 
   static async getQuizById(id: number) {
@@ -232,7 +266,7 @@ export class CMSService {
   // Learning progress tracking (would connect to user backend)
   static async trackProgress(userId: string, lessonId: number, progress: number) {
     // This will connect to the serverless backend we'll create next
-    console.log('Progress tracked:', { userId, lessonId, progress });
+    debug('Progress tracked:', { userId, lessonId, progress });
     return { success: true };
   }
 }

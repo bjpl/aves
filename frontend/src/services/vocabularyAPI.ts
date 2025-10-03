@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { DisclosureLevel } from '../../../shared/types/vocabulary.types';
+import { error as logError } from '../utils/logger';
 
 const API_BASE_URL = '/api';
 
@@ -26,8 +27,8 @@ export const vocabularyAPI = {
         spanishTerm,
         disclosureLevel: level
       });
-    } catch (error) {
-      console.error('Failed to track interaction:', error);
+    } catch (err) {
+      logError('Failed to track interaction', err as Error);
     }
   },
 

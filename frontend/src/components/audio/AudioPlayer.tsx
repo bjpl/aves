@@ -3,6 +3,7 @@
 // PATTERN: Component with Web Audio API integration
 
 import React, { useState, useRef, useEffect } from 'react';
+import { error as logError } from '../../utils/logger';
 
 interface AudioPlayerProps {
   audioUrl?: string;
@@ -131,7 +132,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
         }
       }
     } catch (err) {
-      console.error('Playback error:', err);
+      logError('Playback error:', err);
       setError('Failed to play audio');
       setIsPlaying(false);
     }

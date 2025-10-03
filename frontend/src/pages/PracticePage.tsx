@@ -1,6 +1,7 @@
 import React from 'react';
 import { ExerciseContainer } from '../components/exercises/ExerciseContainer';
 import { Annotation } from '../../../shared/types/annotation.types';
+import { debug } from '../utils/logger';
 
 // Rich educational content following pedagogical best practices
 const sampleAnnotations: Annotation[] = [
@@ -181,7 +182,7 @@ export const PracticePage: React.FC = () => {
         <ExerciseContainer
           annotations={sampleAnnotations}
           onComplete={(progress) => {
-            console.log('Session complete:', progress);
+            debug('Session complete', { progress });
           }}
         />
       </div>

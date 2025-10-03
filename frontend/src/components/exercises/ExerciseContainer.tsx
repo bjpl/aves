@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { SessionProgress } from '../../../../shared/types/exercise.types';
 import { Annotation } from '../../../../shared/types/annotation.types';
 import { EnhancedExercise } from '../../../../shared/types/enhanced-exercise.types';
@@ -27,11 +27,21 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
   const [showFeedback, setShowFeedback] = useState(false);
   const [lastResult, setLastResult] = useState<{ correct: boolean; feedback: string } | null>(null);
 
+  // Store timeout ID for cleanup
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     generateNewExercise();
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
   }, []);
 
-  const generateNewExercise = () => {
+  const generateNewExercise = useCallback(() => {
     // Use adaptive exercise generation for better learning progression
     const exercise = generator.generateAdaptiveExercise();
 
@@ -40,9 +50,9 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
       setShowFeedback(false);
       setLastResult(null);
     }
-  };
+  }, [generator]);
 
-  const handleAnswer = (answer: any) => {
+  const handleAnswer = useCallback((answer: any) => {
     if (!currentExercise) return;
 
     const isCorrect = EnhancedExerciseGenerator.checkAnswer(currentExercise, answer);
@@ -62,13 +72,18 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
     // Update generator level based on performance
     generator.updateLevel({ correct: newProgress.correctAnswers, total: newProgress.exercisesCompleted });
 
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
     // Auto-advance after delay
-    setTimeout(() => {
+    timeoutRef.current = setTimeout(() => {
       generateNewExercise();
     }, 3000);
-  };
+  }, [currentExercise, progress, generator, generateNewExercise]);
 
-  const renderExercise = () => {
+  const renderExercise = useCallback(() => {
     if (!currentExercise) return null;
 
     // Show pre-teaching if available
@@ -138,11 +153,11 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
         )}
       </>
     );
-  };
+  }, [currentExercise, showFeedback, handleAnswer]);
 
-  const accuracyPercentage = progress.exercisesCompleted > 0
+  const accuracyPercentage = useMemo(() => progress.exercisesCompleted > 0
     ? Math.round((progress.correctAnswers / progress.exercisesCompleted) * 100)
-    : 0;
+    : 0, [progress.exercisesCompleted, progress.correctAnswers]);
 
   return (
     <div className="max-w-3xl mx-auto p-6">

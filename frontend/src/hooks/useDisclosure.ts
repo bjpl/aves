@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { VocabularyDisclosure, DisclosureLevel } from '../../../shared/types/vocabulary.types';
 import { Annotation } from '../../../shared/types/annotation.types';
 import { vocabularyAPI } from '../services/vocabularyAPI';
+import { error as logError } from '../utils/logger';
 
 export const useDisclosure = (annotation: Annotation) => {
   const [disclosure, setDisclosure] = useState<VocabularyDisclosure>({
@@ -41,7 +42,7 @@ export const useDisclosure = (annotation: Annotation) => {
         content.mnemonic = enrichment.mnemonic;
         content.relatedTerms = enrichment.relatedTerms;
       } catch (error) {
-        console.error('Failed to fetch enrichment:', error);
+        logError('Failed to fetch enrichment:', error);
       }
     }
 
@@ -51,7 +52,7 @@ export const useDisclosure = (annotation: Annotation) => {
         content.usageExamples = examples.usageExamples;
         content.commonPhrases = examples.commonPhrases;
       } catch (error) {
-        console.error('Failed to fetch examples:', error);
+        logError('Failed to fetch examples:', error);
       }
     }
 

@@ -4,6 +4,7 @@ import axios from 'axios';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import sharp from 'sharp';
+import { error as logError } from '../utils/logger';
 
 const router = Router();
 
@@ -54,8 +55,8 @@ router.post('/images/search', async (req: Request, res: Response) => {
     };
 
     res.json(mockResults);
-  } catch (error) {
-    console.error('Error searching images:', error);
+  } catch (err) {
+    logError('Error searching images', err as Error);
     res.status(500).json({ error: 'Failed to search images' });
   }
 });
@@ -106,8 +107,8 @@ router.post('/images/import', async (req: Request, res: Response) => {
     res.json({
       image: result.rows[0]
     });
-  } catch (error) {
-    console.error('Error importing image:', error);
+  } catch (err) {
+    logError('Error importing image', err as Error);
     res.status(500).json({ error: 'Failed to import image' });
   }
 });
@@ -157,8 +158,8 @@ router.post('/images/generate-prompts', async (req: Request, res: Response) => {
       generated: prompts.length,
       prompts
     });
-  } catch (error) {
-    console.error('Error generating prompts:', error);
+  } catch (err) {
+    logError('Error generating prompts', err as Error);
     res.status(500).json({ error: 'Failed to generate prompts' });
   }
 });
@@ -184,8 +185,8 @@ router.get('/images/prompts', async (req: Request, res: Response) => {
     res.json({
       prompts: result.rows
     });
-  } catch (error) {
-    console.error('Error fetching prompts:', error);
+  } catch (err) {
+    logError('Error fetching prompts', err as Error);
     res.status(500).json({ error: 'Failed to fetch prompts' });
   }
 });
@@ -205,8 +206,8 @@ router.get('/images/stats', async (req: Request, res: Response) => {
     const result = await pool.query(statsQuery);
 
     res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error fetching image stats:', error);
+  } catch (err) {
+    logError('Error fetching image stats', err as Error);
     res.status(500).json({ error: 'Failed to fetch image statistics' });
   }
 });

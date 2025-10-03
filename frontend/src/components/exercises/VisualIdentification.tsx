@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Exercise } from '../../../../shared/types/exercise.types';
 
 interface VisualIdentificationProps {
@@ -15,8 +15,8 @@ export const VisualIdentification: React.FC<VisualIdentificationProps> = ({
   const [selectedPart, setSelectedPart] = useState<string | null>(null);
   const [hoveredPart, setHoveredPart] = useState<string | null>(null);
 
-  // Bird anatomy map with coordinates for common birds
-  const anatomyMaps: Record<string, Array<{id: string, label: string, x: number, y: number, width: number, height: number}>> = {
+  // Bird anatomy map with coordinates for common birds (memoized to prevent recreation)
+  const anatomyMaps = useMemo<Record<string, Array<{id: string, label: string, x: number, y: number, width: number, height: number}>>>(() => ({
     flamingo: [
       { id: 'beak', label: 'el pico', x: 25, y: 15, width: 8, height: 5 },
       { id: 'neck', label: 'el cuello', x: 22, y: 20, width: 6, height: 15 },
@@ -38,19 +38,27 @@ export const VisualIdentification: React.FC<VisualIdentificationProps> = ({
       { id: 'legs', label: 'las patas', x: 38, y: 50, width: 6, height: 8 },
       { id: 'breast', label: 'el pecho', x: 35, y: 38, width: 10, height: 10 }
     ]
-  };
+  }), []);
 
-  const targetBird = exercise.metadata?.bird || 'flamingo';
-  const targetPart = exercise.metadata?.targetPart || 'beak';
-  const anatomyMap = anatomyMaps[targetBird] || anatomyMaps.flamingo;
+  const targetBird = useMemo(() => exercise.metadata?.bird || 'flamingo', [exercise.metadata?.bird]);
+  const targetPart = useMemo(() => exercise.metadata?.targetPart || 'beak', [exercise.metadata?.targetPart]);
+  const anatomyMap = useMemo(() => anatomyMaps[targetBird] || anatomyMaps.flamingo, [anatomyMaps, targetBird]);
 
-  const handlePartClick = (partId: string) => {
+  const handlePartClick = useCallback((partId: string) => {
     if (disabled) return;
     setSelectedPart(partId);
     onAnswer(partId);
-  };
+  }, [disabled, onAnswer]);
 
-  const getPartStyle = (part: typeof anatomyMap[0]) => {
+  const handlePartHoverEnter = useCallback((partId: string) => {
+    if (!disabled) setHoveredPart(partId);
+  }, [disabled]);
+
+  const handlePartHoverLeave = useCallback(() => {
+    if (!disabled) setHoveredPart(null);
+  }, [disabled]);
+
+  const getPartStyle = useCallback((part: typeof anatomyMap[0]) => {
     const isTarget = part.id === targetPart;
     const isHovered = hoveredPart === part.id;
     const isSelected = selectedPart === part.id;
@@ -93,9 +101,9 @@ export const VisualIdentification: React.FC<VisualIdentificationProps> = ({
       alignItems: 'center',
       justifyContent: 'center'
     };
-  };
+  }, [part, targetPart, disabled, hoveredPart, selectedPart]);
 
-  const getBirdImage = () => {
+  const birdImage = useMemo(() => {
     const images: Record<string, string> = {
       flamingo: 'https://images.unsplash.com/photo-1535821265819-8e7ff3c30737?w=600',
       eagle: 'https://images.unsplash.com/photo-1611689342806-0863700ce1e4?w=600',
@@ -105,7 +113,7 @@ export const VisualIdentification: React.FC<VisualIdentificationProps> = ({
       peacock: 'https://images.unsplash.com/photo-1512990641230-7e91cc31d0dc?w=600'
     };
     return images[targetBird] || images.flamingo;
-  };
+  }, [targetBird]);
 
   return (
     <div className="space-y-6">
@@ -127,7 +135,7 @@ export const VisualIdentification: React.FC<VisualIdentificationProps> = ({
       {/* Interactive Bird Image */}
       <div className="relative mx-auto" style={{ maxWidth: '500px' }}>
         <img
-          src={getBirdImage()}
+          src={birdImage}
           alt="Bird for identification"
           className="w-full rounded-lg shadow-md"
         />
@@ -137,8 +145,8 @@ export const VisualIdentification: React.FC<VisualIdentificationProps> = ({
           <div
             key={part.id}
             style={getPartStyle(part)}
-            onMouseEnter={() => !disabled && setHoveredPart(part.id)}
-            onMouseLeave={() => !disabled && setHoveredPart(null)}
+            onMouseEnter={() => handlePartHoverEnter(part.id)}
+            onMouseLeave={handlePartHoverLeave}
             onClick={() => handlePartClick(part.id)}
           >
             {(hoveredPart === part.id || (selectedPart === part.id && disabled)) && (

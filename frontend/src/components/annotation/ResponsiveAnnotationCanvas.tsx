@@ -6,6 +6,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Annotation, Coordinate } from '../../types';
 import { useMobileDetect } from '../../hooks/useMobileDetect';
 import { useProgress } from '../../hooks/useProgress';
+import { error as logError } from '../../utils/logger';
 
 interface ResponsiveAnnotationCanvasProps {
   imageUrl: string;
@@ -42,7 +43,7 @@ export const ResponsiveAnnotationCanvas: React.FC<ResponsiveAnnotationCanvasProp
     };
 
     img.onerror = () => {
-      console.error('Failed to load image:', imageUrl);
+      logError('Failed to load image:', imageUrl);
     };
 
     img.src = imageUrl;

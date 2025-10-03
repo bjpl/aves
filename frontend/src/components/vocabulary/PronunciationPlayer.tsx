@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { error as logError } from '../../utils/logger';
 
 interface PronunciationPlayerProps {
   audioUrl: string;
@@ -32,7 +33,7 @@ export const PronunciationPlayer: React.FC<PronunciationPlayerProps> = ({
         };
       }
     } catch (error) {
-      console.error('Error playing audio:', error);
+      logError('Error playing audio:', error);
       setIsPlaying(false);
     }
   };

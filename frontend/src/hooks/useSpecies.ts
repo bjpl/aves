@@ -1,111 +1,144 @@
-// CONCEPT: Hook for species data management with dual-mode support
-// WHY: Abstracts data fetching logic from components, works with both API and client storage
-// PATTERN: Custom hook with loading states and error handling
+// CONCEPT: React Query hooks for species data management with intelligent caching
+// WHY: Leverages React Query for automatic caching, background refetching, and optimistic updates
+// PATTERN: useQuery/useMutation hooks with cache key factories
 
-import { useState, useCallback, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Species } from '../types';
 import { api } from '../services/apiAdapter';
+import { queryKeys } from '../config/queryClient';
+import { error as logError } from '../utils/logger';
 
-export const useSpecies = () => {
-  const [species, setSpecies] = useState<Species[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+// Hook: Fetch all species with optional filters
+export const useSpecies = (filters?: any) => {
+  return useQuery({
+    queryKey: queryKeys.species.list(filters),
+    queryFn: async () => {
+      try {
+        return await api.species.list(filters);
+      } catch (err) {
+        logError('Error fetching species', err as Error);
+        return []; // Return empty array on error
+      }
+    },
+    staleTime: 10 * 60 * 1000, // 10 minutes - species data is relatively static
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    placeholderData: [], // Show empty array while loading
+  });
+};
 
-  // Fetch all species
-  const fetchSpecies = useCallback(async (filters?: any) => {
-    setLoading(true);
-    setError(null);
+// Hook: Fetch single species by ID
+export const useSpeciesById = (id: string) => {
+  return useQuery({
+    queryKey: queryKeys.species.detail(id),
+    queryFn: async () => {
+      try {
+        return await api.species.get(id);
+      } catch (err) {
+        logError('Error fetching species details', err as Error);
+        return null;
+      }
+    },
+    enabled: !!id, // Only fetch if ID is provided
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
+};
 
-    try {
-      const data = await api.species.list(filters);
-      setSpecies(data);
-      return data;
-    } catch (err) {
-      const errorMessage = 'Failed to load species';
-      setError(errorMessage);
-      console.error('Error fetching species:', err);
+// Hook: Search species (client-side filtering for now)
+export const useSpeciesSearch = (query: string, enabled = true) => {
+  const { data: allSpecies = [] } = useSpecies();
 
-      // Return empty array on error so UI can still render
-      setSpecies([]);
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Fetch species by ID
-  const fetchSpeciesById = useCallback(async (id: string) => {
-    try {
-      const data = await api.species.get(id);
-      return data;
-    } catch (err) {
-      console.error('Error fetching species details:', err);
-      return null;
-    }
-  }, []);
-
-  // Search species
-  const searchSpecies = useCallback(async (query: string) => {
-    try {
-      // For now, do client-side search on loaded species
+  return useQuery({
+    queryKey: queryKeys.species.search(query),
+    queryFn: () => {
       const searchTerm = query.toLowerCase();
-      const results = species.filter(s =>
+      return allSpecies.filter(s =>
         s.spanishName?.toLowerCase().includes(searchTerm) ||
         s.englishName?.toLowerCase().includes(searchTerm) ||
         s.scientificName?.toLowerCase().includes(searchTerm)
       );
-      return results;
-    } catch (err) {
-      console.error('Error searching species:', err);
-      return [];
-    }
-  }, [species]);
+    },
+    enabled: enabled && query.length > 2 && allSpecies.length > 0,
+    staleTime: 1 * 60 * 1000, // 1 minute - search is dynamic
+    gcTime: 2 * 60 * 1000,
+  });
+};
 
-  // Get species statistics
-  const getSpeciesStats = useCallback(() => {
-    const stats = {
-      totalSpecies: species.length,
-      byOrder: {} as Record<string, number>,
-      byHabitat: {} as Record<string, number>,
-      bySize: {} as Record<string, number>
-    };
+// Hook: Get species statistics
+export const useSpeciesStats = () => {
+  const { data: species = [] } = useSpecies();
 
-    species.forEach(s => {
-      // Count by order
-      if (s.orderName) {
-        stats.byOrder[s.orderName] = (stats.byOrder[s.orderName] || 0) + 1;
-      }
+  return useQuery({
+    queryKey: queryKeys.species.stats(),
+    queryFn: () => {
+      const stats = {
+        totalSpecies: species.length,
+        byOrder: {} as Record<string, number>,
+        byHabitat: {} as Record<string, number>,
+        bySize: {} as Record<string, number>
+      };
 
-      // Count by habitat
-      s.habitats?.forEach(habitat => {
-        stats.byHabitat[habitat] = (stats.byHabitat[habitat] || 0) + 1;
+      species.forEach(s => {
+        // Count by order
+        if (s.orderName) {
+          stats.byOrder[s.orderName] = (stats.byOrder[s.orderName] || 0) + 1;
+        }
+
+        // Count by habitat
+        s.habitats?.forEach(habitat => {
+          stats.byHabitat[habitat] = (stats.byHabitat[habitat] || 0) + 1;
+        });
+
+        // Count by size
+        if (s.sizeCategory) {
+          stats.bySize[s.sizeCategory] = (stats.bySize[s.sizeCategory] || 0) + 1;
+        }
       });
 
-      // Count by size
-      if (s.sizeCategory) {
-        stats.bySize[s.sizeCategory] = (stats.bySize[s.sizeCategory] || 0) + 1;
-      }
-    });
+      return stats;
+    },
+    enabled: species.length > 0,
+    staleTime: 10 * 60 * 1000,
+  });
+};
 
-    return stats;
-  }, [species]);
-
-  // Auto-load species on mount for static data
-  useEffect(() => {
-    // Only auto-load if we're using client storage (GitHub Pages)
-    const storageMode = api.utils.getMode();
-    if (storageMode === 'client' && species.length === 0) {
-      fetchSpecies();
-    }
-  }, []);
+// Hook: Prefetch species for performance optimization
+export const usePrefetchSpecies = () => {
+  const queryClient = useQueryClient();
 
   return {
-    species,
-    loading,
-    error,
-    fetchSpecies,
-    fetchSpeciesById,
-    searchSpecies,
-    getSpeciesStats
+    prefetchSpecies: (filters?: any) => {
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.species.list(filters),
+        queryFn: () => api.species.list(filters),
+        staleTime: 10 * 60 * 1000,
+      });
+    },
+    prefetchSpeciesById: (id: string) => {
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.species.detail(id),
+        queryFn: () => api.species.get(id),
+        staleTime: 10 * 60 * 1000,
+      });
+    },
   };
+};
+
+// Mutation: Create/Update species (for admin functionality)
+export const useSpeciesMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (species: Partial<Species>) => {
+      // Implement create/update logic when backend is ready
+      return species;
+    },
+    onSuccess: () => {
+      // Invalidate and refetch species queries
+      queryClient.invalidateQueries({ queryKey: queryKeys.species.all });
+    },
+    onError: (error) => {
+      logError('Error mutating species', error as Error);
+    },
+  });
 };

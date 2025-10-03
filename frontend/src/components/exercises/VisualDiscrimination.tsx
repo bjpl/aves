@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { VisualDiscriminationExercise } from '../../../../shared/types/exercise.types';
 
 interface VisualDiscriminationProps {
@@ -15,15 +15,15 @@ export const VisualDiscrimination: React.FC<VisualDiscriminationProps> = ({
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
 
-  const handleSelect = (optionId: string) => {
+  const handleSelect = useCallback((optionId: string) => {
     if (disabled || hasAnswered) return;
 
     setSelectedOption(optionId);
     setHasAnswered(true);
     onAnswer(optionId);
-  };
+  }, [disabled, hasAnswered, onAnswer]);
 
-  const getOptionClass = (optionId: string) => {
+  const getOptionClass = useCallback((optionId: string) => {
     if (!hasAnswered) {
       return selectedOption === optionId
         ? 'ring-2 ring-blue-500'
@@ -39,7 +39,7 @@ export const VisualDiscrimination: React.FC<VisualDiscriminationProps> = ({
     }
 
     return 'opacity-50';
-  };
+  }, [hasAnswered, selectedOption, exercise.correctOptionId]);
 
   return (
     <div className="space-y-6">

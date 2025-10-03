@@ -3,15 +3,20 @@
 // PATTERN: Repository pattern with IndexedDB for complex data, LocalStorage for settings
 
 import { Annotation, Species, Exercise, VocabularyInteraction } from '../types';
+import {
+  ProgressRecord,
+  ExerciseResultRecord,
+  InteractionRecord,
+  ExportData,
+  StoreName,
+  TransactionMode
+} from '../types/storage.types';
+import { StorageError } from '../types/error.types';
+import { SpeciesFilter } from '../types';
+import { error as logError } from '../utils/logger';
 
-// Database structure interface for reference
-// interface ClientDatabase {
-//   annotations: Annotation[];
-//   species: Species[];
-//   exercises: Exercise[];
-//   interactions: VocabularyInteraction[];
-//   progress: Map<string, any>;
-// }
+// Database structure defined in storage.types.ts
+// Contains: interactions, progress, exerciseResults
 
 class ClientDataService {
   private dbName = 'aves-learning-db';
@@ -57,7 +62,7 @@ class ClientDataService {
         this.staticData.exercises = [];
       }
     } catch (error) {
-      console.error('Failed to load static data:', error);
+      logError('Failed to load static data:', error);
       // Fall back to embedded sample data
       this.loadEmbeddedData();
     }
@@ -131,7 +136,7 @@ class ClientDataService {
       const request = indexedDB.open(this.dbName, this.dbVersion);
 
       request.onerror = () => {
-        console.error('Failed to open IndexedDB');
+        logError('Failed to open IndexedDB');
         reject(request.error);
       };
 
@@ -181,7 +186,7 @@ class ClientDataService {
         this.saveProgress(progress);
         localStorage.removeItem('aves-progress');
       } catch (error) {
-        console.error('Failed to migrate localStorage:', error);
+        logError('Failed to migrate localStorage:', error);
       }
     }
   }
@@ -195,7 +200,7 @@ class ClientDataService {
     return this.staticData.annotations;
   }
 
-  async getSpecies(filters?: any): Promise<Species[]> {
+  async getSpecies(filters?: SpeciesFilter): Promise<Species[]> {
     let results = [...this.staticData.species];
 
     if (filters) {
@@ -207,6 +212,20 @@ class ClientDataService {
       }
       if (filters.primaryColor) {
         results = results.filter(s => s.primaryColors.includes(filters.primaryColor));
+      }
+      if (filters.searchTerm) {
+        const searchLower = filters.searchTerm.toLowerCase();
+        results = results.filter(s =>
+          s.spanishName.toLowerCase().includes(searchLower) ||
+          s.englishName.toLowerCase().includes(searchLower) ||
+          s.scientificName.toLowerCase().includes(searchLower)
+        );
+      }
+      if (filters.orderName) {
+        results = results.filter(s => s.orderName === filters.orderName);
+      }
+      if (filters.familyName) {
+        results = results.filter(s => s.familyName === filters.familyName);
       }
     }
 
@@ -222,41 +241,45 @@ class ClientDataService {
 
   async saveInteraction(interaction: Omit<VocabularyInteraction, 'id'>): Promise<void> {
     if (!this.db) {
-      throw new Error('Database not initialized');
+      throw new StorageError('Database not initialized');
     }
 
     const transaction = this.db.transaction(['interactions'], 'readwrite');
     const store = transaction.objectStore('interactions');
 
-    await new Promise((resolve, reject) => {
-      const request = store.add({
-        ...interaction,
-        timestamp: new Date()
-      });
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+    const interactionRecord: Omit<InteractionRecord, 'id'> = {
+      ...interaction,
+      userSessionId: this.getCurrentSessionId(),
+      timestamp: new Date()
+    };
+
+    await new Promise<void>((resolve, reject) => {
+      const request = store.add(interactionRecord);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(new StorageError('Failed to save interaction', { error: request.error }));
     });
   }
 
   async getInteractions(sessionId: string): Promise<VocabularyInteraction[]> {
     if (!this.db) {
-      throw new Error('Database not initialized');
+      throw new StorageError('Database not initialized');
     }
 
     const transaction = this.db.transaction(['interactions'], 'readonly');
     const store = transaction.objectStore('interactions');
 
-    return new Promise((resolve, reject) => {
+    return new Promise<VocabularyInteraction[]>((resolve, reject) => {
       const request = store.getAll();
       request.onsuccess = () => {
-        const interactions = request.result.filter(i => i.userSessionId === sessionId);
+        const interactions = (request.result as InteractionRecord[])
+          .filter((i: InteractionRecord) => i.userSessionId === sessionId);
         resolve(interactions);
       };
-      request.onerror = () => reject(request.error);
+      request.onerror = () => reject(new StorageError('Failed to get interactions', { error: request.error }));
     });
   }
 
-  async saveProgress(progress: any): Promise<void> {
+  async saveProgress(progress: Omit<ProgressRecord, 'lastUpdated'>): Promise<void> {
     if (!this.db) {
       // Fallback to localStorage if IndexedDB fails
       localStorage.setItem('aves-progress-backup', JSON.stringify(progress));
@@ -266,76 +289,86 @@ class ClientDataService {
     const transaction = this.db.transaction(['progress'], 'readwrite');
     const store = transaction.objectStore('progress');
 
-    await new Promise((resolve, reject) => {
-      const request = store.put({
-        ...progress,
-        lastUpdated: new Date()
-      });
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+    const progressRecord: ProgressRecord = {
+      ...progress,
+      lastUpdated: new Date()
+    };
+
+    await new Promise<void>((resolve, reject) => {
+      const request = store.put(progressRecord);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(new StorageError('Failed to save progress', { error: request.error }));
     });
   }
 
-  async getProgress(sessionId: string): Promise<any> {
+  async getProgress(sessionId: string): Promise<ProgressRecord | null> {
     if (!this.db) {
       // Fallback to localStorage
       const backup = localStorage.getItem('aves-progress-backup');
-      return backup ? JSON.parse(backup) : null;
+      return backup ? JSON.parse(backup) as ProgressRecord : null;
     }
 
     const transaction = this.db.transaction(['progress'], 'readonly');
     const store = transaction.objectStore('progress');
 
-    return new Promise((resolve, reject) => {
+    return new Promise<ProgressRecord | null>((resolve, reject) => {
       const request = store.get(sessionId);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result as ProgressRecord || null);
+      request.onerror = () => reject(new StorageError('Failed to get progress', { error: request.error }));
     });
   }
 
-  async saveExerciseResult(result: any): Promise<void> {
+  async saveExerciseResult(result: Omit<ExerciseResultRecord, 'id' | 'completedAt'>): Promise<void> {
     if (!this.db) {
-      throw new Error('Database not initialized');
+      throw new StorageError('Database not initialized');
     }
 
     const transaction = this.db.transaction(['exerciseResults'], 'readwrite');
     const store = transaction.objectStore('exerciseResults');
 
-    await new Promise((resolve, reject) => {
-      const request = store.add({
-        ...result,
-        completedAt: new Date()
-      });
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+    const resultRecord: Omit<ExerciseResultRecord, 'id'> = {
+      ...result,
+      completedAt: new Date()
+    };
+
+    await new Promise<void>((resolve, reject) => {
+      const request = store.add(resultRecord);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(new StorageError('Failed to save exercise result', { error: request.error }));
     });
   }
 
-  async getExerciseResults(sessionId: string): Promise<any[]> {
+  async getExerciseResults(sessionId: string): Promise<ExerciseResultRecord[]> {
     if (!this.db) {
-      throw new Error('Database not initialized');
+      throw new StorageError('Database not initialized');
     }
 
     const transaction = this.db.transaction(['exerciseResults'], 'readonly');
     const store = transaction.objectStore('exerciseResults');
 
-    return new Promise((resolve, reject) => {
+    return new Promise<ExerciseResultRecord[]>((resolve, reject) => {
       const request = store.getAll();
       request.onsuccess = () => {
-        const results = request.result.filter(r => r.sessionId === sessionId);
+        const results = (request.result as ExerciseResultRecord[])
+          .filter((r: ExerciseResultRecord) => r.sessionId === sessionId);
         resolve(results);
       };
-      request.onerror = () => reject(request.error);
+      request.onerror = () => reject(new StorageError('Failed to get exercise results', { error: request.error }));
     });
   }
 
   // Utility methods
 
   async exportData(): Promise<string> {
-    const data = {
-      interactions: await this.getInteractions(this.getCurrentSessionId()),
-      progress: await this.getProgress(this.getCurrentSessionId()),
-      exerciseResults: await this.getExerciseResults(this.getCurrentSessionId()),
+    const sessionId = this.getCurrentSessionId();
+    const interactions = await this.getInteractions(sessionId);
+    const progress = await this.getProgress(sessionId);
+    const exerciseResults = await this.getExerciseResults(sessionId);
+
+    const data: ExportData = {
+      interactions: interactions as InteractionRecord[],
+      progress,
+      exerciseResults,
       exportedAt: new Date().toISOString()
     };
 
@@ -344,10 +377,10 @@ class ClientDataService {
 
   async importData(jsonString: string): Promise<void> {
     try {
-      const data = JSON.parse(jsonString);
+      const data = JSON.parse(jsonString) as Partial<ExportData>;
 
       // Import interactions
-      if (data.interactions) {
+      if (data.interactions && Array.isArray(data.interactions)) {
         for (const interaction of data.interactions) {
           await this.saveInteraction(interaction);
         }
@@ -359,14 +392,14 @@ class ClientDataService {
       }
 
       // Import exercise results
-      if (data.exerciseResults) {
+      if (data.exerciseResults && Array.isArray(data.exerciseResults)) {
         for (const result of data.exerciseResults) {
           await this.saveExerciseResult(result);
         }
       }
     } catch (error) {
-      console.error('Failed to import data:', error);
-      throw new Error('Invalid import data format');
+      logError('Failed to import data:', error);
+      throw new StorageError('Invalid import data format', { error });
     }
   }
 
@@ -411,4 +444,4 @@ class ClientDataService {
 export const clientDataService = new ClientDataService();
 
 // Initialize on first import
-clientDataService.initialize().catch(console.error);
+clientDataService.initialize().catch(logError);

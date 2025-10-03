@@ -28,6 +28,7 @@ export interface Phrase {
 }
 
 export interface VocabularyInteraction {
+  id?: string;
   annotationId: string;
   spanishTerm: string;
   disclosureLevel: DisclosureLevel;

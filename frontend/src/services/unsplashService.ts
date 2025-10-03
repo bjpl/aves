@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { UnsplashPhoto, ImageSearchResult } from '../../../shared/types/image.types';
+import { error as logError, warn } from '../utils/logger';
 
 // Note: In production, these should be environment variables
 const UNSPLASH_ACCESS_KEY = process.env.REACT_APP_UNSPLASH_ACCESS_KEY || '';
@@ -11,7 +12,7 @@ export class UnsplashService {
 
   async searchPhotos(query: string, page: number = 1, perPage: number = 10): Promise<ImageSearchResult> {
     if (!UNSPLASH_ACCESS_KEY) {
-      console.warn('Unsplash API key not configured');
+      warn('Unsplash API key not configured');
       return { query, results: [], total: 0, totalPages: 0 };
     }
 
@@ -42,7 +43,7 @@ export class UnsplashService {
         totalPages: response.data.total_pages
       };
     } catch (error) {
-      console.error('Unsplash API error:', error);
+      logError('Unsplash API error:', error);
       throw error;
     }
   }
@@ -61,7 +62,7 @@ export class UnsplashService {
 
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch photo:', error);
+      logError('Failed to fetch photo:', error);
       return null;
     }
   }
@@ -76,7 +77,7 @@ export class UnsplashService {
           }
         });
       } catch (error) {
-        console.error('Failed to track download:', error);
+        logError('Failed to track download:', error);
       }
     }
   }

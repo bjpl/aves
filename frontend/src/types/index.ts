@@ -8,6 +8,13 @@ export * from '../../../shared/types/vocabulary.types';
 export * from '../../../shared/types/exercise.types';
 export * from '../../../shared/types/species.types';
 export * from '../../../shared/types/image.types';
+export * from '../../../shared/types/enhanced-exercise.types';
+
+// Re-export type utilities
+export * from './guards';
+export * from './api.types';
+export * from './error.types';
+export * from './storage.types';
 
 // Local frontend-specific types
 export interface AppConfig {
@@ -25,7 +32,7 @@ export interface UserSession {
 export interface ErrorState {
   message: string;
   code?: string;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 export interface LoadingState {

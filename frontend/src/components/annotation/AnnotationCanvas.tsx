@@ -1,5 +1,17 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+// CONCEPT: Multi-layer canvas architecture for 60fps rendering
+// WHY: Separate rendering layers (static, interactive, hover) to minimize redraws
+// PATTERN: Layered rendering with requestAnimationFrame and dirty rectangle tracking
+
+import React, { useState, useCallback, useMemo } from 'react';
 import { Annotation, Coordinate } from '../../../../shared/types/annotation.types';
+import {
+  CanvasPerformanceMonitor,
+  DirtyRectTracker,
+  useDebouncedHover
+} from '../canvas/CanvasLayer';
+import { StaticLayer } from './layers/StaticLayer';
+import { InteractiveLayer } from './layers/InteractiveLayer';
+import { HoverLayer } from './layers/HoverLayer';
 
 interface AnnotationCanvasProps {
   imageUrl: string;
@@ -10,12 +22,6 @@ interface AnnotationCanvasProps {
   showLabels?: boolean;
 }
 
-const ANNOTATION_COLORS = {
-  anatomical: '#3B82F6',
-  behavioral: '#10B981',
-  color: '#F59E0B',
-  pattern: '#8B5CF6'
-};
 
 export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   imageUrl,
@@ -25,76 +31,18 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   interactive = true,
   showLabels = false
 }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imageRef = useRef<HTMLImageElement | null>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [hoveredAnnotation, setHoveredAnnotation] = useState<Annotation | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  const loadImage = useCallback(() => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      setDimensions({ width: img.width, height: img.height });
-      setImageLoaded(true);
-      imageRef.current = img;
-      drawCanvas();
-    };
-    img.src = imageUrl;
-  }, [imageUrl]);
+  // Performance monitoring
+  const performanceMonitor = useMemo(() => new CanvasPerformanceMonitor(), []);
+  const dirtyRectTracker = useMemo(() => new DirtyRectTracker(), []);
 
-  useEffect(() => {
-    loadImage();
-  }, [loadImage]);
-
-  const drawCanvas = useCallback(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    const img = imageRef.current;
-
-    if (!canvas || !ctx || !img || !imageLoaded) return;
-
-    canvas.width = dimensions.width;
-    canvas.height = dimensions.height;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(img, 0, 0);
-
-    annotations.forEach(annotation => {
-      const { boundingBox, type } = annotation;
-      const color = ANNOTATION_COLORS[type];
-      const isHovered = hoveredAnnotation?.id === annotation.id;
-
-      ctx.strokeStyle = color;
-      ctx.lineWidth = isHovered ? 3 : 2;
-      ctx.setLineDash(isHovered ? [] : [5, 5]);
-
-      const x = boundingBox.topLeft.x;
-      const y = boundingBox.topLeft.y;
-      const width = boundingBox.width;
-      const height = boundingBox.height;
-
-      ctx.strokeRect(x, y, width, height);
-
-      if (isHovered || showLabels) {
-        ctx.fillStyle = color;
-        ctx.globalAlpha = 0.9;
-        ctx.fillRect(x, y - 25, width, 25);
-
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = 'white';
-        ctx.font = '14px system-ui, -apple-system, sans-serif';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(annotation.spanishTerm, x + 5, y - 12);
-      }
-
-      ctx.setLineDash([]);
-    });
-  }, [annotations, dimensions, hoveredAnnotation, imageLoaded, showLabels]);
-
-  useEffect(() => {
-    drawCanvas();
-  }, [drawCanvas]);
+  const handleImageLoad = useCallback((_img: HTMLImageElement, dims: { width: number; height: number }) => {
+    setDimensions(dims);
+    setImageLoaded(true);
+  }, []);
 
   const getAnnotationAtPoint = (point: Coordinate): Annotation | null => {
     for (const annotation of annotations) {
@@ -113,10 +61,11 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
     return null;
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!interactive || !canvasRef.current) return;
+  // Debounced hover handler for reduced redraws
+  const handleMouseMoveInternal = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!interactive) return;
 
-    const rect = canvasRef.current.getBoundingClientRect();
+    const rect = e.currentTarget.getBoundingClientRect();
     const scaleX = dimensions.width / rect.width;
     const scaleY = dimensions.height / rect.height;
 
@@ -130,14 +79,31 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
     if (annotation !== hoveredAnnotation) {
       setHoveredAnnotation(annotation);
       onAnnotationHover?.(annotation);
-      canvasRef.current.style.cursor = annotation ? 'pointer' : 'default';
+
+      // Mark dirty region for hover layer
+      if (annotation) {
+        const { boundingBox } = annotation;
+        dirtyRectTracker.markDirty(
+          boundingBox.topLeft.x,
+          boundingBox.topLeft.y - 30,
+          Math.max(boundingBox.width, 150),
+          boundingBox.height + 30
+        );
+      } else {
+        dirtyRectTracker.markFullDirty(dimensions.width, dimensions.height);
+      }
+
+      e.currentTarget.style.cursor = annotation ? 'pointer' : 'default';
     }
-  };
+  }, [interactive, dimensions, hoveredAnnotation, onAnnotationHover, dirtyRectTracker, getAnnotationAtPoint]);
 
-  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!interactive || !canvasRef.current) return;
+  // Apply debouncing to reduce hover event processing
+  const handleMouseMove = useDebouncedHover(handleMouseMoveInternal, 16);
 
-    const rect = canvasRef.current.getBoundingClientRect();
+  const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!interactive) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
     const scaleX = dimensions.width / rect.width;
     const scaleY = dimensions.height / rect.height;
 
@@ -149,27 +115,59 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
     const annotation = getAnnotationAtPoint(point);
     if (annotation) {
       onAnnotationClick?.(annotation);
-    }
-  };
 
-  const handleMouseLeave = () => {
+      dirtyRectTracker.markDirty(
+        annotation.boundingBox.topLeft.x,
+        annotation.boundingBox.topLeft.y,
+        annotation.boundingBox.width,
+        annotation.boundingBox.height
+      );
+    }
+  }, [interactive, dimensions, onAnnotationClick, dirtyRectTracker, getAnnotationAtPoint]);
+
+  const handleMouseLeave = useCallback(() => {
     setHoveredAnnotation(null);
     onAnnotationHover?.(null);
-  };
+    dirtyRectTracker.markFullDirty(dimensions.width, dimensions.height);
+  }, [onAnnotationHover, dimensions, dirtyRectTracker]);
 
   return (
-    <div className="relative inline-block max-w-full">
-      <canvas
-        ref={canvasRef}
-        className="max-w-full h-auto"
-        style={{
-          width: dimensions.width ? '100%' : 'auto',
-          maxWidth: dimensions.width
-        }}
-        onMouseMove={handleMouseMove}
-        onClick={handleClick}
-        onMouseLeave={handleMouseLeave}
+    <div
+      className="relative inline-block max-w-full"
+      onMouseMove={handleMouseMove}
+      onClick={handleClick}
+      onMouseLeave={handleMouseLeave}
+    >
+      <StaticLayer
+        imageUrl={imageUrl}
+        onImageLoad={handleImageLoad}
+        performanceMonitor={performanceMonitor}
       />
+
+      <InteractiveLayer
+        annotations={annotations}
+        dimensions={dimensions}
+        showLabels={showLabels}
+        imageLoaded={imageLoaded}
+        performanceMonitor={performanceMonitor}
+      />
+
+      <HoverLayer
+        hoveredAnnotation={hoveredAnnotation}
+        dimensions={dimensions}
+        imageLoaded={imageLoaded}
+        performanceMonitor={performanceMonitor}
+      />
+
+      {/* Spacer to maintain layout dimensions */}
+      <div
+        style={{
+          width: dimensions.width || 'auto',
+          height: dimensions.height || 'auto',
+          visibility: 'hidden'
+        }}
+      />
+
       {!imageLoaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
           <div className="text-gray-500">Cargando imagen...</div>

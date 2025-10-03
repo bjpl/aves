@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ProgressSection } from '../components/learn/ProgressSection';
+import { BirdSelector } from '../components/learn/BirdSelector';
+import { InteractiveBirdImage } from '../components/learn/InteractiveBirdImage';
+import { VocabularyPanel } from '../components/learn/VocabularyPanel';
 
 // Rich bird learning data with multiple images and annotations
 const birdLearningData = [
@@ -178,6 +182,11 @@ export const EnhancedLearnPage: React.FC = () => {
 
   const progress = (discoveredTerms.size / (birdLearningData.length * 3)) * 100;
 
+  const handleBirdSelect = (bird: typeof birdLearningData[0]) => {
+    setSelectedBird(bird);
+    setSelectedAnnotation(null);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -190,93 +199,33 @@ export const EnhancedLearnPage: React.FC = () => {
             Click on the highlighted areas to learn Spanish bird vocabulary
           </p>
 
-          {/* Progress Bar */}
-          <div className="mt-4">
-            <div className="flex justify-between text-sm text-gray-600 mb-1">
-              <span>Learning Progress</span>
-              <span>{Math.round(progress)}% ({discoveredTerms.size} / {birdLearningData.length * 3} terms)</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <div
-                className="bg-gradient-to-r from-green-400 to-blue-500 h-3 rounded-full transition-all duration-500"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
+          <ProgressSection
+            progress={progress}
+            discoveredCount={discoveredTerms.size}
+            totalCount={birdLearningData.length * 3}
+          />
         </div>
 
-        {/* Bird Selection Tabs */}
-        <div className="mb-6">
-          <div className="flex flex-wrap gap-2 bg-white p-2 rounded-lg shadow-sm">
-            {birdLearningData.map(bird => (
-              <button
-                key={bird.id}
-                onClick={() => {
-                  setSelectedBird(bird);
-                  setSelectedAnnotation(null);
-                }}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                  selectedBird.id === bird.id
-                    ? 'bg-blue-500 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <span className="block text-xs opacity-75">{bird.name}</span>
-                <span>{bird.spanishName}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+        <BirdSelector
+          birds={birdLearningData}
+          selectedBird={selectedBird}
+          onBirdSelect={handleBirdSelect}
+        />
 
         {/* Main Learning Area */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Interactive Image */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-lg p-4">
-              <div className="relative">
-                <img
-                  src={selectedBird.imageUrl}
-                  alt={selectedBird.name}
-                  className="w-full rounded-lg"
-                />
-
-                {/* Annotation Hotspots */}
-                {selectedBird.annotations.map(annotation => (
-                  <div
-                    key={annotation.id}
-                    className="absolute cursor-pointer transform -translate-x-1/2 -translate-y-1/2"
-                    style={{ left: `${annotation.x}%`, top: `${annotation.y}%` }}
-                    onMouseEnter={() => setHoveredAnnotation(annotation.id)}
-                    onMouseLeave={() => setHoveredAnnotation(null)}
-                    onClick={() => handleAnnotationClick(annotation)}
-                  >
-                    {/* Pulsing dot */}
-                    <div className={`relative ${discoveredTerms.has(annotation.id) ? '' : 'animate-pulse'}`}>
-                      <div className={`w-8 h-8 rounded-full border-3 ${
-                        discoveredTerms.has(annotation.id)
-                          ? 'bg-green-500 border-green-600'
-                          : 'bg-blue-500 border-blue-600'
-                      } opacity-75`} />
-                      {discoveredTerms.has(annotation.id) && (
-                        <svg className="absolute inset-0 w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-
-                    {/* Hover tooltip */}
-                    {hoveredAnnotation === annotation.id && (
-                      <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-3 py-2 rounded-lg whitespace-nowrap z-10">
-                        <div className="text-sm font-bold">{annotation.term}</div>
-                        <div className="text-xs opacity-90">{annotation.english}</div>
-                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
-                          <div className="border-8 border-transparent border-t-gray-900" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <InteractiveBirdImage
+                imageUrl={selectedBird.imageUrl}
+                altText={selectedBird.name}
+                annotations={selectedBird.annotations}
+                discoveredTerms={discoveredTerms}
+                hoveredAnnotation={hoveredAnnotation}
+                onAnnotationHover={setHoveredAnnotation}
+                onAnnotationClick={handleAnnotationClick}
+              />
 
               {/* Bird Info */}
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
@@ -291,75 +240,12 @@ export const EnhancedLearnPage: React.FC = () => {
 
           {/* Vocabulary Details Panel */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-lg p-6 sticky top-4">
-              <h2 className="text-xl font-semibold mb-4">Vocabulary Details</h2>
-
-              {selectedAnnotation ? (
-                <div className="space-y-4">
-                  {/* Spanish Term */}
-                  <div>
-                    <h3 className="text-2xl font-bold text-gray-900">
-                      {selectedAnnotation.term}
-                    </h3>
-                    <p className="text-sm text-gray-500 italic mt-1">
-                      {selectedAnnotation.pronunciation}
-                    </p>
-                  </div>
-
-                  {/* English Translation */}
-                  <div>
-                    <p className="text-sm text-gray-600">English:</p>
-                    <p className="text-lg font-medium">{selectedAnnotation.english}</p>
-                  </div>
-
-                  {/* Description */}
-                  <div>
-                    <p className="text-sm text-gray-600">Description:</p>
-                    <p className="text-sm text-gray-700">{selectedAnnotation.description}</p>
-                  </div>
-
-                  {/* Practice Button */}
-                  <Link
-                    to="/practice"
-                    className="block w-full text-center bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition-colors"
-                  >
-                    Practice This Term
-                  </Link>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  <p>Click on a highlighted area to see details</p>
-                </div>
-              )}
-
-              {/* Discovered Terms List */}
-              <div className="mt-6 pt-6 border-t">
-                <h3 className="font-semibold mb-3">Terms for {selectedBird.spanishName}:</h3>
-                <div className="space-y-2">
-                  {selectedBird.annotations.map(ann => (
-                    <div
-                      key={ann.id}
-                      className={`flex items-center justify-between p-2 rounded ${
-                        discoveredTerms.has(ann.id)
-                          ? 'bg-green-50 text-green-700'
-                          : 'bg-gray-50 text-gray-400'
-                      }`}
-                    >
-                      <span className="text-sm">{ann.term}</span>
-                      {discoveredTerms.has(ann.id) && (
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <VocabularyPanel
+              selectedAnnotation={selectedAnnotation}
+              birdAnnotations={selectedBird.annotations}
+              birdName={selectedBird.spanishName}
+              discoveredTerms={discoveredTerms}
+            />
           </div>
         </div>
 

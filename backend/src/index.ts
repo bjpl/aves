@@ -3,12 +3,14 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import authRouter from './routes/auth';
 import annotationsRouter from './routes/annotations';
 import vocabularyRouter from './routes/vocabulary';
 import exercisesRouter from './routes/exercises';
 import speciesRouter from './routes/species';
 import imagesRouter from './routes/images';
 import { testConnection } from './database/connection';
+import { error as logError, info } from './utils/logger';
 
 dotenv.config();
 
@@ -39,6 +41,7 @@ app.get('/health', (req, res) => {
 });
 
 // API routes
+app.use('/api', authRouter);
 app.use('/api', annotationsRouter);
 app.use('/api', vocabularyRouter);
 app.use('/api', exercisesRouter);
@@ -47,7 +50,7 @@ app.use('/api', imagesRouter);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
+  logError('Request error', err);
   res.status(err.status || 500).json({
     error: err.message || 'Internal server error',
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
@@ -59,13 +62,15 @@ const startServer = async () => {
   const dbConnected = await testConnection();
 
   if (!dbConnected) {
-    console.error('Failed to connect to database. Server will start but database operations will fail.');
+    logError('Failed to connect to database. Server will start but database operations will fail.');
   }
 
   app.listen(PORT, () => {
-    console.log(`🦅 Aves backend server running on port ${PORT}`);
-    console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    info(`Server started on port ${PORT}`, {
+      port: PORT,
+      environment: process.env.NODE_ENV || 'development'
+    });
   });
 };
 
-startServer().catch(console.error);
+startServer().catch((err) => logError('Failed to start server', err));

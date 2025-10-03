@@ -4,6 +4,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { api } from '../services/apiAdapter';
+import { error as logError } from '../utils/logger';
 
 interface UserProgress {
   sessionId: string;
@@ -64,8 +65,8 @@ export const useProgress = () => {
         setProgress(newProgress);
         await api.progress.save(newProgress);
       }
-    } catch (error) {
-      console.error('Error initializing progress:', error);
+    } catch (err) {
+      logError('Error initializing progress', err as Error);
       // Create local progress if storage fails
       setProgress({
         sessionId,

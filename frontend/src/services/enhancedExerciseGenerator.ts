@@ -1,6 +1,7 @@
 import { ExerciseType } from '../../../shared/types/exercise.types';
 import { Annotation } from '../../../shared/types/annotation.types';
 import { EnhancedExercise, EnhancedExerciseType } from '../../../shared/types/enhanced-exercise.types';
+import { ExerciseAnswer } from '../types/api.types';
 
 export class EnhancedExerciseGenerator {
   private annotations: Annotation[] = [];
@@ -418,7 +419,7 @@ export class EnhancedExerciseGenerator {
     }
   }
 
-  static checkAnswer(exercise: EnhancedExercise, userAnswer: any): boolean {
+  static checkAnswer(exercise: EnhancedExercise, userAnswer: ExerciseAnswer): boolean {
     // Implementation for checking answers based on exercise type
     const metadata = exercise.metadata;
     if (!metadata) return false;

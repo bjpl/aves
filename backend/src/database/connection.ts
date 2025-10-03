@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
+import { info, error as logError } from '../utils/logger';
 
 dotenv.config();
 
@@ -15,7 +16,7 @@ export const pool = new Pool({
 });
 
 pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
+  logError('Unexpected error on idle client', err);
 });
 
 export const testConnection = async (): Promise<boolean> => {
@@ -23,10 +24,10 @@ export const testConnection = async (): Promise<boolean> => {
     const client = await pool.connect();
     const result = await client.query('SELECT NOW()');
     client.release();
-    console.log('Database connected successfully at:', result.rows[0].now);
+    info('Database connected successfully', { timestamp: result.rows[0].now });
     return true;
-  } catch (error) {
-    console.error('Database connection failed:', error);
+  } catch (err) {
+    logError('Database connection failed', err as Error);
     return false;
   }
 };

@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { pool } from '../database/connection';
+import { error as logError } from '../utils/logger';
 
 const router = Router();
 
@@ -34,8 +35,8 @@ router.get('/species', async (req: Request, res: Response) => {
     res.json({
       species: result.rows
     });
-  } catch (error) {
-    console.error('Error fetching species:', error);
+  } catch (err) {
+    logError('Error fetching species', err as Error);
     res.status(500).json({ error: 'Failed to fetch species' });
   }
 });
@@ -90,8 +91,8 @@ router.get('/species/:id', async (req: Request, res: Response) => {
       ...speciesResult.rows[0],
       images: imagesResult.rows
     });
-  } catch (error) {
-    console.error('Error fetching species details:', error);
+  } catch (err) {
+    logError('Error fetching species details', err as Error);
     res.status(500).json({ error: 'Failed to fetch species details' });
   }
 });
@@ -136,8 +137,8 @@ router.get('/species/search', async (req: Request, res: Response) => {
     res.json({
       results: result.rows
     });
-  } catch (error) {
-    console.error('Error searching species:', error);
+  } catch (err) {
+    logError('Error searching species', err as Error);
     res.status(500).json({ error: 'Failed to search species' });
   }
 });
@@ -199,8 +200,8 @@ router.get('/species/stats', async (req: Request, res: Response) => {
         [row.size_category]: parseInt(row.count)
       }), {})
     });
-  } catch (error) {
-    console.error('Error fetching species stats:', error);
+  } catch (err) {
+    logError('Error fetching species stats', err as Error);
     res.status(500).json({ error: 'Failed to fetch species statistics' });
   }
 });
@@ -256,8 +257,8 @@ router.post('/species', async (req: Request, res: Response) => {
     res.status(201).json({
       species: result.rows[0]
     });
-  } catch (error) {
-    console.error('Error creating species:', error);
+  } catch (err) {
+    logError('Error creating species', err as Error);
     res.status(500).json({ error: 'Failed to create species' });
   }
 });

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Species } from '../../../../shared/types/species.types';
+import { LazyImage } from '../ui/LazyImage';
 
 interface SpeciesCardProps {
   species: Species;
@@ -7,7 +8,7 @@ interface SpeciesCardProps {
   viewMode?: 'grid' | 'list';
 }
 
-export const SpeciesCard: React.FC<SpeciesCardProps> = ({
+export const SpeciesCard: React.FC<SpeciesCardProps> = React.memo(({
   species,
   onClick,
   viewMode = 'grid'
@@ -38,9 +39,18 @@ export const SpeciesCard: React.FC<SpeciesCardProps> = ({
         onClick={() => onClick?.(species)}
         className="flex items-center gap-4 p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-gray-200"
       >
-        <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-2xl">
-          {getSizeIcon(species.sizeCategory)}
-        </div>
+        {species.primaryImageUrl ? (
+          <LazyImage
+            src={species.primaryImageUrl}
+            alt={species.spanishName}
+            className="w-16 h-16 rounded-lg"
+            blurAmount={10}
+          />
+        ) : (
+          <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-2xl">
+            {getSizeIcon(species.sizeCategory)}
+          </div>
+        )}
 
         <div className="flex-1">
           <h3 className="font-semibold text-gray-900">{species.spanishName}</h3>
@@ -74,16 +84,16 @@ export const SpeciesCard: React.FC<SpeciesCardProps> = ({
       className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all cursor-pointer overflow-hidden group"
     >
       <div className="aspect-square bg-gradient-to-br from-gray-200 to-gray-300 relative">
-        <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-50">
-          {getSizeIcon(species.sizeCategory)}
-        </div>
-        {species.primaryImageUrl && (
-          <img
+        {species.primaryImageUrl ? (
+          <LazyImage
             src={species.primaryImageUrl}
             alt={species.spanishName}
-            className="w-full h-full object-cover"
-            loading="lazy"
+            className="w-full h-full"
           />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-50">
+            {getSizeIcon(species.sizeCategory)}
+          </div>
         )}
         {species.conservationStatus && (
           <span className={`absolute top-2 right-2 text-xs px-2 py-1 rounded-full ${getConservationColor(species.conservationStatus)}`}>
@@ -133,4 +143,4 @@ export const SpeciesCard: React.FC<SpeciesCardProps> = ({
       </div>
     </div>
   );
-};
+});

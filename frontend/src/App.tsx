@@ -1,10 +1,12 @@
-// import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { HomePage } from './pages/HomePage';
-import { EnhancedLearnPage } from './pages/EnhancedLearnPage';
-import { EnhancedPracticePage } from './pages/EnhancedPracticePage';
-import { SpeciesPage } from './pages/SpeciesPage';
 import './App.css';
+
+// Lazy load route components for better performance
+const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
+const EnhancedLearnPage = lazy(() => import('./pages/EnhancedLearnPage').then(m => ({ default: m.EnhancedLearnPage })));
+const EnhancedPracticePage = lazy(() => import('./pages/EnhancedPracticePage').then(m => ({ default: m.EnhancedPracticePage })));
+const SpeciesPage = lazy(() => import('./pages/SpeciesPage').then(m => ({ default: m.SpeciesPage })));
 
 function App() {
   // PATTERN: Hardcoded basename for GitHub Pages deployment
@@ -52,13 +54,22 @@ function App() {
           </div>
         </nav>
 
-        {/* Routes */}
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/learn" element={<EnhancedLearnPage />} />
-          <Route path="/practice" element={<EnhancedPracticePage />} />
-          <Route path="/species" element={<SpeciesPage />} />
-        </Routes>
+        {/* Routes with Suspense for lazy loading */}
+        <Suspense fallback={
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center">
+              <div className="text-4xl mb-4">🦅</div>
+              <div className="text-gray-600">Loading...</div>
+            </div>
+          </div>
+        }>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/learn" element={<EnhancedLearnPage />} />
+            <Route path="/practice" element={<EnhancedPracticePage />} />
+            <Route path="/species" element={<SpeciesPage />} />
+          </Routes>
+        </Suspense>
       </div>
     </Router>
   );

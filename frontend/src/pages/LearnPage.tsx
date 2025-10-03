@@ -2,7 +2,7 @@
 // WHY: Creates an immersive learning experience that adapts to all devices
 // PATTERN: Progressive disclosure with immediate practice opportunities
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ResponsiveAnnotationCanvas } from '../components/annotation/ResponsiveAnnotationCanvas';
 import { AudioPlayer } from '../components/audio/AudioPlayer';
@@ -19,7 +19,7 @@ export const LearnPage: React.FC = () => {
   const { annotations, loading } = useAnnotations();
   const { progress, recordTermDiscovery, getStats } = useProgress();
   const { isMobile } = useMobileDetect();
-  const stats = getStats();
+  const stats = useMemo(() => getStats(), [getStats]);
 
   // Track discovered terms
   useEffect(() => {
@@ -30,13 +30,22 @@ export const LearnPage: React.FC = () => {
 
   // Show practice prompt after discovering 5 new terms
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
+
     if (discoveredTerms.size > 0 && discoveredTerms.size % 5 === 0) {
       setShowPracticePrompt(true);
-      setTimeout(() => setShowPracticePrompt(false), 5000);
+      timeoutId = setTimeout(() => setShowPracticePrompt(false), 5000);
     }
+
+    // Cleanup timeout
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [discoveredTerms.size]);
 
-  const handleAnnotationDiscover = (annotation: Annotation) => {
+  const handleAnnotationDiscover = useCallback((annotation: Annotation) => {
     setSelectedAnnotation(annotation);
 
     if (annotation.spanishTerm && !discoveredTerms.has(annotation.spanishTerm)) {
@@ -45,7 +54,7 @@ export const LearnPage: React.FC = () => {
       setDiscoveredTerms(newDiscovered);
       recordTermDiscovery(annotation.spanishTerm);
     }
-  };
+  }, [discoveredTerms, recordTermDiscovery]);
 
   if (loading) {
     return (
@@ -54,6 +63,11 @@ export const LearnPage: React.FC = () => {
       </div>
     );
   }
+
+  const discoveryProgress = useMemo(() =>
+    Math.round((discoveredTerms.size / annotations.length) * 100),
+    [discoveredTerms.size, annotations.length]
+  );
 
   return (
     <div className={`min-h-screen bg-gradient-to-br from-green-50 to-blue-50 ${isMobile ? 'pb-20' : ''}`}>
@@ -104,12 +118,12 @@ export const LearnPage: React.FC = () => {
               <div className="mt-4">
                 <div className="flex justify-between text-sm text-gray-600 mb-1">
                   <span>Discovery Progress</span>
-                  <span>{Math.round((discoveredTerms.size / annotations.length) * 100)}%</span>
+                  <span>{discoveryProgress}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
                     className="bg-gradient-to-r from-green-400 to-blue-500 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${(discoveredTerms.size / annotations.length) * 100}%` }}
+                    style={{ width: `${discoveryProgress}%` }}
                   />
                 </div>
               </div>

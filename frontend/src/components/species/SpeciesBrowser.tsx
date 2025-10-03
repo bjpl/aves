@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Species, SpeciesFilter } from '../../../../shared/types/species.types';
 import { SpeciesCard } from './SpeciesCard';
 import { SpeciesFilters } from './SpeciesFilters';
 import { useSpecies } from '../../hooks/useSpecies';
+import { debug } from '../../utils/logger';
 
 export const SpeciesBrowser: React.FC = () => {
   const { species, loading, error, fetchSpecies } = useSpecies();
@@ -61,10 +62,22 @@ export const SpeciesBrowser: React.FC = () => {
     return { orders, families, habitats, colors };
   }, [species, filters.orderName]);
 
-  const handleSpeciesClick = (species: Species) => {
+  const handleSpeciesClick = useCallback((species: Species) => {
     // Navigate to species detail page
-    console.log('Selected species:', species);
-  };
+    debug('Selected species:', species);
+  }, []);
+
+  const handleFilterChange = useCallback((newFilters: SpeciesFilter) => {
+    setFilters(newFilters);
+  }, []);
+
+  const handleViewModeChange = useCallback((mode: 'grid' | 'list') => {
+    setViewMode(mode);
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setFilters({});
+  }, []);
 
   if (loading) {
     return (
@@ -97,7 +110,7 @@ export const SpeciesBrowser: React.FC = () => {
         <div className="w-64 flex-shrink-0">
           <SpeciesFilters
             filters={filters}
-            onFilterChange={setFilters}
+            onFilterChange={handleFilterChange}
             availableFilters={availableFilters}
           />
         </div>
@@ -113,7 +126,7 @@ export const SpeciesBrowser: React.FC = () => {
             <div className="flex items-center gap-4">
               <div className="flex gap-1">
                 <button
-                  onClick={() => setViewMode('grid')}
+                  onClick={() => handleViewModeChange('grid')}
                   className={`p-2 rounded ${
                     viewMode === 'grid'
                       ? 'bg-blue-500 text-white'
@@ -126,7 +139,7 @@ export const SpeciesBrowser: React.FC = () => {
                   </svg>
                 </button>
                 <button
-                  onClick={() => setViewMode('list')}
+                  onClick={() => handleViewModeChange('list')}
                   className={`p-2 rounded ${
                     viewMode === 'list'
                       ? 'bg-blue-500 text-white'
@@ -147,7 +160,7 @@ export const SpeciesBrowser: React.FC = () => {
             <div className="bg-white rounded-lg shadow-sm p-8 text-center">
               <p className="text-gray-500">No species found matching your filters.</p>
               <button
-                onClick={() => setFilters({})}
+                onClick={handleClearFilters}
                 className="mt-4 text-blue-600 hover:text-blue-800"
               >
                 Clear filters

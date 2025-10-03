@@ -3,6 +3,7 @@ import { Species } from '../../../../shared/types/species.types';
 import { unsplashService } from '../../services/unsplashService';
 import { promptGenerator } from '../../services/promptGenerator';
 import axios from 'axios';
+import { error as logError } from '../../utils/logger';
 
 interface ImageImporterProps {
   species: Species[];
@@ -24,8 +25,8 @@ export const ImageImporter: React.FC<ImageImporterProps> = ({ species }) => {
     try {
       const response = await axios.get('/api/images/stats');
       setStats(response.data);
-    } catch (error) {
-      console.error('Failed to fetch stats:', error);
+    } catch (err) {
+      logError('Failed to fetch stats', err as Error);
     }
   };
 
@@ -61,7 +62,7 @@ export const ImageImporter: React.FC<ImageImporterProps> = ({ species }) => {
 
       setSearchResults(allResults.slice(0, 5));
     } catch (error) {
-      console.error('Search failed:', error);
+      logError('Search failed:', error);
     } finally {
       setLoading(false);
     }
@@ -88,7 +89,7 @@ export const ImageImporter: React.FC<ImageImporterProps> = ({ species }) => {
       setImportStatus({ ...importStatus, [photo.id]: 'success' });
       fetchStats();
     } catch (error: any) {
-      console.error('Import failed:', error);
+      logError('Import failed:', error);
       setImportStatus({ ...importStatus, [photo.id]: 'error' });
     }
   };
@@ -98,8 +99,8 @@ export const ImageImporter: React.FC<ImageImporterProps> = ({ species }) => {
       const response = await axios.post('/api/images/generate-prompts');
       alert(`Generated ${response.data.generated} prompts for species missing images`);
       fetchStats();
-    } catch (error) {
-      console.error('Failed to generate prompts:', error);
+    } catch (err) {
+      logError('Failed to generate prompts', err as Error);
     }
   };
 

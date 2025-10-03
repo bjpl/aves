@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Exercise, SessionProgress, ExerciseResult } from '../../../shared/types/exercise.types';
 import axios from 'axios';
+import { error as logError } from '../utils/logger';
 
 const API_BASE_URL = '/api';
 
@@ -19,7 +20,7 @@ export const useExercise = () => {
         sessionId: sessionProgress.sessionId
       });
     } catch (error) {
-      console.error('Failed to start exercise session:', error);
+      logError('Failed to start exercise session:', error);
     }
   }, [sessionProgress.sessionId]);
 
@@ -57,7 +58,7 @@ export const useExercise = () => {
         timeTaken
       });
     } catch (error) {
-      console.error('Failed to record exercise result:', error);
+      logError('Failed to record exercise result:', error);
     }
 
     return result;
@@ -70,7 +71,7 @@ export const useExercise = () => {
       );
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch session stats:', error);
+      logError('Failed to fetch session stats:', error);
       return null;
     }
   }, [sessionProgress.sessionId]);
@@ -80,7 +81,7 @@ export const useExercise = () => {
       const response = await axios.get(`${API_BASE_URL}/exercises/difficult-terms`);
       return response.data.difficultTerms;
     } catch (error) {
-      console.error('Failed to fetch difficult terms:', error);
+      logError('Failed to fetch difficult terms:', error);
       return [];
     }
   }, []);
