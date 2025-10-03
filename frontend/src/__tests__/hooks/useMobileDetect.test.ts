@@ -2,6 +2,7 @@
 // WHY: Verify mobile/tablet/desktop detection utilities
 // PATTERN: Test window resize events and media query matching
 
+import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useMobileDetect } from '../../hooks/useMobileDetect';

@@ -2,6 +2,7 @@
 // WHY: Verify progress tracking with React Query patterns
 // PATTERN: Test session progress mutations and optimistic updates
 
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

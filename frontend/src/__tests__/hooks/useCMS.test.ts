@@ -2,6 +2,7 @@
 // WHY: Verify Strapi CMS integration for birds, lessons, and quizzes
 // PATTERN: Test useQuery and useMutation hooks with CMSService
 
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from 'react-query';

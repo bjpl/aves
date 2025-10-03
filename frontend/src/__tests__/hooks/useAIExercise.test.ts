@@ -2,6 +2,7 @@
 // WHY: Verify AI exercise generation, caching, prefetching, and analytics
 // PATTERN: renderHook with mutations, test service availability checks
 
+import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
