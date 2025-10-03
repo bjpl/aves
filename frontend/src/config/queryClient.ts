@@ -80,6 +80,14 @@ export const queryKeys = {
     lesson: (id: number) => [...queryKeys.cms.all, 'lesson', id] as const,
     quizzes: (lessonId: number) => [...queryKeys.cms.all, 'quizzes', lessonId] as const,
   },
+
+  // AI Exercise queries
+  aiExercises: {
+    all: ['ai-exercises'] as const,
+    generation: (userId: string) => [...queryKeys.aiExercises.all, 'generate', userId] as const,
+    stats: () => [...queryKeys.aiExercises.all, 'stats'] as const,
+    prefetch: (userId: string) => [...queryKeys.aiExercises.all, 'prefetch', userId] as const,
+  },
 };
 
 // Cache configuration documentation for memory storage

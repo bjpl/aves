@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import { VisualDiscriminationExercise } from '../../../../shared/types/exercise.types';
 
 interface VisualDiscriminationProps {

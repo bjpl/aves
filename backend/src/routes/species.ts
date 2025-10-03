@@ -5,7 +5,7 @@ import { error as logError } from '../utils/logger';
 const router = Router();
 
 // GET /api/species
-router.get('/species', async (req: Request, res: Response) => {
+router.get('/species', async (_req: Request, res: Response) => {
   try {
     const query = `
       SELECT
@@ -42,7 +42,7 @@ router.get('/species', async (req: Request, res: Response) => {
 });
 
 // GET /api/species/:id
-router.get('/species/:id', async (req: Request, res: Response) => {
+router.get('/species/:id', async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
 
@@ -69,7 +69,8 @@ router.get('/species/:id', async (req: Request, res: Response) => {
     const speciesResult = await pool.query(speciesQuery, [id]);
 
     if (speciesResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Species not found' });
+      res.status(404).json({ error: 'Species not found' });
+      return;
     }
 
     // Get associated images and annotations
@@ -98,12 +99,13 @@ router.get('/species/:id', async (req: Request, res: Response) => {
 });
 
 // GET /api/species/search
-router.get('/species/search', async (req: Request, res: Response) => {
+router.get('/species/search', async (req: Request, res: Response): Promise<void> => {
   try {
     const { q } = req.query;
 
     if (!q || typeof q !== 'string') {
-      return res.json({ results: [] });
+      res.json({ results: [] });
+      return;
     }
 
     const searchTerm = `%${q.toLowerCase()}%`;
@@ -144,7 +146,7 @@ router.get('/species/search', async (req: Request, res: Response) => {
 });
 
 // GET /api/species/stats
-router.get('/species/stats', async (req: Request, res: Response) => {
+router.get('/species/stats', async (_req: Request, res: Response) => {
   try {
     const statsQuery = `
       SELECT

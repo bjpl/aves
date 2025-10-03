@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 
-interface LazyImageProps {
+export interface LazyImageProps {
   src: string;
   alt: string;
   className?: string;

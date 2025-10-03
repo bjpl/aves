@@ -27,8 +27,7 @@ export function validate(
 ) {
   const {
     source = 'body',
-    sanitize = true,
-    stripUnknown = true
+    sanitize = true
   } = options;
 
   return async (req: Request, res: Response, next: NextFunction) => {

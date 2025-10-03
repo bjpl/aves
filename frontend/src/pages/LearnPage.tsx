@@ -16,10 +16,9 @@ export const LearnPage: React.FC = () => {
   const [discoveredTerms, setDiscoveredTerms] = useState<Set<string>>(new Set());
   const [showPracticePrompt, setShowPracticePrompt] = useState(false);
 
-  const { annotations, loading } = useAnnotations();
-  const { progress, recordTermDiscovery, getStats } = useProgress();
+  const { data: annotations = [], isLoading: loading } = useAnnotations();
+  const { progress, recordTermDiscovery } = useProgress();
   const { isMobile } = useMobileDetect();
-  const stats = useMemo(() => getStats(), [getStats]);
 
   // Track discovered terms
   useEffect(() => {
@@ -163,25 +162,13 @@ export const LearnPage: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* Etymology if available */}
-                  {selectedAnnotation.etymology && (
-                    <div>
-                      <p className="text-sm text-gray-600">Etymology:</p>
-                      <p className="text-sm text-gray-700">
-                        {selectedAnnotation.etymology}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Example sentence */}
-                  {selectedAnnotation.exampleSentence && (
-                    <div>
-                      <p className="text-sm text-gray-600">Example:</p>
-                      <p className="text-sm text-gray-700 italic">
-                        "{selectedAnnotation.exampleSentence}"
-                      </p>
-                    </div>
-                  )}
+                  {/* Annotation type */}
+                  <div>
+                    <p className="text-sm text-gray-600">Category:</p>
+                    <p className="text-sm font-medium capitalize">
+                      {selectedAnnotation.type}
+                    </p>
+                  </div>
 
                   {/* Difficulty indicator */}
                   <div className="flex items-center gap-2">

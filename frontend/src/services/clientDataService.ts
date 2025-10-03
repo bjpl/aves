@@ -8,8 +8,6 @@ import {
   ExerciseResultRecord,
   InteractionRecord,
   ExportData,
-  StoreName,
-  TransactionMode
 } from '../types/storage.types';
 import { StorageError } from '../types/error.types';
 import { SpeciesFilter } from '../types';
@@ -62,7 +60,7 @@ class ClientDataService {
         this.staticData.exercises = [];
       }
     } catch (error) {
-      logError('Failed to load static data:', error);
+      logError('Failed to load static data:', error instanceof Error ? error : new Error(String(error)));
       // Fall back to embedded sample data
       this.loadEmbeddedData();
     }
@@ -186,7 +184,7 @@ class ClientDataService {
         this.saveProgress(progress);
         localStorage.removeItem('aves-progress');
       } catch (error) {
-        logError('Failed to migrate localStorage:', error);
+        logError('Failed to migrate localStorage:', error instanceof Error ? error : new Error(String(error)));
       }
     }
   }
@@ -205,13 +203,13 @@ class ClientDataService {
 
     if (filters) {
       if (filters.habitat) {
-        results = results.filter(s => s.habitats.includes(filters.habitat));
+        results = results.filter(s => s.habitats.includes(filters.habitat!));
       }
       if (filters.sizeCategory) {
         results = results.filter(s => s.sizeCategory === filters.sizeCategory);
       }
       if (filters.primaryColor) {
-        results = results.filter(s => s.primaryColors.includes(filters.primaryColor));
+        results = results.filter(s => s.primaryColors.includes(filters.primaryColor!));
       }
       if (filters.searchTerm) {
         const searchLower = filters.searchTerm.toLowerCase();
@@ -273,7 +271,7 @@ class ClientDataService {
       request.onsuccess = () => {
         const interactions = (request.result as InteractionRecord[])
           .filter((i: InteractionRecord) => i.userSessionId === sessionId);
-        resolve(interactions);
+        resolve(interactions as VocabularyInteraction[]);
       };
       request.onerror = () => reject(new StorageError('Failed to get interactions', { error: request.error }));
     });
@@ -398,7 +396,7 @@ class ClientDataService {
         }
       }
     } catch (error) {
-      logError('Failed to import data:', error);
+      logError('Failed to import data:', error instanceof Error ? error : new Error(String(error)));
       throw new StorageError('Invalid import data format', { error });
     }
   }

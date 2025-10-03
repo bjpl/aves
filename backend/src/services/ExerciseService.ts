@@ -1,11 +1,17 @@
 import { Pool } from 'pg';
 
+/**
+ * Exercise session data
+ */
 export interface Session {
   id: number;
   session_id: string;
   started_at: Date;
 }
 
+/**
+ * Result data for a completed exercise
+ */
 export interface ExerciseResult {
   sessionId: string;
   exerciseType: string;
@@ -13,29 +19,78 @@ export interface ExerciseResult {
   spanishTerm: string;
   userAnswer: any;
   isCorrect: boolean;
-  timeTaken: number;
+  timeTaken: number; // milliseconds
 }
 
+/**
+ * Session progress statistics
+ */
 export interface Progress {
   sessionId: string;
   totalExercises: number;
   correctAnswers: number;
-  avgTimePerExercise: number;
-  accuracy: string;
+  avgTimePerExercise: number; // milliseconds
+  accuracy: string; // percentage as string (e.g., "75.5")
 }
 
+/**
+ * Term difficulty statistics
+ */
 export interface DifficultTerm {
   spanish_term: string;
   attempts: number;
   correct: number;
-  success_rate: number;
+  success_rate: number; // 0-100
 }
 
+/**
+ * Exercise Service
+ *
+ * Manages exercise sessions, result tracking, and performance analytics.
+ * Provides session-based progress tracking and identifies difficult vocabulary terms.
+ *
+ * @example
+ * ```typescript
+ * const exerciseService = new ExerciseService(pool);
+ *
+ * // Start a session
+ * const session = await exerciseService.createSession();
+ *
+ * // Record results
+ * await exerciseService.recordResult({
+ *   sessionId: session.session_id,
+ *   exerciseType: 'visual_discrimination',
+ *   spanishTerm: 'plumas',
+ *   userAnswer: 'correct_id',
+ *   isCorrect: true,
+ *   timeTaken: 3500
+ * });
+ *
+ * // Get progress
+ * const progress = await exerciseService.getSessionProgress(session.session_id);
+ * console.log(`Accuracy: ${progress.accuracy}%`);
+ * ```
+ */
 export class ExerciseService {
   constructor(private pool: Pool) {}
 
   /**
-   * Create a new exercise session
+   * Creates a new exercise session
+   *
+   * Initializes a new learning session for tracking user progress.
+   * Session ID can be provided or will be auto-generated.
+   *
+   * @param sessionId - Optional custom session identifier. Auto-generated if not provided.
+   * @returns Session data including ID and start time
+   *
+   * @example
+   * ```typescript
+   * // Auto-generated session ID
+   * const session = await exerciseService.createSession();
+   *
+   * // Custom session ID
+   * const session = await exerciseService.createSession('user_123_session');
+   * ```
    */
   async createSession(sessionId?: string): Promise<Session> {
     const query = `
@@ -51,7 +106,32 @@ export class ExerciseService {
   }
 
   /**
-   * Record an exercise result and update session stats
+   * Records an exercise result and updates session statistics
+   *
+   * Stores individual exercise results and automatically updates session-level
+   * statistics including total exercises completed and correct answers count.
+   * Uses a database transaction to ensure data consistency.
+   *
+   * @param data - Exercise result data including answer, correctness, and time taken
+   * @throws {Error} If database transaction fails
+   *
+   * @example
+   * ```typescript
+   * await exerciseService.recordResult({
+   *   sessionId: 'session_123',
+   *   exerciseType: 'visual_discrimination',
+   *   spanishTerm: 'plumas',
+   *   userAnswer: 'option_id_456',
+   *   isCorrect: true,
+   *   timeTaken: 3500
+   * });
+   * ```
+   *
+   * @remarks
+   * - Uses database transaction for atomicity
+   * - Automatically updates session statistics
+   * - Stores user_answer as JSON
+   * - Annotation ID is optional
    */
   async recordResult(data: ExerciseResult): Promise<void> {
     const client = await this.pool.connect();
@@ -99,7 +179,26 @@ export class ExerciseService {
   }
 
   /**
-   * Get progress for a specific session
+   * Retrieves progress statistics for a session
+   *
+   * Calculates comprehensive session statistics including total exercises,
+   * correct answers, average time per exercise, and accuracy percentage.
+   *
+   * @param sessionId - Session identifier to retrieve progress for
+   * @returns Progress statistics with accuracy as percentage string
+   *
+   * @example
+   * ```typescript
+   * const progress = await exerciseService.getSessionProgress('session_123');
+   * console.log(`Completed ${progress.totalExercises} exercises`);
+   * console.log(`Accuracy: ${progress.accuracy}%`);
+   * console.log(`Avg time: ${progress.avgTimePerExercise}ms`);
+   * ```
+   *
+   * @remarks
+   * - Returns default values if no exercises completed
+   * - Accuracy is calculated as (correctAnswers / totalExercises * 100)
+   * - Average time is in milliseconds
    */
   async getSessionProgress(sessionId: string): Promise<Progress> {
     const query = `
@@ -133,7 +232,27 @@ export class ExerciseService {
   }
 
   /**
-   * Get terms that users find difficult (low success rate)
+   * Identifies vocabulary terms that users find difficult
+   *
+   * Analyzes exercise results to find Spanish terms with low success rates.
+   * Returns top 10 most difficult terms based on historical performance.
+   *
+   * @returns Array of difficult terms sorted by success rate (lowest first)
+   *
+   * @example
+   * ```typescript
+   * const difficultTerms = await exerciseService.getDifficultTerms();
+   * difficultTerms.forEach(term => {
+   *   console.log(`${term.spanish_term}: ${term.success_rate}% success rate`);
+   *   console.log(`Attempts: ${term.attempts}, Correct: ${term.correct}`);
+   * });
+   * ```
+   *
+   * @remarks
+   * - Requires minimum 3 attempts per term for inclusion
+   * - Returns top 10 most difficult terms
+   * - Success rate calculated as (correct / attempts * 100)
+   * - Ordered by success rate ascending (most difficult first)
    */
   async getDifficultTerms(): Promise<DifficultTerm[]> {
     const query = `

@@ -101,7 +101,7 @@ export const VisualIdentification: React.FC<VisualIdentificationProps> = ({
       alignItems: 'center',
       justifyContent: 'center'
     };
-  }, [part, targetPart, disabled, hoveredPart, selectedPart]);
+  }, [targetPart, disabled, hoveredPart, selectedPart]);
 
   const birdImage = useMemo(() => {
     const images: Record<string, string> = {

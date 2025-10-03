@@ -62,7 +62,7 @@ export const ImageImporter: React.FC<ImageImporterProps> = ({ species }) => {
 
       setSearchResults(allResults.slice(0, 5));
     } catch (error) {
-      logError('Search failed:', error);
+      logError('Search failed:', error instanceof Error ? error : new Error(String(error)));
     } finally {
       setLoading(false);
     }
@@ -88,8 +88,8 @@ export const ImageImporter: React.FC<ImageImporterProps> = ({ species }) => {
 
       setImportStatus({ ...importStatus, [photo.id]: 'success' });
       fetchStats();
-    } catch (error: any) {
-      logError('Import failed:', error);
+    } catch (error: unknown) {
+      logError('Import failed:', error instanceof Error ? error : new Error(String(error)));
       setImportStatus({ ...importStatus, [photo.id]: 'error' });
     }
   };

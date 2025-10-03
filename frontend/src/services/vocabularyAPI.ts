@@ -28,7 +28,7 @@ export const vocabularyAPI = {
         disclosureLevel: level
       });
     } catch (err) {
-      logError('Failed to track interaction', err as Error);
+      logError('Failed to track interaction', err instanceof Error ? err : new Error(String(err)));
     }
   },
 

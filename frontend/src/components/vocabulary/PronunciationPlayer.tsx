@@ -33,7 +33,7 @@ export const PronunciationPlayer: React.FC<PronunciationPlayerProps> = ({
         };
       }
     } catch (error) {
-      logError('Error playing audio:', error);
+      logError('Error playing audio:', error instanceof Error ? error : new Error(String(error)));
       setIsPlaying(false);
     }
   };

@@ -14,9 +14,9 @@ import {
 import {
   ApiResponse,
   ExerciseAnswerSubmission,
-  ExerciseResult,
-  UserProgress
+  ExerciseResult
 } from '../types/api.types';
+import { UserProgress } from '../../../shared/types/vocabulary.types';
 import { NetworkError, toAppError } from '../types/error.types';
 import { error as logError, warn } from '../utils/logger';
 
@@ -93,7 +93,7 @@ class ApiAdapter {
       return response.data.data;
     } catch (error) {
       // Fallback to client storage on error
-      logError('API error, falling back to client storage:', error);
+      logError('API error, falling back to client storage:', error instanceof Error ? error : new Error(String(error)));
       this.handleApiError(error);
       return clientDataService.getAnnotations(imageId);
     }
@@ -126,7 +126,7 @@ class ApiAdapter {
       });
       return response.data.data;
     } catch (error) {
-      logError('API error, falling back to client storage:', error);
+      logError('API error, falling back to client storage:', error instanceof Error ? error : new Error(String(error)));
       this.handleApiError(error);
       return clientDataService.getSpecies(filters);
     }
@@ -150,7 +150,7 @@ class ApiAdapter {
       });
       return response.data.data;
     } catch (error) {
-      logError('API error, falling back to client storage:', error);
+      logError('API error, falling back to client storage:', error instanceof Error ? error : new Error(String(error)));
       this.handleApiError(error);
       return clientDataService.getExercises(type);
     }
@@ -229,7 +229,7 @@ class ApiAdapter {
       );
       return response.data.data;
     } catch (error) {
-      logError('API error, falling back to client storage:', error);
+      logError('API error, falling back to client storage:', error instanceof Error ? error : new Error(String(error)));
       this.handleApiError(error);
       return clientDataService.getInteractions(sessionId);
     }
@@ -261,7 +261,7 @@ class ApiAdapter {
       );
       return response.data.data;
     } catch (error) {
-      logError('API error, falling back to client storage:', error);
+      logError('API error, falling back to client storage:', error instanceof Error ? error : new Error(String(error)));
       this.handleApiError(error);
       return clientDataService.getProgress(sessionId);
     }

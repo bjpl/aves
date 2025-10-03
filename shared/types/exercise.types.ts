@@ -2,6 +2,10 @@ import { Annotation } from './annotation.types';
 
 export type ExerciseType =
   | 'visual_discrimination'
+  | 'visual_identification'
+  | 'audio_recognition'
+  | 'sentence_building'
+  | 'cultural_context'
   | 'term_matching'
   | 'contextual_fill'
   | 'image_labeling';
@@ -11,6 +15,8 @@ export interface ExerciseBase {
   type: ExerciseType;
   instructions: string;
   annotation?: Annotation;
+  prompt?: string;
+  metadata?: Record<string, any>;
 }
 
 export interface VisualDiscriminationExercise extends ExerciseBase {
@@ -48,11 +54,24 @@ export interface ImageLabelingExercise extends ExerciseBase {
   }[];
 }
 
+export interface VisualIdentificationExercise extends ExerciseBase {
+  type: 'visual_identification';
+  prompt: string;
+  instructions: string;
+  metadata?: {
+    bird?: string;
+    targetPart?: string;
+    pronunciation?: string;
+    tip?: string;
+  };
+}
+
 export type Exercise =
   | VisualDiscriminationExercise
   | TermMatchingExercise
   | ContextualFillExercise
-  | ImageLabelingExercise;
+  | ImageLabelingExercise
+  | VisualIdentificationExercise;
 
 export interface ExerciseResult {
   exerciseId: string;

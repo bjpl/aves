@@ -132,7 +132,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
         }
       }
     } catch (err) {
-      logError('Playback error:', err);
+      logError('Playback error:', err instanceof Error ? err : new Error(String(err)));
       setError('Failed to play audio');
       setIsPlaying(false);
     }

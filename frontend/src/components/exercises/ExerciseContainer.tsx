@@ -100,7 +100,7 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
       case 'visual_identification':
         exerciseComponent = (
           <VisualIdentification
-            exercise={currentExercise}
+            exercise={currentExercise as any}
             onAnswer={handleAnswer}
             disabled={showFeedback}
           />

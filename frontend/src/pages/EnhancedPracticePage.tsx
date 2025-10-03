@@ -158,17 +158,24 @@ export const EnhancedPracticePage: React.FC = () => {
   const renderExercise = useCallback(() => {
     const exercise = getCurrentExerciseData();
 
+    // Type guards for discriminated union
+    const hasQuestion = 'question' in exercise;
+    const hasSentence = 'sentence' in exercise;
+    const hasImageUrl = 'imageUrl' in exercise;
+    const hasTranslation = 'translation' in exercise;
+    const hasExplanation = 'explanation' in exercise;
+
     return (
       <ExerciseRenderer
         type={currentExerciseType as any}
-        question={exercise.question || exercise.sentence}
-        imageUrl={exercise.imageUrl}
-        translation={exercise.translation}
+        question={hasQuestion ? exercise.question : hasSentence ? exercise.sentence : ''}
+        imageUrl={hasImageUrl ? exercise.imageUrl : undefined}
+        translation={hasTranslation ? exercise.translation : undefined}
         options={exercise.options}
         selectedAnswer={selectedAnswer}
         correctAnswer={exercise.correctAnswer}
         showFeedback={showFeedback}
-        explanation={exercise.explanation}
+        explanation={hasExplanation ? exercise.explanation : undefined}
         onAnswer={handleAnswer}
       />
     );

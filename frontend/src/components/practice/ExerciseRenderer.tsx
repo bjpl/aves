@@ -1,11 +1,5 @@
 import React from 'react';
 
-interface ExerciseOption {
-  text: string;
-  isCorrect?: boolean;
-  isSelected?: boolean;
-}
-
 interface ExerciseRendererProps {
   type: 'visual_match' | 'fill_blank' | 'multiple_choice';
   question: string;

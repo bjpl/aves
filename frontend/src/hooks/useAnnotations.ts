@@ -16,7 +16,7 @@ export const useAnnotations = (imageId?: string) => {
       try {
         return await api.annotations.list(imageId);
       } catch (err) {
-        logError('Error fetching annotations:', err);
+        logError('Error fetching annotations:', err instanceof Error ? err : new Error(String(err)));
         return []; // Return empty array on error
       }
     },
@@ -86,7 +86,7 @@ export const useAnnotationMutation = () => {
       // Implement create/update logic when backend is ready
       return annotation;
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       // Invalidate relevant annotation queries
       queryClient.invalidateQueries({ queryKey: queryKeys.annotations.all });
 
@@ -98,7 +98,7 @@ export const useAnnotationMutation = () => {
       }
     },
     onError: (error) => {
-      logError('Error mutating annotation', error as Error);
+      logError('Error mutating annotation', error instanceof Error ? error : new Error(String(error)));
     },
   });
 };

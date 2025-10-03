@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { pool } from '../database/connection';
-import { Annotation, AnnotationType } from '../../../shared/types/annotation.types';
 import { error as logError } from '../utils/logger';
 
 const router = Router();
@@ -117,7 +116,7 @@ router.post('/annotations', async (req: Request, res: Response) => {
 });
 
 // PUT /api/annotations/:id
-router.put('/annotations/:id', async (req: Request, res: Response) => {
+router.put('/annotations/:id', async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -146,7 +145,8 @@ router.put('/annotations/:id', async (req: Request, res: Response) => {
     }
 
     if (setClause.length === 0) {
-      return res.status(400).json({ error: 'No valid fields to update' });
+      res.status(400).json({ error: 'No valid fields to update' });
+      return;
     }
 
     values.push(id);
@@ -172,7 +172,8 @@ router.put('/annotations/:id', async (req: Request, res: Response) => {
     const result = await pool.query(query, values);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Annotation not found' });
+      res.status(404).json({ error: 'Annotation not found' });
+      return;
     }
 
     const annotation = {
@@ -188,7 +189,7 @@ router.put('/annotations/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE /api/annotations/:id
-router.delete('/annotations/:id', async (req: Request, res: Response) => {
+router.delete('/annotations/:id', async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
 
@@ -196,7 +197,8 @@ router.delete('/annotations/:id', async (req: Request, res: Response) => {
     const result = await pool.query(query, [id]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Annotation not found' });
+      res.status(404).json({ error: 'Annotation not found' });
+      return;
     }
 
     res.json({ message: 'Annotation deleted successfully', id });

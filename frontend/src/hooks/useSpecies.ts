@@ -16,7 +16,7 @@ export const useSpecies = (filters?: any) => {
       try {
         return await api.species.list(filters);
       } catch (err) {
-        logError('Error fetching species', err as Error);
+        logError('Error fetching species', err instanceof Error ? err : new Error(String(err)));
         return []; // Return empty array on error
       }
     },
@@ -34,7 +34,7 @@ export const useSpeciesById = (id: string) => {
       try {
         return await api.species.get(id);
       } catch (err) {
-        logError('Error fetching species details', err as Error);
+        logError('Error fetching species details', err instanceof Error ? err : new Error(String(err)));
         return null;
       }
     },
@@ -138,7 +138,7 @@ export const useSpeciesMutation = () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.species.all });
     },
     onError: (error) => {
-      logError('Error mutating species', error as Error);
+      logError('Error mutating species', error instanceof Error ? error : new Error(String(error)));
     },
   });
 };

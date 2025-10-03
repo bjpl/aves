@@ -106,7 +106,6 @@ export const useCanvasAnimation = (
   deps: React.DependencyList = []
 ) => {
   const animationFrameRef = useRef<number>();
-  const lastTimestampRef = useRef<number>(0);
 
   const animate = useCallback((timestamp: number) => {
     callback(timestamp);
@@ -293,13 +292,13 @@ export class CanvasPerformanceMonitor {
 /**
  * Debounced event handler for hover events
  */
-export const useDebouncedHover = (
-  callback: (event: React.MouseEvent) => void,
+export const useDebouncedHover = <T = Element>(
+  callback: (event: React.MouseEvent<T>) => void,
   delay: number = 16 // ~60fps
-): ((event: React.MouseEvent) => void) => {
+): ((event: React.MouseEvent<T>) => void) => {
   const timeoutRef = useRef<NodeJS.Timeout>();
 
-  return useCallback((event: React.MouseEvent) => {
+  return useCallback((event: React.MouseEvent<T>) => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }

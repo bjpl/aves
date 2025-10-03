@@ -1,7 +1,8 @@
 // IndexedDB and storage-related type definitions
 
 import { VocabularyInteraction } from './index';
-import { UserProgress, ExerciseResult } from './api.types';
+import { ExerciseResult } from './api.types';
+import { UserProgress } from '../../../shared/types/vocabulary.types';
 
 /**
  * IndexedDB database schema
@@ -32,8 +33,8 @@ export interface ExerciseResultRecord extends ExerciseResult {
 /**
  * Interaction record stored in IndexedDB
  */
-export interface InteractionRecord extends VocabularyInteraction {
-  id?: number; // Auto-incremented by IndexedDB
+export interface InteractionRecord extends Omit<VocabularyInteraction, 'id'> {
+  id?: number; // Auto-incremented by IndexedDB (different from VocabularyInteraction's string id)
   userSessionId: string;
   timestamp: Date;
 }

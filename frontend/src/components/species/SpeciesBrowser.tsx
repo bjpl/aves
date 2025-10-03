@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Species, SpeciesFilter } from '../../../../shared/types/species.types';
 import { SpeciesCard } from './SpeciesCard';
 import { SpeciesFilters } from './SpeciesFilters';
@@ -6,13 +6,9 @@ import { useSpecies } from '../../hooks/useSpecies';
 import { debug } from '../../utils/logger';
 
 export const SpeciesBrowser: React.FC = () => {
-  const { species, loading, error, fetchSpecies } = useSpecies();
+  const { data: species = [], isLoading: loading, error } = useSpecies();
   const [filters, setFilters] = useState<SpeciesFilter>({});
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-
-  useEffect(() => {
-    fetchSpecies();
-  }, []);
 
   // Apply filters to species list
   const filteredSpecies = useMemo(() => {
@@ -20,7 +16,7 @@ export const SpeciesBrowser: React.FC = () => {
 
     if (filters.searchTerm) {
       const term = filters.searchTerm.toLowerCase();
-      result = result.filter(s =>
+      result = result.filter((s: Species) =>
         s.spanishName.toLowerCase().includes(term) ||
         s.englishName.toLowerCase().includes(term) ||
         s.scientificName.toLowerCase().includes(term)
@@ -28,23 +24,23 @@ export const SpeciesBrowser: React.FC = () => {
     }
 
     if (filters.orderName) {
-      result = result.filter(s => s.orderName === filters.orderName);
+      result = result.filter((s: Species) => s.orderName === filters.orderName);
     }
 
     if (filters.familyName) {
-      result = result.filter(s => s.familyName === filters.familyName);
+      result = result.filter((s: Species) => s.familyName === filters.familyName);
     }
 
     if (filters.sizeCategory) {
-      result = result.filter(s => s.sizeCategory === filters.sizeCategory);
+      result = result.filter((s: Species) => s.sizeCategory === filters.sizeCategory);
     }
 
     if (filters.habitat) {
-      result = result.filter(s => s.habitats.includes(filters.habitat as string));
+      result = result.filter((s: Species) => s.habitats.includes(filters.habitat as string));
     }
 
     if (filters.primaryColor) {
-      result = result.filter(s => s.primaryColors.includes(filters.primaryColor as string));
+      result = result.filter((s: Species) => s.primaryColors.includes(filters.primaryColor as string));
     }
 
     return result;
@@ -52,19 +48,19 @@ export const SpeciesBrowser: React.FC = () => {
 
   // Extract available filter options from data
   const availableFilters = useMemo(() => {
-    const orders = [...new Set(species.map(s => s.orderName))].sort();
+    const orders = [...new Set(species.map((s: Species) => s.orderName))].sort() as string[];
     const families = filters.orderName
-      ? [...new Set(species.filter(s => s.orderName === filters.orderName).map(s => s.familyName))].sort()
-      : [...new Set(species.map(s => s.familyName))].sort();
-    const habitats = [...new Set(species.flatMap(s => s.habitats))].sort();
-    const colors = [...new Set(species.flatMap(s => s.primaryColors))].sort();
+      ? ([...new Set(species.filter((s: Species) => s.orderName === filters.orderName).map((s: Species) => s.familyName))].sort() as string[])
+      : ([...new Set(species.map((s: Species) => s.familyName))].sort() as string[]);
+    const habitats = [...new Set(species.flatMap((s: Species) => s.habitats))].sort() as string[];
+    const colors = [...new Set(species.flatMap((s: Species) => s.primaryColors))].sort() as string[];
 
     return { orders, families, habitats, colors };
   }, [species, filters.orderName]);
 
-  const handleSpeciesClick = useCallback((species: Species) => {
+  const handleSpeciesClick = useCallback((speciesItem: Species) => {
     // Navigate to species detail page
-    debug('Selected species:', species);
+    debug('Selected species:', { name: speciesItem.spanishName });
   }, []);
 
   const handleFilterChange = useCallback((newFilters: SpeciesFilter) => {
@@ -90,7 +86,9 @@ export const SpeciesBrowser: React.FC = () => {
   if (error) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-red-500">Error loading species: {error}</div>
+        <div className="text-red-500">
+          Error loading species: {error instanceof Error ? error.message : 'Unknown error'}
+        </div>
       </div>
     );
   }
@@ -172,10 +170,10 @@ export const SpeciesBrowser: React.FC = () => {
                 ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
                 : 'space-y-4'
             }>
-              {filteredSpecies.map(species => (
+              {filteredSpecies.map((speciesItem: Species) => (
                 <SpeciesCard
-                  key={species.id}
-                  species={species}
+                  key={speciesItem.id}
+                  species={speciesItem}
                   onClick={handleSpeciesClick}
                   viewMode={viewMode}
                 />

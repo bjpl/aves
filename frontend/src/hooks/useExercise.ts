@@ -20,7 +20,7 @@ export const useExercise = () => {
         sessionId: sessionProgress.sessionId
       });
     } catch (error) {
-      logError('Failed to start exercise session:', error);
+      logError('Failed to start exercise session:', error instanceof Error ? error : new Error(String(error)));
     }
   }, [sessionProgress.sessionId]);
 
@@ -58,7 +58,7 @@ export const useExercise = () => {
         timeTaken
       });
     } catch (error) {
-      logError('Failed to record exercise result:', error);
+      logError('Failed to record exercise result:', error instanceof Error ? error : new Error(String(error)));
     }
 
     return result;
@@ -71,7 +71,7 @@ export const useExercise = () => {
       );
       return response.data;
     } catch (error) {
-      logError('Failed to fetch session stats:', error);
+      logError('Failed to fetch session stats:', error instanceof Error ? error : new Error(String(error)));
       return null;
     }
   }, [sessionProgress.sessionId]);
@@ -81,7 +81,7 @@ export const useExercise = () => {
       const response = await axios.get(`${API_BASE_URL}/exercises/difficult-terms`);
       return response.data.difficultTerms;
     } catch (error) {
-      logError('Failed to fetch difficult terms:', error);
+      logError('Failed to fetch difficult terms:', error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }, []);

@@ -72,7 +72,7 @@ export const LessonViewer: React.FC<LessonViewerProps> = ({ lessonId, userId, on
 
   const handleQuizSubmit = useCallback(async () => {
     const results: Record<number, boolean> = {};
-    const quizData = quizzes?.data || [];
+    const quizData = quizzes || [];
 
     for (const quiz of quizData) {
       const answer = quizAnswers[quiz.id];
@@ -91,13 +91,13 @@ export const LessonViewer: React.FC<LessonViewerProps> = ({ lessonId, userId, on
       }
       onComplete?.();
     }
-  }, [quizzes?.data, quizAnswers, submitQuiz, userId, lessonId, trackProgress, onComplete]);
+  }, [quizzes, quizAnswers, submitQuiz, userId, lessonId, trackProgress, onComplete]);
 
   const quizScore = useMemo(() => {
     const correctCount = Object.values(quizResults).filter(r => r).length;
-    const totalCount = (quizzes?.data || []).length;
+    const totalCount = (quizzes || []).length;
     return { correct: correctCount, total: totalCount };
-  }, [quizResults, quizzes?.data]);
+  }, [quizResults, quizzes]);
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -157,7 +157,7 @@ export const LessonViewer: React.FC<LessonViewerProps> = ({ lessonId, userId, on
 
         {currentSection === 'quiz' && (
           <LessonQuiz
-            quizzes={quizzes?.data || []}
+            quizzes={quizzes || []}
             quizAnswers={quizAnswers}
             quizResults={quizResults}
             quizScore={quizScore}

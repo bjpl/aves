@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '../test/test-utils';
 import { userEvent } from '@testing-library/user-event';

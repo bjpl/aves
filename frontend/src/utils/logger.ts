@@ -8,7 +8,7 @@
 import pino from 'pino';
 
 // Determine log level based on environment
-const getLogLevel = (): pino.Level => {
+const getLogLevel = (): pino.LevelWithSilent => {
   const env = import.meta.env.MODE;
 
   if (env === 'production' || env === 'gh-pages') {

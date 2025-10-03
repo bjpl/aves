@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useBirds } from '../hooks/useCMS';
 import { CMSService } from '../services/cms.service';
-import { ChevronRight, Search, Filter } from 'lucide-react';
+import { ChevronRight, Search } from 'lucide-react';
 
 // PATTERN: Component Composition with CMS Data
 // WHY: Modular UI components that consume CMS content

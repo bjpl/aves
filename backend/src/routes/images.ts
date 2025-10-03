@@ -9,9 +9,9 @@ import { error as logError } from '../utils/logger';
 const router = Router();
 
 // GET /api/images/search
-router.post('/images/search', async (req: Request, res: Response) => {
+router.post('/images/search', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { speciesId, query } = req.body;
+    const { query } = req.body;
 
     // Check rate limit
     const rateLimitQuery = `
@@ -32,10 +32,11 @@ router.post('/images/search', async (req: Request, res: Response) => {
           WHERE api_name = 'unsplash'
         `);
       } else if (requests_made >= requests_limit) {
-        return res.status(429).json({
+        res.status(429).json({
           error: 'Rate limit exceeded',
           resetTime: reset_time
         });
+        return;
       }
     }
 
@@ -62,7 +63,7 @@ router.post('/images/search', async (req: Request, res: Response) => {
 });
 
 // POST /api/images/import
-router.post('/images/import', async (req: Request, res: Response) => {
+router.post('/images/import', async (req: Request, res: Response): Promise<void> => {
   try {
     const { speciesId, imageUrl, sourceType, sourceId, photographer } = req.body;
 
@@ -74,7 +75,8 @@ router.post('/images/import', async (req: Request, res: Response) => {
     const existing = await pool.query(existingQuery, [speciesId, sourceId]);
 
     if (existing.rows.length > 0) {
-      return res.status(409).json({ error: 'Image already imported' });
+      res.status(409).json({ error: 'Image already imported' });
+      return;
     }
 
     // Process and save image
@@ -114,7 +116,7 @@ router.post('/images/import', async (req: Request, res: Response) => {
 });
 
 // POST /api/images/generate-prompts
-router.post('/images/generate-prompts', async (req: Request, res: Response) => {
+router.post('/images/generate-prompts', async (_req: Request, res: Response) => {
   try {
     // Find species without sufficient images
     const query = `
@@ -192,7 +194,7 @@ router.get('/images/prompts', async (req: Request, res: Response) => {
 });
 
 // GET /api/images/stats
-router.get('/images/stats', async (req: Request, res: Response) => {
+router.get('/images/stats', async (_req: Request, res: Response) => {
   try {
     const statsQuery = `
       SELECT

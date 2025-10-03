@@ -135,7 +135,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
     <div
       className="relative inline-block max-w-full"
       onMouseMove={handleMouseMove}
-      onClick={handleClick}
+      onClick={(e) => handleClick(e as any)}
       onMouseLeave={handleMouseLeave}
     >
       <StaticLayer

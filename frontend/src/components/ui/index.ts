@@ -35,4 +35,4 @@ export { ProgressBar, CircularProgress } from './ProgressBar';
 export type { ProgressBarProps, CircularProgressProps } from './ProgressBar';
 
 export { LazyImage, LazyImageCard, LazyImageBanner, LazyImageThumbnail } from './LazyImage';
-export type { default as LazyImageProps } from './LazyImage';
+export type { LazyImageProps } from './LazyImage';

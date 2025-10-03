@@ -8,7 +8,7 @@ export interface BoundingBox {
     width: number;
     height: number;
 }
-export type AnnotationType = 'anatomical' | 'behavioral' | 'color' | 'pattern';
+export type AnnotationType = 'anatomical' | 'behavioral' | 'color' | 'pattern' | 'habitat';
 export interface Annotation {
     id: string;
     imageId: string;

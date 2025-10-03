@@ -29,7 +29,7 @@ export const ResponsiveAnnotationCanvas: React.FC<ResponsiveAnnotationCanvasProp
   const [scale, setScale] = useState(1);
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
 
-  const { isMobile, hasTouch, screenSize } = useMobileDetect();
+  const { isMobile, hasTouch } = useMobileDetect();
   const { recordTermDiscovery } = useProgress();
 
   // Load image
@@ -43,7 +43,7 @@ export const ResponsiveAnnotationCanvas: React.FC<ResponsiveAnnotationCanvasProp
     };
 
     img.onerror = () => {
-      logError('Failed to load image:', imageUrl);
+      logError('Failed to load image', new Error(`Image URL: ${imageUrl}`));
     };
 
     img.src = imageUrl;

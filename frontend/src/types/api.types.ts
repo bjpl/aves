@@ -83,9 +83,10 @@ export interface ExerciseResult {
 }
 
 /**
- * User progress data
+ * User progress data (DEPRECATED: Use UserProgress from shared/types/vocabulary.types.ts)
+ * This is kept for API compatibility but should not be used in new code.
  */
-export interface UserProgress {
+export interface ApiUserProgress {
   sessionId: string;
   exercisesCompleted: number;
   correctAnswers: number;

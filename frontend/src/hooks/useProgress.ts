@@ -5,19 +5,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { api } from '../services/apiAdapter';
 import { error as logError } from '../utils/logger';
-
-interface UserProgress {
-  sessionId: string;
-  termsDiscovered: string[];
-  exercisesCompleted: number;
-  correctAnswers: number;
-  totalAnswers: number;
-  currentStreak: number;
-  longestStreak: number;
-  lastActivity: Date;
-  startedAt: Date;
-  vocabularyMastery: Record<string, number>; // term -> mastery level (0-100)
-}
+import { UserProgress } from '../../../shared/types/vocabulary.types';
 
 export const useProgress = () => {
   const [progress, setProgress] = useState<UserProgress | null>(null);
@@ -55,30 +43,36 @@ export const useProgress = () => {
           termsDiscovered: [],
           exercisesCompleted: 0,
           correctAnswers: 0,
+          incorrectAnswers: 0,
           totalAnswers: 0,
           currentStreak: 0,
           longestStreak: 0,
           lastActivity: new Date(),
           startedAt: new Date(),
-          vocabularyMastery: {}
+          lastUpdated: new Date(),
+          vocabularyMastery: {},
+          accuracy: 0
         };
         setProgress(newProgress);
         await api.progress.save(newProgress);
       }
     } catch (err) {
-      logError('Error initializing progress', err as Error);
+      logError('Error initializing progress', err instanceof Error ? err : new Error(String(err)));
       // Create local progress if storage fails
       setProgress({
         sessionId,
         termsDiscovered: [],
         exercisesCompleted: 0,
         correctAnswers: 0,
+        incorrectAnswers: 0,
         totalAnswers: 0,
         currentStreak: 0,
         longestStreak: 0,
         lastActivity: new Date(),
         startedAt: new Date(),
-        vocabularyMastery: {}
+        lastUpdated: new Date(),
+        vocabularyMastery: {},
+        accuracy: 0
       });
     } finally {
       setLoading(false);
@@ -105,11 +99,18 @@ export const useProgress = () => {
   const recordExerciseCompletion = useCallback(async (correct: boolean) => {
     if (!progress) return;
 
+    const newCorrectAnswers = correct ? progress.correctAnswers + 1 : progress.correctAnswers;
+    const newIncorrectAnswers = correct ? progress.incorrectAnswers : progress.incorrectAnswers + 1;
+    const newTotalAnswers = progress.totalAnswers + 1;
+    const newAccuracy = newTotalAnswers > 0 ? Math.round((newCorrectAnswers / newTotalAnswers) * 100) : 0;
+
     const updatedProgress = {
       ...progress,
       exercisesCompleted: progress.exercisesCompleted + 1,
-      correctAnswers: correct ? progress.correctAnswers + 1 : progress.correctAnswers,
-      totalAnswers: progress.totalAnswers + 1,
+      correctAnswers: newCorrectAnswers,
+      incorrectAnswers: newIncorrectAnswers,
+      totalAnswers: newTotalAnswers,
+      accuracy: newAccuracy,
       currentStreak: correct ? progress.currentStreak + 1 : 0,
       longestStreak: correct && progress.currentStreak + 1 > progress.longestStreak
         ? progress.currentStreak + 1
@@ -186,12 +187,15 @@ export const useProgress = () => {
       termsDiscovered: [],
       exercisesCompleted: 0,
       correctAnswers: 0,
+      incorrectAnswers: 0,
       totalAnswers: 0,
       currentStreak: 0,
       longestStreak: 0,
       lastActivity: new Date(),
       startedAt: new Date(),
-      vocabularyMastery: {}
+      lastUpdated: new Date(),
+      vocabularyMastery: {},
+      accuracy: 0
     };
 
     setProgress(newProgress);

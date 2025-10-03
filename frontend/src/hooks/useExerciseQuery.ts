@@ -45,7 +45,7 @@ export const useSessionStats = (sessionId: string) => {
         );
         return response.data;
       } catch (error) {
-        logError('Failed to fetch session stats:', error);
+        logError('Failed to fetch session stats:', error instanceof Error ? error : new Error(String(error)));
         return null;
       }
     },
@@ -63,7 +63,7 @@ export const useDifficultTerms = () => {
         const response = await axios.get(`${API_BASE_URL}/exercises/difficult-terms`);
         return response.data.difficultTerms;
       } catch (error) {
-        logError('Failed to fetch difficult terms:', error);
+        logError('Failed to fetch difficult terms:', error instanceof Error ? error : new Error(String(error)));
         return [];
       }
     },
@@ -74,8 +74,6 @@ export const useDifficultTerms = () => {
 
 // Mutation: Start exercise session
 export const useStartSession = () => {
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async (sessionId: string) => {
       await axios.post(`${API_BASE_URL}/exercises/session/start`, {
@@ -84,7 +82,7 @@ export const useStartSession = () => {
       return sessionId;
     },
     onError: (error) => {
-      logError('Failed to start exercise session:', error);
+      logError('Failed to start exercise session:', error instanceof Error ? error : new Error(String(error)));
     },
   });
 };
@@ -160,9 +158,9 @@ export const useRecordExerciseResult = () => {
           context.previousProgress
         );
       }
-      logError('Failed to record exercise result:', err);
+      logError('Failed to record exercise result:', err instanceof Error ? err : new Error(String(err)));
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       // Invalidate related queries
       queryClient.invalidateQueries({
         queryKey: queryKeys.exercises.stats(variables.sessionId)

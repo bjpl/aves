@@ -42,7 +42,7 @@ export const useDisclosure = (annotation: Annotation) => {
         content.mnemonic = enrichment.mnemonic;
         content.relatedTerms = enrichment.relatedTerms;
       } catch (error) {
-        logError('Failed to fetch enrichment:', error);
+        logError('Failed to fetch enrichment:', error instanceof Error ? error : new Error(String(error)));
       }
     }
 
@@ -52,7 +52,7 @@ export const useDisclosure = (annotation: Annotation) => {
         content.usageExamples = examples.usageExamples;
         content.commonPhrases = examples.commonPhrases;
       } catch (error) {
-        logError('Failed to fetch examples:', error);
+        logError('Failed to fetch examples:', error instanceof Error ? error : new Error(String(error)));
       }
     }
 

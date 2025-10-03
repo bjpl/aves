@@ -5,7 +5,18 @@
 // Re-export all shared types
 export * from '../../../shared/types/annotation.types';
 export * from '../../../shared/types/vocabulary.types';
-export * from '../../../shared/types/exercise.types';
+export type {
+  ExerciseType,
+  ExerciseBase,
+  VisualDiscriminationExercise,
+  TermMatchingExercise,
+  ContextualFillExercise,
+  ImageLabelingExercise,
+  VisualIdentificationExercise,
+  Exercise,
+  ExerciseResult,
+  SessionProgress
+} from '../../../shared/types/exercise.types';
 export * from '../../../shared/types/species.types';
 export * from '../../../shared/types/image.types';
 export * from '../../../shared/types/enhanced-exercise.types';

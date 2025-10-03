@@ -43,7 +43,7 @@ export class UnsplashService {
         totalPages: response.data.total_pages
       };
     } catch (error) {
-      logError('Unsplash API error:', error);
+      logError('Unsplash API error:', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -62,7 +62,7 @@ export class UnsplashService {
 
       return response.data;
     } catch (error) {
-      logError('Failed to fetch photo:', error);
+      logError('Failed to fetch photo:', error instanceof Error ? error : new Error(String(error)));
       return null;
     }
   }
@@ -77,7 +77,7 @@ export class UnsplashService {
           }
         });
       } catch (error) {
-        logError('Failed to track download:', error);
+        logError('Failed to track download:', error instanceof Error ? error : new Error(String(error)));
       }
     }
   }

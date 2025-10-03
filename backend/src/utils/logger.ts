@@ -11,7 +11,7 @@ import { config } from 'dotenv';
 config();
 
 // Determine log level based on environment
-const getLogLevel = (): pino.Level => {
+const getLogLevel = (): pino.LevelWithSilent => {
   const env = process.env.NODE_ENV;
 
   if (env === 'production') {

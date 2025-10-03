@@ -12,4 +12,5 @@ export interface EnhancedExercise extends ExerciseBase {
   metadata?: Record<string, any>;
 }
 
-export type EnhancedExerciseType = ExerciseType | 'visual_identification' | 'audio_recognition' | 'sentence_building' | 'cultural_context';
+// EnhancedExerciseType is now the same as ExerciseType since all types are included
+export type EnhancedExerciseType = ExerciseType;

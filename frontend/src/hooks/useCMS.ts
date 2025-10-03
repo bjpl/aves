@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { CMSService, Bird, Lesson, Quiz } from '../services/cms.service';
+import { CMSService } from '../services/cms.service';
 
 // PATTERN: Custom React Hooks for Data Fetching
 // WHY: Encapsulates data fetching logic with caching
@@ -107,7 +107,6 @@ export const useBirdSearch = (searchTerm: string, enabled = true) => {
     {
       enabled: enabled && searchTerm.length > 2,
       staleTime: 2 * 60 * 1000,
-      debounce: 300, // Custom debounce if implemented
     }
   );
 };

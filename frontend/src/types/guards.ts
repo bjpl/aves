@@ -116,3 +116,31 @@ export function isArrayOf<T>(
 ): arr is T[] {
   return Array.isArray(arr) && arr.every(guard);
 }
+
+/**
+ * Type guard to check if a value is an Error
+ */
+export function isError(err: unknown): err is Error {
+  return err instanceof Error;
+}
+
+/**
+ * Type guard to check if a value is a Record<string, unknown>
+ */
+export function isRecordError(err: unknown): err is Record<string, unknown> {
+  return typeof err === 'object' && err !== null && !isError(err);
+}
+
+/**
+ * Convert unknown error to Error or Record for logging
+ */
+export function toLoggableError(err: unknown): Error | Record<string, unknown> {
+  if (isError(err)) {
+    return err;
+  }
+  if (isRecordError(err)) {
+    return err;
+  }
+  // Convert primitives and other types to a loggable object
+  return { error: String(err), type: typeof err };
+}

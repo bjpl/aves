@@ -34,3 +34,20 @@ export interface VocabularyInteraction {
   disclosureLevel: DisclosureLevel;
   timestamp: Date;
 }
+
+export interface UserProgress {
+  sessionId: string;
+  termsDiscovered: string[];
+  exercisesCompleted: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  totalAnswers: number;
+  currentStreak: number;
+  longestStreak: number;
+  lastActivity: Date;
+  lastExerciseAt?: Date;
+  startedAt: Date;
+  lastUpdated: Date;
+  vocabularyMastery: Record<string, number>;
+  accuracy: number;
+}

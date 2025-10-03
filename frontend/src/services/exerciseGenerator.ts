@@ -7,13 +7,58 @@ import {
 } from '../../../shared/types/exercise.types';
 import { Annotation } from '../../../shared/types/annotation.types';
 
+/**
+ * Exercise Generator Service
+ *
+ * Generates interactive Spanish vocabulary exercises from bird image annotations.
+ * Supports multiple exercise types with adaptive difficulty and intelligent content selection.
+ *
+ * @example
+ * ```typescript
+ * const annotations = await fetchAnnotations();
+ * const generator = new ExerciseGenerator(annotations);
+ * const exercise = generator.generateExercise('visual_discrimination');
+ * ```
+ *
+ * @see {@link https://github.com/aves/docs/EXERCISE_GENERATION_GUIDE.md|Exercise Generation Guide}
+ */
 export class ExerciseGenerator {
   private annotations: Annotation[] = [];
 
+  /**
+   * Creates a new ExerciseGenerator instance
+   *
+   * @param annotations - Array of bird image annotations to use for exercise generation
+   * @throws {Error} If annotations array is empty
+   *
+   * @example
+   * ```typescript
+   * const generator = new ExerciseGenerator(annotations);
+   * ```
+   */
   constructor(annotations: Annotation[]) {
     this.annotations = annotations;
   }
 
+  /**
+   * Generates an exercise of the specified type
+   *
+   * @param type - The type of exercise to generate (visual_discrimination, term_matching, contextual_fill, etc.)
+   * @returns The generated exercise or null if generation fails
+   *
+   * @example
+   * ```typescript
+   * const exercise = generator.generateExercise('visual_discrimination');
+   * if (exercise) {
+   *   console.log('Exercise generated:', exercise.type);
+   * }
+   * ```
+   *
+   * @remarks
+   * - Requires minimum 4 annotations for most exercise types
+   * - Returns null if insufficient annotations available
+   * - Each exercise type has specific requirements
+   */
   generateExercise(type: ExerciseType): Exercise | null {
     switch (type) {
       case 'visual_discrimination':
@@ -27,6 +72,26 @@ export class ExerciseGenerator {
     }
   }
 
+  /**
+   * Generates a visual discrimination exercise
+   *
+   * Presents multiple bird images and asks the user to identify which one matches
+   * the target Spanish term. Includes 1 correct answer and 3 distractors.
+   *
+   * @returns A visual discrimination exercise or null if insufficient annotations
+   *
+   * @example
+   * ```typescript
+   * const exercise = generator.generateVisualDiscrimination();
+   * // Shows: "¿Cuál imagen muestra: 'plumas'?"
+   * // Options: [image1, image2, image3, image4] (randomized)
+   * ```
+   *
+   * @remarks
+   * - Requires minimum 4 annotations
+   * - Options are randomized to prevent pattern recognition
+   * - Each option includes image URL, species name, and unique ID
+   */
   private generateVisualDiscrimination(): VisualDiscriminationExercise | null {
     if (this.annotations.length < 4) return null;
 
@@ -53,6 +118,28 @@ export class ExerciseGenerator {
     };
   }
 
+  /**
+   * Generates a term matching exercise
+   *
+   * Presents Spanish terms and English translations that users must match.
+   * English terms are shuffled to create the matching challenge.
+   *
+   * @returns A term matching exercise or null if insufficient annotations
+   *
+   * @example
+   * ```typescript
+   * const exercise = generator.generateTermMatching();
+   * // Spanish: [plumas, pico, alas, cola]
+   * // English: [beak, tail, feathers, wings] (shuffled)
+   * // User matches Spanish → English
+   * ```
+   *
+   * @remarks
+   * - Requires minimum 4 annotations
+   * - Selects 4 random annotation pairs
+   * - English terms are randomized to prevent easy matching
+   * - Correct pairs stored for validation
+   */
   private generateTermMatching(): TermMatchingExercise | null {
     if (this.annotations.length < 4) return null;
 
@@ -79,6 +166,28 @@ export class ExerciseGenerator {
     };
   }
 
+  /**
+   * Generates a contextual fill-in-the-blank exercise
+   *
+   * Presents a Spanish sentence with a blank (___)  that users fill with the correct term.
+   * Includes multiple choice options with 1 correct answer and 3 distractors.
+   *
+   * @returns A contextual fill exercise or null if insufficient annotations
+   *
+   * @example
+   * ```typescript
+   * const exercise = generator.generateContextualFill();
+   * // Sentence: "El ___ del pájaro es de color rojo brillante."
+   * // Options: [plumas, pico, alas, cola] (randomized)
+   * // Correct: plumas
+   * ```
+   *
+   * @remarks
+   * - Requires minimum 4 annotations
+   * - Selects distractors of same type (e.g., all anatomy terms)
+   * - Template sentences vary for engagement
+   * - Options randomized to prevent positional bias
+   */
   private generateContextualFill(): ContextualFillExercise | null {
     if (this.annotations.length < 4) return null;
 
@@ -109,6 +218,34 @@ export class ExerciseGenerator {
     };
   }
 
+  /**
+   * Validates a user's answer against the correct answer
+   *
+   * Checks if the user's response matches the expected answer for the exercise type.
+   * Handles different answer formats for different exercise types.
+   *
+   * @param exercise - The exercise being validated
+   * @param userAnswer - The user's submitted answer (format varies by exercise type)
+   * @returns True if answer is correct, false otherwise
+   *
+   * @example
+   * ```typescript
+   * // Visual discrimination
+   * const isCorrect = ExerciseGenerator.checkAnswer(exercise, 'option_id_123');
+   *
+   * // Term matching
+   * const pairs = [{ spanish: 'plumas', english: 'feathers' }];
+   * const isCorrect = ExerciseGenerator.checkAnswer(exercise, pairs);
+   *
+   * // Contextual fill
+   * const isCorrect = ExerciseGenerator.checkAnswer(exercise, 'plumas');
+   * ```
+   *
+   * @remarks
+   * - Visual discrimination: Expects option ID (string)
+   * - Term matching: Expects array of {spanish, english} pairs
+   * - Contextual fill: Expects Spanish term (string)
+   */
   static checkAnswer(exercise: Exercise, userAnswer: any): boolean {
     switch (exercise.type) {
       case 'visual_discrimination':
@@ -130,6 +267,30 @@ export class ExerciseGenerator {
     }
   }
 
+  /**
+   * Generates feedback message based on answer correctness
+   *
+   * Provides encouraging feedback for correct answers and helpful hints for incorrect ones.
+   * Feedback is localized with Spanish positive messages.
+   *
+   * @param isCorrect - Whether the user's answer was correct
+   * @param exercise - The exercise that was answered
+   * @returns Feedback message in Spanish (correct) or English (incorrect with hint)
+   *
+   * @example
+   * ```typescript
+   * const feedback = ExerciseGenerator.generateFeedback(true, exercise);
+   * // Returns: "¡Excelente!" or "¡Muy bien!" or "¡Correcto!" or "¡Perfecto!"
+   *
+   * const feedback = ExerciseGenerator.generateFeedback(false, exercise);
+   * // Returns: "The correct answer was: plumas"
+   * ```
+   *
+   * @remarks
+   * - Correct answers receive randomized Spanish praise
+   * - Incorrect answers show the correct answer
+   * - Feedback type varies by exercise type
+   */
   static generateFeedback(isCorrect: boolean, exercise: Exercise): string {
     if (isCorrect) {
       const positives = ['¡Excelente!', '¡Muy bien!', '¡Correcto!', '¡Perfecto!'];
