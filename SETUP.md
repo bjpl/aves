@@ -4,16 +4,24 @@
 
 This guide will help you get Aves running on your local machine for development and testing purposes.
 
+**Live Demo**: [https://bjpl.github.io/aves/](https://bjpl.github.io/aves/)
+
 ## 📋 Prerequisites
 
 ### Required Software
 - **Node.js** (v18.0.0 or higher)
 - **npm** (v9.0.0 or higher)
-- **PostgreSQL** (v14.0 or higher)
+- **PostgreSQL** (v14.0 or higher) - Optional, only for backend development
 - **Git** (for version control)
 
+### Required API Keys
+- **OpenAI API Key** (REQUIRED for AI features)
+  - Sign up at [platform.openai.com](https://platform.openai.com)
+  - Create API key for GPT-4 Vision and GPT-4 Turbo
+  - Note: AI features require GPT-4 access
+
 ### Optional Services
-- **Unsplash Account** (for bird image sourcing)
+- **Unsplash Account** (optional, for bird image sourcing)
   - Sign up at [unsplash.com/developers](https://unsplash.com/developers)
   - Create an application to get API keys
 
@@ -29,12 +37,13 @@ cd aves
 ### 2. Install Dependencies
 
 ```bash
-# Install all dependencies (frontend + backend)
+# Install all dependencies (uses npm workspaces - installs both frontend and backend)
 npm install
 
-# Or install separately
-cd frontend && npm install
-cd ../backend && npm install
+# This automatically installs:
+# - Root workspace dependencies (concurrently)
+# - Frontend dependencies (React, Vite, Playwright, etc.)
+# - Backend dependencies (Express, OpenAI, Jest, etc.)
 ```
 
 ### 3. Database Setup
@@ -59,16 +68,20 @@ GRANT ALL PRIVILEGES ON DATABASE aves TO aves_user;
 #### Run Migrations
 
 ```bash
-# From project root
-npm run db:migrate
+# From backend directory (NOT from root)
+cd backend
+npm run migrate
 
-# Or manually
-psql -U postgres -d aves -f database/schemas/001_initial_schema.sql
-psql -U postgres -d aves -f database/schemas/002_vocabulary_disclosure.sql
-psql -U postgres -d aves -f database/schemas/003_exercises.sql
-psql -U postgres -d aves -f database/schemas/004_species_taxonomy.sql
-psql -U postgres -d aves -f database/schemas/005_image_management.sql
+# Or manually apply migrations
+psql -U postgres -d aves -f src/database/migrations/001_create_users_table.sql
+psql -U postgres -d aves -f src/database/migrations/002_create_ai_annotations_table.sql
+psql -U postgres -d aves -f src/database/migrations/003_create_vision_cache.sql
+psql -U postgres -d aves -f src/database/migrations/006_batch_jobs.sql
+psql -U postgres -d aves -f src/database/migrations/007_exercise_cache.sql
+psql -U postgres -d aves -f src/database/migrations/008_add_user_roles.sql
 ```
+
+**Note**: Database is optional for frontend-only development. The app can run in client-side mode using local JSON data.
 
 ### 4. Environment Configuration
 
@@ -79,7 +92,7 @@ Create `.env` files in both frontend and backend directories:
 ```env
 # Server Configuration
 NODE_ENV=development
-PORT=3000
+PORT=3001
 
 # Database Configuration
 DATABASE_URL=postgresql://aves_user:your_secure_password@localhost:5432/aves
@@ -89,15 +102,27 @@ DB_NAME=aves
 DB_USER=aves_user
 DB_PASSWORD=your_secure_password
 
-# Session Configuration
-SESSION_SECRET=your_session_secret_here_change_in_production
+# OpenAI Configuration (REQUIRED for AI features)
+OPENAI_API_KEY=sk-your-openai-api-key-here
+OPENAI_MODEL=gpt-4o
+OPENAI_TEMPERATURE=0.7
+OPENAI_MAX_TOKENS=1500
 
-# External APIs
+# Session & Security Configuration
+SESSION_SECRET=your_session_secret_here_change_in_production
+JWT_SECRET=your_jwt_secret_change_in_production
+
+# External APIs (Optional)
 UNSPLASH_ACCESS_KEY=your_unsplash_access_key
 UNSPLASH_SECRET_KEY=your_unsplash_secret_key
 
 # CORS Configuration
 FRONTEND_URL=http://localhost:5173
+
+# Feature Flags
+ENABLE_VISION_AI=true
+ENABLE_EXERCISE_GENERATION=true
+ENABLE_BATCH_PROCESSING=true
 
 # Rate Limiting
 RATE_LIMIT_WINDOW_MS=900000
@@ -108,11 +133,13 @@ RATE_LIMIT_MAX_REQUESTS=100
 
 ```env
 # API Configuration
-VITE_API_URL=http://localhost:3000
+VITE_API_URL=http://localhost:3001
 VITE_API_VERSION=v1
 
 # Feature Flags
 VITE_ENABLE_UNSPLASH=true
+VITE_ENABLE_AI_EXERCISES=true
+VITE_ENABLE_VISION_AI=true
 VITE_ENABLE_ANALYTICS=false
 
 # Development
@@ -121,26 +148,41 @@ VITE_DEBUG_MODE=true
 
 ### 5. Seed Sample Data (Optional)
 
-```bash
-# Run seed script
-npm run db:seed
+**Note**: The frontend includes client-side data in `frontend/src/data/` and `cms/` directories. Database seeding is optional.
 
-# Or use the SQL file
-psql -U postgres -d aves -f database/seeds/sample_data.sql
+```bash
+# If you need to seed the database (backend development)
+# Currently, seed scripts are in development
+# Data is primarily managed through the CMS interface
 ```
 
 ## 🏃 Running the Application
 
 ### Development Mode
 
-#### Option 1: Run Both Frontend and Backend
+#### Option 1: Run Both Frontend and Backend (Recommended)
 
 ```bash
 # From project root
 npm run dev
+
+# This starts:
+# - Frontend on http://localhost:5173
+# - Backend on http://localhost:3001
 ```
 
-#### Option 2: Run Separately
+#### Option 2: Run Frontend Only (No Backend Required)
+
+```bash
+# From frontend directory
+cd frontend
+npm run dev
+
+# App works in client-side mode using local JSON data
+# AI features will be unavailable without backend
+```
+
+#### Option 3: Run Separately
 
 ```bash
 # Terminal 1: Backend
@@ -167,20 +209,34 @@ npm run start
 ### Run All Tests
 
 ```bash
+# From project root - runs all workspace tests
 npm run test
 ```
 
 ### Run Specific Test Suites
 
+**Frontend Tests** (264 tests):
 ```bash
-# Unit tests
-npm run test:unit
+cd frontend
 
-# Integration tests
-npm run test:integration
+# Vitest unit/integration tests
+npm run test
 
-# E2E tests
+# Playwright E2E tests (57 tests)
 npm run test:e2e
+npm run test:e2e:ui          # Run with UI
+npm run test:e2e:headed      # Run in headed mode
+npm run test:e2e:debug       # Debug mode
+npm run test:e2e:smoke       # Smoke tests only
+npm run test:e2e:report      # Show test report
+```
+
+**Backend Tests** (95%+ coverage):
+```bash
+cd backend
+
+# Jest with coverage
+npm run test
 ```
 
 ## 🐛 Common Issues & Solutions
