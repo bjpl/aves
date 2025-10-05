@@ -39,7 +39,8 @@ async function runMigrations() {
       '006_batch_jobs.sql',
       '007_exercise_cache.sql',
       '008_add_user_roles.sql',
-      '009_optimize_cache_indexes.sql'
+      '009_optimize_cache_indexes.sql',
+      '010_create_species_and_images.sql'
     ];
 
     for (const migration of migrations) {
