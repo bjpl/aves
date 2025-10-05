@@ -4,6 +4,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import axios from 'axios';
 import { info, error as logError } from '../utils/logger';
 
 export interface BoundingBox {
@@ -123,19 +124,22 @@ export class VisionAIService {
   }
 
   /**
-   * Fetch image from URL and convert to base64
+   * Fetch image from URL and convert to base64 using axios
    */
   private async fetchImageAsBase64(imageUrl: string): Promise<{ base64: string; mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp' }> {
     try {
-      const response = await fetch(imageUrl);
+      info('Fetching image from URL', { imageUrl });
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch image: ${response.statusText}`);
-      }
+      const response = await axios.get(imageUrl, {
+        responseType: 'arraybuffer',
+        timeout: 30000, // 30 second timeout
+        headers: {
+          'User-Agent': 'Aves-Bird-Learning/1.0',
+        }
+      });
 
-      const contentType = response.headers.get('content-type') || 'image/jpeg';
-      const arrayBuffer = await response.arrayBuffer();
-      const base64 = Buffer.from(arrayBuffer).toString('base64');
+      const contentType = response.headers['content-type'] || 'image/jpeg';
+      const base64 = Buffer.from(response.data, 'binary').toString('base64');
 
       // Map content type to supported Anthropic types
       let mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
@@ -148,6 +152,12 @@ export class VisionAIService {
       } else {
         mediaType = 'image/jpeg';
       }
+
+      info('Image fetched and encoded successfully', {
+        imageUrl,
+        mediaType,
+        sizeBytes: response.data.length
+      });
 
       return { base64, mediaType };
     } catch (error) {
