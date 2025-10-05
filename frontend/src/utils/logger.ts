@@ -22,28 +22,26 @@ const getLogLevel = (): pino.LevelWithSilent => {
   return 'debug'; // Full logging in development
 };
 
-// Browser console transport for better formatting
-const browserTransport = pino.transport({
-  target: 'pino-pretty',
-  options: {
-    colorize: true,
-    translateTime: 'HH:MM:ss',
-    ignore: 'pid,hostname',
-    singleLine: false,
-  },
-});
-
 // Create logger instance
+// Note: pino.transport() doesn't work in browsers, so we use browser mode only
 const logger = pino({
   level: getLogLevel(),
   browser: {
     asObject: true,
     serialize: true,
+    write: {
+      // Custom browser write function that formats output nicely
+      info: (o: any) => console.info(o),
+      error: (o: any) => console.error(o),
+      warn: (o: any) => console.warn(o),
+      debug: (o: any) => console.debug(o),
+      trace: (o: any) => console.trace(o),
+    },
   },
   base: {
     env: import.meta.env.MODE,
   },
-}, browserTransport);
+});
 
 /**
  * Create a child logger with additional context
