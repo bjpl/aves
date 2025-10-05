@@ -27,6 +27,7 @@ export interface AIAnnotation {
   confidence: number;
   status: 'pending' | 'approved' | 'rejected' | 'edited';
   created_at: string;
+  imageUrl?: string; // Added for admin review UI
 }
 
 /**
@@ -57,24 +58,54 @@ export const useImageAnnotations = (imageId: string) => {
 };
 
 /**
- * Fetch all pending annotations (for admin review)
+ * Fetch all pending annotations with image URLs (for admin review)
  */
 export const usePendingAnnotations = () => {
   return useQuery({
     queryKey: ['annotations', 'pending'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      info('Fetching pending annotations from Supabase');
+
+      // First, get all pending annotations
+      const { data: annotations, error: annotError } = await supabase
         .from('ai_annotation_items')
-        .select('*, ai_annotations!inner(image_url)')
+        .select('*')
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        logError('Failed to fetch pending annotations', new Error(error.message));
-        throw new Error(error.message);
+      if (annotError) {
+        logError('Failed to fetch pending annotations', new Error(annotError.message));
+        throw new Error(annotError.message);
       }
 
-      return data;
+      // Get unique image IDs
+      const imageIds = [...new Set(annotations?.map(a => a.image_id) || [])];
+
+      // Fetch image URLs for all images
+      const { data: images, error: imgError } = await supabase
+        .from('images')
+        .select('id, url')
+        .in('id', imageIds);
+
+      if (imgError) {
+        logError('Failed to fetch image URLs', new Error(imgError.message));
+        // Continue without images rather than failing completely
+      }
+
+      // Create image URL lookup map
+      const imageUrlMap = new Map(
+        images?.map(img => [img.id, img.url]) || []
+      );
+
+      // Enrich annotations with image URLs
+      const enrichedAnnotations = annotations?.map(annotation => ({
+        ...annotation,
+        imageUrl: imageUrlMap.get(annotation.image_id) || '',
+      })) || [];
+
+      info('Pending annotations fetched with image URLs', { count: enrichedAnnotations.length });
+
+      return enrichedAnnotations;
     },
   });
 };

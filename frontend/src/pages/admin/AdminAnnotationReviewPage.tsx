@@ -205,7 +205,7 @@ export const AdminAnnotationReviewPage: React.FC = () => {
               <AnnotationReviewCard
                 key={annotation.id}
                 annotation={annotation}
-                imageUrl={annotation.ai_annotations?.image_url || ''}
+                imageUrl={annotation.imageUrl || ''}
                 onApprove={handleApprove}
                 onReject={handleReject}
                 onEdit={handleEdit}
