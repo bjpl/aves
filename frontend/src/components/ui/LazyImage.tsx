@@ -105,6 +105,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
           alt={alt}
           onLoad={handleLoad}
           onError={handleError}
+          crossOrigin="anonymous"
           className={`relative w-full h-full object-cover transition-opacity duration-500 ${
             isLoaded ? 'opacity-100' : 'opacity-0'
           }`}
