@@ -7,6 +7,7 @@ const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.H
 const EnhancedLearnPage = lazy(() => import('./pages/EnhancedLearnPage').then(m => ({ default: m.EnhancedLearnPage })));
 const EnhancedPracticePage = lazy(() => import('./pages/EnhancedPracticePage').then(m => ({ default: m.EnhancedPracticePage })));
 const SpeciesPage = lazy(() => import('./pages/SpeciesPage').then(m => ({ default: m.SpeciesPage })));
+const AdminAnnotationReviewPage = lazy(() => import('./pages/admin/AdminAnnotationReviewPage').then(m => ({ default: m.AdminAnnotationReviewPage })));
 
 function App() {
   // PATTERN: Hardcoded basename for GitHub Pages deployment
@@ -48,6 +49,12 @@ function App() {
                   >
                     Species
                   </Link>
+                  <Link
+                    to="/admin/annotations"
+                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-orange-600 hover:text-orange-700 border-l border-gray-200 ml-4 pl-4"
+                  >
+                    Admin
+                  </Link>
                 </div>
               </div>
             </div>
@@ -68,6 +75,7 @@ function App() {
             <Route path="/learn" element={<EnhancedLearnPage />} />
             <Route path="/practice" element={<EnhancedPracticePage />} />
             <Route path="/species" element={<SpeciesPage />} />
+            <Route path="/admin/annotations" element={<AdminAnnotationReviewPage />} />
           </Routes>
         </Suspense>
       </div>
