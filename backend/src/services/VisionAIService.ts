@@ -1,8 +1,9 @@
 /**
  * Vision AI Service
- * Handles AI-powered image annotation using OpenAI GPT-4 Vision API
+ * Handles AI-powered image annotation using Anthropic Claude Sonnet 4.5 Vision API
  */
 
+import Anthropic from '@anthropic-ai/sdk';
 import { info, error as logError } from '../utils/logger';
 
 export interface BoundingBox {
@@ -35,90 +36,80 @@ export interface AnnotationJobResult {
  * VisionAI Service for generating bird annotations
  */
 export class VisionAIService {
+  private client: Anthropic;
   private apiKey: string;
-  private apiEndpoint = 'https://api.openai.com/v1/chat/completions';
 
   constructor() {
-    this.apiKey = process.env.OPENAI_API_KEY || '';
+    this.apiKey = process.env.ANTHROPIC_API_KEY || '';
 
     if (!this.apiKey) {
-      logError('OPENAI_API_KEY not configured. Vision AI features will not work.');
+      logError('ANTHROPIC_API_KEY not configured. Vision AI features will not work.');
+      // Create a dummy client to avoid errors
+      this.client = new Anthropic({ apiKey: 'dummy-key' });
+    } else {
+      this.client = new Anthropic({ apiKey: this.apiKey });
+      info('VisionAI Service initialized with Claude Sonnet 4.5');
     }
   }
 
   /**
-   * Generate annotations for a bird image using GPT-4 Vision
+   * Generate annotations for a bird image using Claude Sonnet 4.5 Vision
    * @param imageUrl - URL of the bird image to annotate
    * @param imageId - Database ID of the image
    * @returns Promise<AIAnnotation[]>
    */
   async generateAnnotations(imageUrl: string, imageId: string): Promise<AIAnnotation[]> {
     if (!this.apiKey) {
-      throw new Error('OpenAI API key not configured');
+      throw new Error('Anthropic API key not configured');
     }
 
     try {
-      info('Starting Vision AI annotation generation', { imageId, imageUrl });
+      info('Starting Vision AI annotation generation with Claude', { imageId, imageUrl });
 
       const prompt = this.buildAnnotationPrompt();
 
-      const response = await fetch(this.apiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4-vision-preview',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are an expert ornithologist and Spanish language teacher. Your task is to identify anatomical features in bird images and provide accurate Spanish-English vocabulary with bounding boxes.'
-            },
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: prompt
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: imageUrl,
-                    detail: 'high'
-                  }
+      // Fetch image and convert to base64
+      const imageData = await this.fetchImageAsBase64(imageUrl);
+
+      const response = await this.client.messages.create({
+        model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
+        max_tokens: 4096,
+        temperature: 0.3,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: imageData.mediaType,
+                  data: imageData.base64
                 }
-              ]
-            }
-          ],
-          max_tokens: 2000,
-          temperature: 0.3 // Lower temperature for more consistent results
-        })
+              },
+              {
+                type: 'text',
+                text: prompt
+              }
+            ]
+          }
+        ]
       });
 
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`OpenAI API error: ${response.status} - ${errorData}`);
+      const content = response.content[0];
+
+      if (content.type !== 'text') {
+        throw new Error('Unexpected response type from Claude');
       }
 
-      const data = await response.json() as {
-        choices: Array<{
-          message: {
-            content: string;
-          };
-        }>;
-      };
-      const content = data.choices[0]?.message?.content;
-
-      if (!content) {
-        throw new Error('No content returned from Vision API');
+      if (!content.text) {
+        throw new Error('No content returned from Claude Vision API');
       }
 
       // Parse the JSON response
-      const annotations = this.parseAnnotationResponse(content);
+      const annotations = this.parseAnnotationResponse(content.text);
 
-      info('Vision AI annotations generated successfully', {
+      info('Claude Vision AI annotations generated successfully', {
         imageId,
         annotationCount: annotations.length
       });
@@ -126,13 +117,47 @@ export class VisionAIService {
       return annotations;
 
     } catch (error) {
-      logError('Failed to generate annotations with Vision AI', error as Error);
+      logError('Failed to generate annotations with Claude Vision AI', error as Error);
       throw error;
     }
   }
 
   /**
-   * Build the annotation prompt for GPT-4 Vision
+   * Fetch image from URL and convert to base64
+   */
+  private async fetchImageAsBase64(imageUrl: string): Promise<{ base64: string; mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp' }> {
+    try {
+      const response = await fetch(imageUrl);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.statusText}`);
+      }
+
+      const contentType = response.headers.get('content-type') || 'image/jpeg';
+      const arrayBuffer = await response.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString('base64');
+
+      // Map content type to supported Anthropic types
+      let mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+      if (contentType.includes('png')) {
+        mediaType = 'image/png';
+      } else if (contentType.includes('gif')) {
+        mediaType = 'image/gif';
+      } else if (contentType.includes('webp')) {
+        mediaType = 'image/webp';
+      } else {
+        mediaType = 'image/jpeg';
+      }
+
+      return { base64, mediaType };
+    } catch (error) {
+      logError('Failed to fetch and encode image', error as Error);
+      throw new Error(`Failed to fetch image from URL: ${imageUrl}`);
+    }
+  }
+
+  /**
+   * Build the annotation prompt for Claude Vision
    */
   private buildAnnotationPrompt(): string {
     return `
@@ -167,7 +192,7 @@ IMPORTANT: Return only the JSON array, nothing else.
   }
 
   /**
-   * Parse annotation response from GPT-4 Vision
+   * Parse annotation response from Claude Vision
    * Handles both pure JSON and markdown-wrapped JSON
    */
   private parseAnnotationResponse(content: string): AIAnnotation[] {

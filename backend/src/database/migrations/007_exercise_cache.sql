@@ -65,14 +65,14 @@ CREATE INDEX IF NOT EXISTS idx_exercise_usage_count
   ON exercise_cache(usage_count DESC);
 
 -- Composite index for efficient cache lookup with expiration check
+-- Note: WHERE clause removed for Supabase compatibility (CURRENT_TIMESTAMP not IMMUTABLE)
 CREATE INDEX IF NOT EXISTS idx_exercise_lookup
-  ON exercise_cache(cache_key, expires_at)
-  WHERE expires_at > CURRENT_TIMESTAMP;
+  ON exercise_cache(cache_key, expires_at);
 
--- Partial index for active (non-expired) cache entries
+-- Index for active (non-expired) cache entries sorted by creation
+-- Note: WHERE clause removed for Supabase compatibility (CURRENT_TIMESTAMP not IMMUTABLE)
 CREATE INDEX IF NOT EXISTS idx_exercise_active
-  ON exercise_cache(created_at DESC)
-  WHERE expires_at > CURRENT_TIMESTAMP;
+  ON exercise_cache(created_at DESC, expires_at);
 
 -- Topics search index (GIN for array operations)
 CREATE INDEX IF NOT EXISTS idx_exercise_topics

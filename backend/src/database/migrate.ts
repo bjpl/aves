@@ -9,9 +9,12 @@ dotenv.config();
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'aves',
+  database: process.env.DB_NAME || 'postgres',
   user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD
+  password: process.env.DB_PASSWORD,
+  ssl: process.env.DB_SSL_ENABLED === 'true' ? {
+    rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false'
+  } : undefined
 });
 
 async function runMigrations() {
@@ -30,7 +33,13 @@ async function runMigrations() {
 
     // List of migration files in order
     const migrations = [
-      '001_create_users_table.sql'
+      '001_create_users_table.sql',
+      '002_create_ai_annotations_table.sql',
+      '003_create_vision_ai_cache.sql',
+      '006_batch_jobs.sql',
+      '007_exercise_cache.sql',
+      '008_add_user_roles.sql',
+      '009_optimize_cache_indexes.sql'
     ];
 
     for (const migration of migrations) {

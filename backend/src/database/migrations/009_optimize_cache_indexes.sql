@@ -7,24 +7,24 @@
 -- ============================================================================
 
 -- Composite index for cache lookups
--- Improves: Cache hit/miss queries by user + exercise parameters
+-- Improves: Cache hit/miss queries by exercise parameters
 -- Expected: 10-50x faster cache lookups
+-- Note: Using actual column names from exercise_cache table (user_context_hash, difficulty, not user_id)
 CREATE INDEX IF NOT EXISTS idx_exercise_cache_lookup
-ON exercise_cache(user_id, exercise_type, difficulty_level, topic, expires_at)
-WHERE expires_at IS NOT NULL;
+ON exercise_cache(user_context_hash, exercise_type, difficulty, expires_at);
 
 COMMENT ON INDEX idx_exercise_cache_lookup IS
-'Composite index for fast cache lookups by user context. Expected 10-50x speedup.';
+'Composite index for fast cache lookups by user context hash. Expected 10-50x speedup.';
 
 -- Index for cache cleanup (expired entries)
 -- Improves: Background cleanup jobs that remove expired cache entries
 -- Expected: 10-20x faster cleanup operations
+-- Note: WHERE clause removed for Supabase compatibility (see migration 007)
 CREATE INDEX IF NOT EXISTS idx_exercise_cache_expires
-ON exercise_cache(expires_at)
-WHERE expires_at IS NOT NULL;
+ON exercise_cache(expires_at);
 
 COMMENT ON INDEX idx_exercise_cache_expires IS
-'Partial index for efficient cleanup of expired cache entries.';
+'Index for efficient cleanup of expired cache entries.';
 
 -- ============================================================================
 -- AI ANNOTATIONS INDEXES (Priority 1 - Very High Impact)
@@ -90,9 +90,9 @@ COMMENT ON INDEX idx_batch_job_errors_job IS
 -- 1. Exercise Cache Lookup:
 --    EXPLAIN ANALYZE
 --    SELECT * FROM exercise_cache
---    WHERE user_id = 'some-user-id'
+--    WHERE user_context_hash = 'some-hash'
 --      AND exercise_type = 'visual_discrimination'
---      AND difficulty_level = 2
+--      AND difficulty = 2
 --      AND expires_at > NOW();
 --
 --    Expected: "Index Scan using idx_exercise_cache_lookup"
