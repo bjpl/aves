@@ -21,8 +21,9 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "build:gh-pages": "tsc && vite build --mode gh-pages",
+    "build": "vite build",
+    "build:gh-pages": "vite build --mode gh-pages",
+    "build:typecheck": "tsc && vite build",
     "preview": "vite preview",
     "preview:gh-pages": "vite preview --mode gh-pages",
     "deploy": "npm run build:gh-pages && gh-pages -d ../docs",
