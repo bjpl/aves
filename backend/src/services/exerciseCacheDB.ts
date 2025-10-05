@@ -17,7 +17,7 @@
 import crypto from 'crypto';
 import { Pool } from 'pg';
 import { Exercise, ExerciseType } from '../../../shared/types/exercise.types';
-import { logger } from '../utils/logger';
+import * as logger from '../utils/logger';
 
 // User context for cache key generation
 export interface UserContext {

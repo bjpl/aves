@@ -1,11 +1,11 @@
 /**
- * AI Exercise Generator Service - GPT-4 Integration for Dynamic Exercise Generation
+ * AI Exercise Generator Service - Claude Sonnet 4.5 Integration for Dynamic Exercise Generation
  *
- * Leverages OpenAI's GPT-4 Turbo to generate context-aware, personalized exercises
+ * Leverages Anthropic's Claude Sonnet 4.5 to generate context-aware, personalized exercises
  * for Spanish bird vocabulary learning with intelligent caching and cost optimization.
  */
 
-import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 import { Pool } from 'pg';
 import {
   Exercise,
@@ -46,9 +46,9 @@ interface GenerationStats {
 }
 
 /**
- * Raw response structures from GPT-4
+ * Raw response structures from Claude
  */
-interface GPTContextualFillResponse {
+interface ClaudeContextualFillResponse {
   sentence: string;
   correctAnswer: string;
   options: string[];
@@ -57,7 +57,7 @@ interface GPTContextualFillResponse {
   difficulty: number;
 }
 
-interface GPTTermMatchingResponse {
+interface ClaudeTermMatchingResponse {
   spanishTerms: string[];
   englishTerms: string[];
   correctPairs: { spanish: string; english: string }[];
@@ -65,7 +65,7 @@ interface GPTTermMatchingResponse {
   difficulty: number;
 }
 
-interface GPTImageLabelingResponse {
+interface ClaudeImageLabelingResponse {
   imageUrl: string;
   labels: {
     term: string;
@@ -77,37 +77,37 @@ interface GPTImageLabelingResponse {
 /**
  * AI Exercise Generator Class
  *
- * Generates dynamic, context-aware exercises using GPT-4 Turbo
+ * Generates dynamic, context-aware exercises using Claude Sonnet 4.5
  */
 export class AIExerciseGenerator {
-  private client: OpenAI;
+  private client: Anthropic;
   private config: Required<AIExerciseConfig>;
   private stats: GenerationStats;
 
-  // GPT-4 Turbo pricing (as of 2024)
+  // Claude Sonnet pricing (as of 2025)
   private readonly PRICING = {
-    inputTokenCost: 0.01 / 1000,   // $0.01 per 1K input tokens
-    outputTokenCost: 0.03 / 1000   // $0.03 per 1K output tokens
+    inputTokenCost: 3.00 / 1000000,   // $3.00 per 1M input tokens
+    outputTokenCost: 15.00 / 1000000  // $15.00 per 1M output tokens
   };
 
   constructor(_pool?: Pool, config?: AIExerciseConfig) {
     // _pool parameter kept for future cache integration (unused for now)
     // Merge default config with provided config
     this.config = {
-      apiKey: config?.apiKey || process.env.OPENAI_API_KEY || '',
+      apiKey: config?.apiKey || process.env.ANTHROPIC_API_KEY || '',
       maxRetries: config?.maxRetries ?? 3,
       retryDelay: config?.retryDelay ?? 2000,
-      modelVersion: config?.modelVersion ?? 'gpt-4-turbo',
-      maxTokens: config?.maxTokens ?? 800,
+      modelVersion: config?.modelVersion ?? 'claude-sonnet-4-20250514',
+      maxTokens: config?.maxTokens ?? 2048,
       temperature: config?.temperature ?? 0.7,
       costTrackingEnabled: config?.costTrackingEnabled ?? true
     };
 
     if (!this.config.apiKey) {
-      throw new Error('OpenAI API key is required. Set OPENAI_API_KEY environment variable.');
+      throw new Error('Anthropic API key is required. Set ANTHROPIC_API_KEY environment variable.');
     }
 
-    this.client = new OpenAI({
+    this.client = new Anthropic({
       apiKey: this.config.apiKey
     });
 
@@ -122,7 +122,7 @@ export class AIExerciseGenerator {
       averageCostPerRequest: 0
     };
 
-    logger.info('AI Exercise Generator initialized', {
+    logger.info('AI Exercise Generator initialized with Claude', {
       modelVersion: this.config.modelVersion,
       costTracking: this.config.costTrackingEnabled
     });
@@ -136,7 +136,7 @@ export class AIExerciseGenerator {
    * @returns Generated exercise
    */
   async generateExercise(type: ExerciseType, context: UserContext): Promise<Exercise> {
-    logger.info('Generating AI exercise', { type, userId: context.userId });
+    logger.info('Generating AI exercise with Claude', { type, userId: context.userId });
 
     try {
       let exercise: Exercise;
@@ -162,7 +162,7 @@ export class AIExerciseGenerator {
           exercise = await this.generateContextualFill(context);
       }
 
-      logger.info('Successfully generated AI exercise', {
+      logger.info('Successfully generated AI exercise with Claude', {
         type,
         userId: context.userId,
         exerciseId: exercise.id
@@ -171,7 +171,7 @@ export class AIExerciseGenerator {
       return exercise;
 
     } catch (error) {
-      logger.error('Failed to generate AI exercise', {
+      logger.error('Failed to generate AI exercise with Claude', {
         error: error instanceof Error ? error : { error },
         type,
         userId: context.userId
@@ -188,11 +188,11 @@ export class AIExerciseGenerator {
    */
   async generateContextualFill(context: UserContext): Promise<ContextualFillExercise> {
     const prompt = this.buildContextualFillPrompt(context);
-    const response = await this.callGPTWithRetry(prompt);
-    const parsed = this.parseResponse<GPTContextualFillResponse>(response);
+    const response = await this.callClaudeWithRetry(prompt);
+    const parsed = this.parseResponse<ClaudeContextualFillResponse>(response);
 
     if (!this.validateContextualFillResponse(parsed)) {
-      throw new Error('Invalid contextual fill response from GPT-4');
+      throw new Error('Invalid contextual fill response from Claude');
     }
 
     const exerciseId = this.generateExerciseId('contextual_fill');
@@ -222,11 +222,11 @@ export class AIExerciseGenerator {
    */
   async generateTermMatching(context: UserContext): Promise<TermMatchingExercise> {
     const prompt = this.buildTermMatchingPrompt(context);
-    const response = await this.callGPTWithRetry(prompt);
-    const parsed = this.parseResponse<GPTTermMatchingResponse>(response);
+    const response = await this.callClaudeWithRetry(prompt);
+    const parsed = this.parseResponse<ClaudeTermMatchingResponse>(response);
 
     if (!this.validateTermMatchingResponse(parsed)) {
-      throw new Error('Invalid term matching response from GPT-4');
+      throw new Error('Invalid term matching response from Claude');
     }
 
     const exerciseId = this.generateExerciseId('term_matching');
@@ -290,11 +290,11 @@ export class AIExerciseGenerator {
    */
   async generateImageLabeling(context: UserContext): Promise<ImageLabelingExercise> {
     const prompt = this.buildImageLabelingPrompt(context);
-    const response = await this.callGPTWithRetry(prompt);
-    const parsed = this.parseResponse<GPTImageLabelingResponse>(response);
+    const response = await this.callClaudeWithRetry(prompt);
+    const parsed = this.parseResponse<ClaudeImageLabelingResponse>(response);
 
     if (!this.validateImageLabelingResponse(parsed)) {
-      throw new Error('Invalid image labeling response from GPT-4');
+      throw new Error('Invalid image labeling response from Claude');
     }
 
     const exerciseId = this.generateExerciseId('image_labeling');
@@ -371,7 +371,7 @@ Requirements:
 - Use proper Spanish grammar with accents
 - Difficulty should match user level (${context.level})
 
-Return ONLY valid JSON (no markdown, no code blocks):
+Return ONLY valid JSON:
 {
   "sentence": "El cardenal tiene plumas _____ brillantes.",
   "correctAnswer": "rojas",
@@ -404,7 +404,7 @@ Requirements:
 - Use proper Spanish grammar with articles (el/la)
 - Terms should be thematically related
 
-Return ONLY valid JSON (no markdown, no code blocks):
+Return ONLY valid JSON:
 {
   "spanishTerms": ["el pico", "las alas", "la cola", "las patas", "las plumas"],
   "englishTerms": ["beak", "wings", "tail", "legs", "feathers"],
@@ -439,7 +439,7 @@ Requirements:
 - Focus on clearly visible features
 - Mix familiar and challenging terms
 
-Return ONLY valid JSON (no markdown, no code blocks):
+Return ONLY valid JSON:
 {
   "imageUrl": "/images/birds/cardinal-anatomy.jpg",
   "labels": [
@@ -453,58 +453,64 @@ Return ONLY valid JSON (no markdown, no code blocks):
   }
 
   /**
-   * Call GPT-4 API with retry logic
+   * Call Claude API with retry logic
    */
-  private async callGPTWithRetry(prompt: string): Promise<string> {
+  private async callClaudeWithRetry(prompt: string): Promise<string> {
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= this.config.maxRetries; attempt++) {
       try {
-        logger.debug(`GPT-4 API call attempt ${attempt}/${this.config.maxRetries}`);
+        logger.debug(`Claude API call attempt ${attempt}/${this.config.maxRetries}`);
 
         const startTime = Date.now();
 
-        const response = await this.client.chat.completions.create({
+        const response = await this.client.messages.create({
           model: this.config.modelVersion,
+          max_tokens: this.config.maxTokens,
+          temperature: this.config.temperature,
+          system: 'You are an expert Spanish language tutor. Always respond with valid JSON only, no markdown formatting or code blocks.',
           messages: [
-            {
-              role: 'system',
-              content: 'You are an expert Spanish language tutor. Always respond with valid JSON only, no markdown formatting.'
-            },
             {
               role: 'user',
               content: prompt
             }
-          ],
-          max_tokens: this.config.maxTokens,
-          temperature: this.config.temperature,
-          response_format: { type: 'json_object' }
+          ]
         });
 
-        const content = response.choices[0]?.message?.content;
+        const content = response.content[0];
 
-        if (!content) {
-          throw new Error('Empty response from GPT-4');
+        if (content.type !== 'text') {
+          throw new Error('Unexpected response type from Claude');
+        }
+
+        const textContent = content.text;
+
+        if (!textContent) {
+          throw new Error('Empty response from Claude');
         }
 
         const duration = Date.now() - startTime;
 
         // Track statistics
-        if (this.config.costTrackingEnabled && response.usage) {
-          this.updateStatistics(response.usage, true);
+        if (this.config.costTrackingEnabled) {
+          this.updateStatistics({
+            input_tokens: response.usage.input_tokens,
+            output_tokens: response.usage.output_tokens,
+            total_tokens: response.usage.input_tokens + response.usage.output_tokens
+          }, true);
         }
 
-        logger.debug('GPT-4 API call successful', {
-          tokensUsed: response.usage?.total_tokens,
+        logger.debug('Claude API call successful', {
+          tokensUsed: response.usage.input_tokens + response.usage.output_tokens,
           duration,
           attempt
         });
 
-        return content;
+        return textContent;
 
       } catch (error) {
         lastError = error instanceof Error ? error : new Error('Unknown error');
-        logger.warn(`GPT-4 API call failed (attempt ${attempt}/${this.config.maxRetries})`, {
+        logger.warn(`Claude API call failed (attempt ${attempt}/${this.config.maxRetries})`, {
           error: lastError.message
         });
 
@@ -516,7 +522,8 @@ Return ONLY valid JSON (no markdown, no code blocks):
         // Don't retry on certain errors
         if (error instanceof Error && (
           error.message.includes('API key') ||
-          error.message.includes('rate limit')
+          error.message.includes('rate limit') ||
+          error.message.includes('authentication')
         )) {
           throw error;
         }
@@ -529,11 +536,11 @@ Return ONLY valid JSON (no markdown, no code blocks):
       }
     }
 
-    throw lastError || new Error('Failed to call GPT-4 after all retries');
+    throw lastError || new Error('Failed to call Claude after all retries');
   }
 
   /**
-   * Parse JSON response from GPT-4
+   * Parse JSON response from Claude
    */
   private parseResponse<T>(response: string): T {
     try {
@@ -546,22 +553,28 @@ Return ONLY valid JSON (no markdown, no code blocks):
         cleanResponse = cleanResponse.replace(/```\n?/g, '');
       }
 
+      // Extract JSON if embedded in text
+      const jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        cleanResponse = jsonMatch[0];
+      }
+
       const parsed = JSON.parse(cleanResponse);
       return parsed as T;
 
     } catch (error) {
-      logger.error('Failed to parse GPT-4 response', {
+      logger.error('Failed to parse Claude response', {
         error: error instanceof Error ? error : { error },
         response: response.substring(0, 500)
       });
-      throw new Error('Invalid JSON response from GPT-4');
+      throw new Error('Invalid JSON response from Claude');
     }
   }
 
   /**
    * Validate contextual fill response
    */
-  private validateContextualFillResponse(response: GPTContextualFillResponse): boolean {
+  private validateContextualFillResponse(response: ClaudeContextualFillResponse): boolean {
     if (!response.sentence || !response.correctAnswer || !Array.isArray(response.options)) {
       return false;
     }
@@ -588,7 +601,7 @@ Return ONLY valid JSON (no markdown, no code blocks):
   /**
    * Validate term matching response
    */
-  private validateTermMatchingResponse(response: GPTTermMatchingResponse): boolean {
+  private validateTermMatchingResponse(response: ClaudeTermMatchingResponse): boolean {
     if (!Array.isArray(response.spanishTerms) || !Array.isArray(response.englishTerms)) {
       return false;
     }
@@ -619,7 +632,7 @@ Return ONLY valid JSON (no markdown, no code blocks):
   /**
    * Validate image labeling response
    */
-  private validateImageLabelingResponse(response: GPTImageLabelingResponse): boolean {
+  private validateImageLabelingResponse(response: ClaudeImageLabelingResponse): boolean {
     if (!response.imageUrl || !Array.isArray(response.labels)) {
       return false;
     }
@@ -650,16 +663,16 @@ Return ONLY valid JSON (no markdown, no code blocks):
   /**
    * Update generation statistics
    */
-  private updateStatistics(usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number } | null, success: boolean): void {
+  private updateStatistics(usage: { input_tokens: number; output_tokens: number; total_tokens: number } | null, success: boolean): void {
     this.stats.totalRequests++;
 
     if (success && usage) {
       this.stats.successfulRequests++;
       this.stats.totalTokensUsed += usage.total_tokens;
 
-      // Calculate cost
-      const inputCost = usage.prompt_tokens * this.PRICING.inputTokenCost;
-      const outputCost = usage.completion_tokens * this.PRICING.outputTokenCost;
+      // Calculate cost for Claude
+      const inputCost = usage.input_tokens * this.PRICING.inputTokenCost;
+      const outputCost = usage.output_tokens * this.PRICING.outputTokenCost;
       const requestCost = inputCost + outputCost;
 
       this.stats.totalCost += requestCost;
