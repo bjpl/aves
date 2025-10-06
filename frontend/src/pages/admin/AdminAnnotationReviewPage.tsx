@@ -1,19 +1,21 @@
 /**
  * Admin Annotation Review Page
  *
- * CONCEPT: Human-in-the-loop annotation review interface
+ * CONCEPT: Human-in-the-loop annotation review interface with analytics
  * WHY: Quality control for Claude-generated educational content
- * PATTERN: Infinite scroll with filter/sort, bulk actions
+ * PATTERN: Tabbed interface with review workflow and analytics dashboard
  */
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePendingAnnotations, useApproveAnnotation, useRejectAnnotation, useEditAnnotation } from '../../hooks/useSupabaseAnnotations';
 import { AnnotationReviewCard } from '../../components/admin/AnnotationReviewCard';
+import { AnnotationAnalyticsDashboard } from '../../components/admin/AnnotationAnalyticsDashboard';
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
 
 type FilterType = 'all' | 'pending' | 'approved' | 'rejected' | 'edited';
 type SortType = 'newest' | 'oldest' | 'confidence' | 'difficulty';
+type TabType = 'review' | 'analytics';
 
 export const AdminAnnotationReviewPage: React.FC = () => {
   const { user, loading: authLoading } = useSupabaseAuth();
@@ -25,6 +27,7 @@ export const AdminAnnotationReviewPage: React.FC = () => {
   const [filter, setFilter] = useState<FilterType>('pending');
   const [sort, setSort] = useState<SortType>('newest');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<TabType>('review');
 
   if (authLoading || isLoading) {
     return (
@@ -139,11 +142,40 @@ export const AdminAnnotationReviewPage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Tabs */}
+          <div className="flex gap-4 mt-6 border-b border-gray-200">
+            <button
+              onClick={() => setActiveTab('review')}
+              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                activeTab === 'review'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Review Annotations
+            </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                activeTab === 'analytics'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              📊 Analytics Dashboard
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Filters and Actions */}
+      {/* Tab Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        {activeTab === 'analytics' ? (
+          <AnnotationAnalyticsDashboard targetCount={400} />
+        ) : (
+          <>
+            {/* Filters and Actions */}
         <div className="bg-white rounded-lg shadow p-4 mb-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
             {/* Filters */}
@@ -213,6 +245,8 @@ export const AdminAnnotationReviewPage: React.FC = () => {
               />
             ))}
           </div>
+        )}
+          </>
         )}
       </div>
     </div>
