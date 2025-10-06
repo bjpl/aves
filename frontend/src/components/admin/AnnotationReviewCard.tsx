@@ -1,6 +1,6 @@
 // CONCEPT: Interactive card for reviewing individual AI-generated annotations
 // WHY: Provide admins with a clear UI to review, edit, approve, or reject annotations
-// PATTERN: Controlled form component with optimistic updates
+// PATTERN: Controlled form component with optimistic updates + enhanced QC workflow
 
 import React, { useState } from 'react';
 import { Card, CardHeader, CardBody, CardFooter } from '../ui/Card';
@@ -11,6 +11,9 @@ import { AnnotationCanvas } from '../annotation/AnnotationCanvas';
 import { AIAnnotation } from '../../hooks/useAIAnnotations';
 import { useApproveAnnotation, useRejectAnnotation, useEditAnnotation } from '../../hooks/useAIAnnotations';
 import { Annotation } from '../../types';
+import { EnhancedRejectModal } from './EnhancedRejectModal';
+import { BoundingBoxEditor } from './BoundingBoxEditor';
+import { RejectionCategoryValue } from '../../constants/annotationQuality';
 
 export interface AnnotationReviewCardProps {
   annotation: AIAnnotation;
@@ -35,6 +38,9 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
   });
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectForm, setShowRejectForm] = useState(false);
+  const [showEnhancedReject, setShowEnhancedReject] = useState(false);
+  const [showBboxEditor, setShowBboxEditor] = useState(false);
+  const [editedBbox, setEditedBbox] = useState(annotation.boundingBox);
 
   const approveMutation = useApproveAnnotation();
   const rejectMutation = useRejectAnnotation();
@@ -336,14 +342,24 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
         </div>
 
         {!isEditing && !showRejectForm && (
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={() => setShowRejectForm(true)}
-            disabled={isLoading}
-          >
-            Reject (R)
-          </Button>
+          <>
+            <Button
+              variant="warning"
+              size="sm"
+              onClick={() => setShowBboxEditor(true)}
+              disabled={isLoading}
+            >
+              🎯 Fix Position
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => setShowEnhancedReject(true)}
+              disabled={isLoading}
+            >
+              Reject (R)
+            </Button>
+          </>
         )}
       </CardFooter>
 
@@ -358,6 +374,46 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
             </span>
           </div>
         </div>
+      )}
+
+      {/* Enhanced Rejection Modal */}
+      {showEnhancedReject && (
+        <EnhancedRejectModal
+          annotationLabel={`${annotation.spanishTerm} (${annotation.englishTerm})`}
+          onReject={async (category: RejectionCategoryValue, notes: string) => {
+            try {
+              await rejectMutation.mutateAsync(annotation.id);
+              console.log('Rejected with category:', category, 'Notes:', notes);
+              // TODO: Store category and notes in database
+              setShowEnhancedReject(false);
+              onActionComplete?.();
+            } catch (error) {
+              console.error('Rejection failed:', error);
+            }
+          }}
+          onCancel={() => setShowEnhancedReject(false)}
+        />
+      )}
+
+      {/* Bounding Box Editor Modal */}
+      {showBboxEditor && (
+        <BoundingBoxEditor
+          imageUrl={imageUrl}
+          initialBox={annotation.boundingBox}
+          label={annotation.spanishTerm}
+          onSave={async (newBox) => {
+            try {
+              setEditedBbox(newBox);
+              // TODO: Update bounding box in database
+              console.log('Updated bounding box:', newBox);
+              setShowBboxEditor(false);
+              // Optionally auto-approve after fixing position
+            } catch (error) {
+              console.error('Failed to update bounding box:', error);
+            }
+          }}
+          onCancel={() => setShowBboxEditor(false)}
+        />
       )}
     </Card>
   );
