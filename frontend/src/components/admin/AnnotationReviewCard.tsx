@@ -138,13 +138,34 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
           {/* Image Preview with Annotation */}
           <div className="space-y-2">
             <h4 className="text-sm font-semibold text-gray-700">Image Preview</h4>
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <AnnotationCanvas
-                imageUrl={imageUrl}
-                annotations={[annotation]}
-                interactive={false}
-                showLabels={true}
-              />
+            <div className="border border-gray-200 rounded-lg overflow-hidden relative bg-gray-900">
+              <div className="relative w-full" style={{ paddingTop: '75%' }}>
+                {/* Bird Image */}
+                <img
+                  src={imageUrl}
+                  alt={annotation.englishTerm}
+                  crossOrigin="anonymous"
+                  className="absolute inset-0 w-full h-full object-contain"
+                />
+                {/* Yellow Bounding Box Overlay */}
+                {annotation.boundingBox && annotation.boundingBox.topLeft && (
+                  <div
+                    className="absolute border-4 border-yellow-400 bg-yellow-400 bg-opacity-10 pointer-events-none"
+                    style={{
+                      left: `${annotation.boundingBox.topLeft.x * 100}%`,
+                      top: `${annotation.boundingBox.topLeft.y * 100}%`,
+                      width: `${annotation.boundingBox.width * 100}%`,
+                      height: `${annotation.boundingBox.height * 100}%`,
+                      boxShadow: 'inset 0 0 0 2px rgba(250, 204, 21, 0.6), 0 0 20px rgba(250, 204, 21, 0.4)',
+                    }}
+                  >
+                    {/* Spanish Term Label */}
+                    <div className="absolute -top-8 left-0 bg-yellow-400 text-yellow-900 px-3 py-1 rounded-md text-sm font-bold shadow-lg whitespace-nowrap">
+                      {annotation.spanishTerm}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
