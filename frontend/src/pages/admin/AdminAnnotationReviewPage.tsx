@@ -7,6 +7,7 @@
  */
 
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { usePendingAnnotations, useApproveAnnotation, useRejectAnnotation, useEditAnnotation } from '../../hooks/useSupabaseAnnotations';
 import { AnnotationReviewCard } from '../../components/admin/AnnotationReviewCard';
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
@@ -42,12 +43,12 @@ export const AdminAnnotationReviewPage: React.FC = () => {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h2>
           <p className="text-gray-600 mb-4">Please sign in to access the admin panel.</p>
-          <a
-            href="/login"
+          <Link
+            to="/login"
             className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md"
           >
             Sign In
-          </a>
+          </Link>
         </div>
       </div>
     );
