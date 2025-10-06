@@ -97,10 +97,13 @@ export const usePendingAnnotations = () => {
         images?.map(img => [img.id, img.url]) || []
       );
 
-      // Enrich annotations with image URLs
+      // Enrich annotations with image URLs and parse bounding_box JSON
       const enrichedAnnotations = annotations?.map(annotation => ({
         ...annotation,
         imageUrl: imageUrlMap.get(annotation.image_id) || '',
+        bounding_box: typeof annotation.bounding_box === 'string'
+          ? JSON.parse(annotation.bounding_box)
+          : annotation.bounding_box,
       })) || [];
 
       info('Pending annotations fetched with image URLs', { count: enrichedAnnotations.length });
