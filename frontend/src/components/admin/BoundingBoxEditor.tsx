@@ -111,6 +111,8 @@ export const BoundingBoxEditor: React.FC<BoundingBoxEditorProps> = ({
   const handleSave = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    console.log('🔧 BoundingBoxEditor - handleSave called');
+    console.log('🔧 BoundingBoxEditor - Current box:', box);
     onSave(box);
   };
 
@@ -262,7 +264,10 @@ export const BoundingBoxEditor: React.FC<BoundingBoxEditorProps> = ({
           </button>
           <button
             type="button"
-            onClick={handleSave}
+            onClick={(e) => {
+              console.log('🔧 Save button clicked');
+              handleSave(e);
+            }}
             className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md transition-colors shadow-md"
           >
             💾 Save & Apply
