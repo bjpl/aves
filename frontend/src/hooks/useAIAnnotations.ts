@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Annotation } from '../types';
 import { queryKeys } from '../config/queryClient';
 import { error as logError } from '../utils/logger';
-import axios from 'axios';
+import { api as axios } from '../config/axios';
 
 /**
  * Status of AI-generated annotations
