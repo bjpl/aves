@@ -29,9 +29,14 @@ class ApiAdapter {
   private useClientStorage: boolean;
 
   constructor() {
-    this.useClientStorage = isGitHubPages || !isLocalDev;
+    // IMPORTANT: Admin features ALWAYS need backend, even on GitHub Pages
+    // Client storage is only for public-facing learning/practice features
+    const forceBackendMode = window.location.pathname.includes('/admin');
 
-    if (!this.useClientStorage) {
+    this.useClientStorage = isGitHubPages && !forceBackendMode;
+
+    // Always create axios instance with proper baseURL for admin features
+    if (!this.useClientStorage || forceBackendMode) {
       // Configure axios for backend API
       // Safe access to import.meta.env with fallback
       const env = import.meta.env as Record<string, unknown> | undefined;
@@ -47,6 +52,13 @@ class ApiAdapter {
 
       // Add request/response interceptors
       this.setupInterceptors();
+    }
+
+    // Configure global axios defaults for hooks that use axios directly
+    const env = import.meta.env as Record<string, unknown> | undefined;
+    const apiUrl = env?.VITE_API_URL as string | undefined;
+    if (apiUrl && (forceBackendMode || !isGitHubPages)) {
+      axios.defaults.baseURL = apiUrl;
     }
   }
 
