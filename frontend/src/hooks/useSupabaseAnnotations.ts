@@ -97,14 +97,31 @@ export const usePendingAnnotations = () => {
         images?.map(img => [img.id, img.url]) || []
       );
 
-      // Enrich annotations with image URLs and parse bounding_box JSON
-      const enrichedAnnotations = annotations?.map(annotation => ({
-        ...annotation,
-        imageUrl: imageUrlMap.get(annotation.image_id) || '',
-        bounding_box: typeof annotation.bounding_box === 'string'
+      // Enrich annotations with image URLs and transform bounding_box structure
+      const enrichedAnnotations = annotations?.map(annotation => {
+        // Parse bounding_box if it's a string
+        let bbox = typeof annotation.bounding_box === 'string'
           ? JSON.parse(annotation.bounding_box)
-          : annotation.bounding_box,
-      })) || [];
+          : annotation.bounding_box;
+
+        // Transform from {x, y, width, height} to {topLeft, bottomRight, width, height}
+        // This matches the expected Annotation interface
+        if (bbox && bbox.x !== undefined && !bbox.topLeft) {
+          bbox = {
+            topLeft: { x: bbox.x, y: bbox.y },
+            bottomRight: { x: bbox.x + bbox.width, y: bbox.y + bbox.height },
+            width: bbox.width,
+            height: bbox.height
+          };
+        }
+
+        return {
+          ...annotation,
+          imageUrl: imageUrlMap.get(annotation.image_id) || '',
+          boundingBox: bbox, // Use camelCase to match component
+          bounding_box: bbox, // Keep snake_case for compatibility
+        };
+      }) || [];
 
       info('Pending annotations fetched with image URLs', { count: enrichedAnnotations.length });
 
