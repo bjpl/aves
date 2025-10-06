@@ -298,71 +298,75 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
         </div>
       </CardBody>
 
-      <CardFooter align="between">
-        <div className="flex gap-2">
-          {isEditing ? (
-            <>
+      <CardFooter>
+        <div className="flex items-center justify-between w-full gap-4">
+          {/* Left: Primary Actions */}
+          <div className="flex gap-2">
+            {isEditing ? (
+              <>
+                <Button
+                  variant="success"
+                  size="sm"
+                  onClick={handleEdit}
+                  isLoading={editMutation.isPending}
+                  disabled={isLoading}
+                >
+                  Save & Approve
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelEdit}
+                  disabled={isLoading}
+                >
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="success"
+                  size="sm"
+                  onClick={handleApprove}
+                  isLoading={approveMutation.isPending}
+                  disabled={isLoading}
+                >
+                  Approve (A)
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsEditing(true)}
+                  disabled={isLoading}
+                >
+                  Edit
+                </Button>
+              </>
+            )}
+          </div>
+
+          {/* Right: Fix Position & Reject */}
+          {!isEditing && !showRejectForm && (
+            <div className="flex gap-2">
               <Button
-                variant="success"
+                variant="warning"
                 size="sm"
-                onClick={handleEdit}
-                isLoading={editMutation.isPending}
+                onClick={() => setShowBboxEditor(true)}
                 disabled={isLoading}
               >
-                Save & Approve
+                🎯 Fix Position
               </Button>
               <Button
-                variant="ghost"
+                variant="danger"
                 size="sm"
-                onClick={handleCancelEdit}
+                onClick={() => setShowEnhancedReject(true)}
                 disabled={isLoading}
               >
-                Cancel
+                Reject (R)
               </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                variant="success"
-                size="sm"
-                onClick={handleApprove}
-                isLoading={approveMutation.isPending}
-                disabled={isLoading}
-              >
-                Approve (A)
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setIsEditing(true)}
-                disabled={isLoading}
-              >
-                Edit
-              </Button>
-            </>
+            </div>
           )}
         </div>
-
-        {!isEditing && !showRejectForm && (
-          <>
-            <Button
-              variant="warning"
-              size="sm"
-              onClick={() => setShowBboxEditor(true)}
-              disabled={isLoading}
-            >
-              🎯 Fix Position
-            </Button>
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() => setShowEnhancedReject(true)}
-              disabled={isLoading}
-            >
-              Reject (R)
-            </Button>
-          </>
-        )}
       </CardFooter>
 
       {/* Visual Feedback on Success */}

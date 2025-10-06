@@ -217,6 +217,10 @@ export const useRejectAnnotation = () => {
 
 /**
  * Hook: Update AI annotation WITHOUT approving (keeps it in review queue)
+ *
+ * PATTERN: Optimistic update with rollback
+ * WHY: Provide instant UI feedback when editing bounding boxes or annotation data
+ * HOW: Update cache immediately, rollback on error, refetch on success
  */
 export const useUpdateAnnotation = () => {
   const queryClient = useQueryClient();
@@ -235,12 +239,37 @@ export const useUpdateAnnotation = () => {
       );
       return response.data;
     },
+    // OPTIMISTIC UPDATE: Apply changes to UI immediately
+    onMutate: async ({ annotationId, updates }) => {
+      // Cancel outgoing refetches to avoid race conditions
+      await queryClient.cancelQueries({ queryKey: aiAnnotationKeys.all });
+
+      // Snapshot previous state for rollback
+      const previousData = queryClient.getQueryData<AIAnnotation[]>(aiAnnotationKeys.pending());
+
+      // Optimistically update the annotation in cache
+      if (previousData) {
+        queryClient.setQueryData<AIAnnotation[]>(
+          aiAnnotationKeys.pending(),
+          previousData.map((a) =>
+            a.id === annotationId ? { ...a, ...updates } : a
+          )
+        );
+      }
+
+      return { previousData };
+    },
+    // ROLLBACK: Restore previous state if API fails
+    onError: (error, _variables, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(aiAnnotationKeys.pending(), context.previousData);
+      }
+      logError('Error updating annotation', error instanceof Error ? error : new Error(String(error)));
+    },
+    // REFETCH: Get fresh data from server on success
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: aiAnnotationKeys.all });
       queryClient.invalidateQueries({ queryKey: aiAnnotationKeys.stats() });
-    },
-    onError: (error) => {
-      logError('Error updating annotation', error instanceof Error ? error : new Error(String(error)));
     },
   });
 };
