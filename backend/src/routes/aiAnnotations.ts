@@ -52,8 +52,13 @@ const ApproveAnnotationSchema = z.object({
 });
 
 const RejectAnnotationSchema = z.object({
-  reason: z.string().min(1).max(500)
-});
+  category: z.string().optional(), // Rejection category (technical, pedagogical, etc.)
+  notes: z.string().max(500).optional(), // Additional notes
+  reason: z.string().min(1).max(500).optional() // Legacy field for backwards compatibility
+}).refine(
+  (data) => data.category || data.reason || data.notes,
+  { message: "At least one of category, reason, or notes must be provided" }
+);
 
 const EditAnnotationSchema = z.object({
   spanishTerm: z.string().min(1).max(200).optional(),
@@ -511,8 +516,13 @@ router.post(
       await client.query('BEGIN');
 
       const { annotationId } = req.params;
-      const { reason } = req.body;
+      const { category, notes, reason } = req.body;
       const userId = req.user!.userId;
+
+      // Combine category and notes for storage (backwards compatible with reason)
+      const rejectionMessage = category
+        ? `[${category}] ${notes || ''}`.trim()
+        : (reason || notes || 'No reason provided');
 
       // Get job_id for review record
       const itemQuery = 'SELECT job_id FROM ai_annotation_items WHERE id = $1';
@@ -534,11 +544,12 @@ router.post(
         [annotationId]
       );
 
-      // Record review action
+      // Record review action with category embedded in notes
+      // Format: "[category] notes" or just "notes" if no category
       await client.query(
         `INSERT INTO ai_annotation_reviews (job_id, reviewer_id, action, affected_items, notes)
          VALUES ($1, $2, 'reject', 1, $3)`,
-        [jobId, userId, reason]
+        [jobId, userId, rejectionMessage]
       );
 
       await client.query('COMMIT');
@@ -554,6 +565,130 @@ router.post(
       await client.query('ROLLBACK');
       logError('Error rejecting annotation', err as Error);
       res.status(500).json({ error: 'Failed to reject annotation' });
+    } finally {
+      client.release();
+    }
+  }
+);
+
+/**
+ * PATCH /api/ai/annotations/:annotationId
+ * Update AI annotation WITHOUT approving (keeps it in review queue)
+ *
+ * @auth Admin only
+ *
+ * Request body:
+ * {
+ *   "boundingBox": { "topLeft": {...}, "bottomRight": {...}, "width": ..., "height": ... }
+ * }
+ *
+ * Response:
+ * {
+ *   "message": "Annotation updated successfully",
+ *   "annotationId": "550e8400-e29b-41d4-a716-446655440000"
+ * }
+ */
+router.patch(
+  '/ai/annotations/:annotationId',
+  authenticateToken,
+  requireAdmin,
+  validateParams(AnnotationIdParamSchema),
+  validateBody(EditAnnotationSchema),
+  async (req: Request, res: Response): Promise<void> => {
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      const { annotationId } = req.params;
+      const updates = req.body;
+
+      info('🔧 PATCH /ai/annotations - Received update request', {
+        annotationId,
+        updates,
+        hasUser: !!req.user
+      });
+
+      // Update ai_annotation_items WITHOUT changing status
+      const updateFields: string[] = [];
+      const updateValues: any[] = [];
+      let paramIndex = 1;
+
+      if (updates.spanishTerm) {
+        updateFields.push(`spanish_term = $${paramIndex++}`);
+        updateValues.push(updates.spanishTerm);
+      }
+      if (updates.englishTerm) {
+        updateFields.push(`english_term = $${paramIndex++}`);
+        updateValues.push(updates.englishTerm);
+      }
+      if (updates.boundingBox) {
+        // Convert backend format { x, y, width, height } to storage format { topLeft, bottomRight, width, height }
+        const bbox = updates.boundingBox;
+        const storageFormat = {
+          topLeft: { x: bbox.x, y: bbox.y },
+          bottomRight: { x: bbox.x + bbox.width, y: bbox.y + bbox.height },
+          width: bbox.width,
+          height: bbox.height
+        };
+        updateFields.push(`bounding_box = $${paramIndex++}`);
+        updateValues.push(JSON.stringify(storageFormat));
+      }
+      if (updates.pronunciation !== undefined) {
+        updateFields.push(`pronunciation = $${paramIndex++}`);
+        updateValues.push(updates.pronunciation);
+      }
+      if (updates.difficultyLevel) {
+        updateFields.push(`difficulty_level = $${paramIndex++}`);
+        updateValues.push(updates.difficultyLevel);
+      }
+
+      if (updateFields.length === 0) {
+        await client.query('ROLLBACK');
+        res.status(400).json({ error: 'No valid updates provided' });
+        return;
+      }
+
+      updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
+      updateValues.push(annotationId);
+
+      const updateQuery = `
+        UPDATE ai_annotation_items
+        SET ${updateFields.join(', ')}
+        WHERE id = $${paramIndex} AND status = 'pending'
+        RETURNING id
+      `;
+
+      info('🔧 PATCH /ai/annotations - Executing query', {
+        query: updateQuery,
+        values: updateValues
+      });
+
+      const result = await client.query(updateQuery, updateValues);
+
+      if (result.rows.length === 0) {
+        await client.query('ROLLBACK');
+        logError('Annotation not found or already processed', new Error(`ID: ${annotationId}`));
+        res.status(404).json({ error: 'Annotation not found or already processed' });
+        return;
+      }
+
+      await client.query('COMMIT');
+
+      info('🔧 PATCH /ai/annotations - Update successful', {
+        annotationId,
+        updatedFields: updateFields
+      });
+
+      res.json({
+        message: 'Annotation updated successfully',
+        annotationId
+      });
+
+    } catch (err) {
+      await client.query('ROLLBACK');
+      logError('Error updating annotation', err as Error);
+      res.status(500).json({ error: 'Failed to update annotation' });
     } finally {
       client.release();
     }

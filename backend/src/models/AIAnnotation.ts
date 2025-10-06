@@ -66,7 +66,9 @@ export interface ApproveAnnotationRequest {
 }
 
 export interface RejectAnnotationRequest {
-  reason: string;
+  category?: string; // Rejection category from REJECTION_CATEGORIES
+  notes?: string; // Additional reviewer notes
+  reason?: string; // Legacy field (deprecated, use category + notes)
 }
 
 export interface EditAnnotationRequest {

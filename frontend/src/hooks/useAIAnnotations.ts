@@ -173,14 +173,18 @@ export const useRejectAnnotation = () => {
   return useMutation({
     mutationFn: async ({
       annotationId,
+      category,
+      notes,
       reason,
     }: {
       annotationId: string;
+      category?: string;
+      notes?: string;
       reason?: string;
     }): Promise<AIAnnotation> => {
       const response = await axios.post<{ data: AIAnnotation }>(
         `/api/annotations/ai/${annotationId}/reject`,
-        { reason }
+        { category, notes, reason }
       );
       return response.data.data;
     },
@@ -212,7 +216,37 @@ export const useRejectAnnotation = () => {
 };
 
 /**
- * Hook: Edit and approve an AI annotation
+ * Hook: Update AI annotation WITHOUT approving (keeps it in review queue)
+ */
+export const useUpdateAnnotation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      annotationId,
+      updates,
+    }: {
+      annotationId: string;
+      updates: Partial<Annotation>;
+    }): Promise<{ message: string; annotationId: string }> => {
+      const response = await axios.patch<{ message: string; annotationId: string }>(
+        `/api/annotations/ai/${annotationId}`,
+        updates
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: aiAnnotationKeys.all });
+      queryClient.invalidateQueries({ queryKey: aiAnnotationKeys.stats() });
+    },
+    onError: (error) => {
+      logError('Error updating annotation', error instanceof Error ? error : new Error(String(error)));
+    },
+  });
+};
+
+/**
+ * Hook: Edit and approve an AI annotation (moves to production)
  */
 export const useEditAnnotation = () => {
   const queryClient = useQueryClient();
@@ -225,8 +259,8 @@ export const useEditAnnotation = () => {
       annotationId: string;
       updates: Partial<Annotation>;
     }): Promise<AIAnnotation> => {
-      const response = await axios.patch<{ data: AIAnnotation }>(
-        `/api/annotations/ai/${annotationId}`,
+      const response = await axios.post<{ data: AIAnnotation }>(
+        `/api/annotations/ai/${annotationId}/edit`,
         updates
       );
       return response.data.data;

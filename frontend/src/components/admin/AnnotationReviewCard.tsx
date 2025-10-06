@@ -9,11 +9,12 @@ import { Badge } from '../ui/Badge';
 import { Input } from '../ui/Input';
 import { AnnotationCanvas } from '../annotation/AnnotationCanvas';
 import { AIAnnotation } from '../../hooks/useAIAnnotations';
-import { useApproveAnnotation, useRejectAnnotation, useEditAnnotation } from '../../hooks/useAIAnnotations';
+import { useApproveAnnotation, useRejectAnnotation, useEditAnnotation, useUpdateAnnotation } from '../../hooks/useAIAnnotations';
 import { Annotation } from '../../types';
 import { EnhancedRejectModal } from './EnhancedRejectModal';
 import { BoundingBoxEditor } from './BoundingBoxEditor';
 import { RejectionCategoryValue } from '../../constants/annotationQuality';
+import { toEditorFormat, toBackendFormat } from '../../utils/boundingBoxConverter';
 
 export interface AnnotationReviewCardProps {
   annotation: AIAnnotation;
@@ -45,6 +46,7 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
   const approveMutation = useApproveAnnotation();
   const rejectMutation = useRejectAnnotation();
   const editMutation = useEditAnnotation();
+  const updateMutation = useUpdateAnnotation();
 
   const handleApprove = async () => {
     try {
@@ -91,7 +93,7 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
     });
   };
 
-  const isLoading = approveMutation.isPending || rejectMutation.isPending || editMutation.isPending;
+  const isLoading = approveMutation.isPending || rejectMutation.isPending || editMutation.isPending || updateMutation.isPending;
 
   const getConfidenceBadgeVariant = (score?: number) => {
     if (!score) return 'default';
@@ -382,9 +384,11 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
           annotationLabel={`${annotation.spanishTerm} (${annotation.englishTerm})`}
           onReject={async (category: RejectionCategoryValue, notes: string) => {
             try {
-              await rejectMutation.mutateAsync(annotation.id);
-              console.log('Rejected with category:', category, 'Notes:', notes);
-              // TODO: Store category and notes in database
+              await rejectMutation.mutateAsync({
+                annotationId: annotation.id,
+                category,
+                notes
+              });
               setShowEnhancedReject(false);
               onActionComplete?.();
             } catch (error) {
@@ -399,17 +403,32 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
       {showBboxEditor && (
         <BoundingBoxEditor
           imageUrl={imageUrl}
-          initialBox={annotation.boundingBox}
+          initialBox={toEditorFormat(annotation.boundingBox)}
           label={annotation.spanishTerm}
           onSave={async (newBox) => {
             try {
+              console.log('🔧 BBOX Editor - New box from editor:', newBox);
+
+              // Convert from editor format to backend format
+              const backendFormat = toBackendFormat(newBox);
+              console.log('🔧 BBOX Editor - Converted to backend format:', backendFormat);
+
+              console.log('🔧 BBOX Editor - Sending PATCH to annotation:', annotation.id);
+
+              // Update bounding box WITHOUT approving (keeps in review queue)
+              const result = await updateMutation.mutateAsync({
+                annotationId: annotation.id,
+                updates: { boundingBox: backendFormat }
+              });
+
+              console.log('🔧 BBOX Editor - Update result:', result);
+
               setEditedBbox(newBox);
-              // TODO: Update bounding box in database
-              console.log('Updated bounding box:', newBox);
               setShowBboxEditor(false);
-              // Optionally auto-approve after fixing position
+              onActionComplete?.();
             } catch (error) {
-              console.error('Failed to update bounding box:', error);
+              console.error('❌ Failed to update bounding box:', error);
+              console.error('Error details:', error);
             }
           }}
           onCancel={() => setShowBboxEditor(false)}
