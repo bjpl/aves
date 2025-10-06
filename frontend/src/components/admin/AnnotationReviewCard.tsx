@@ -1,8 +1,8 @@
 // CONCEPT: Interactive card for reviewing individual AI-generated annotations
 // WHY: Provide admins with a clear UI to review, edit, approve, or reject annotations
-// PATTERN: Controlled form component with optimistic updates + enhanced QC workflow
+// PATTERN: Controlled form component with optimistic updates + enhanced QC workflow + keyboard shortcuts
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardBody, CardFooter } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
@@ -95,12 +95,94 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
 
   const isLoading = approveMutation.isPending || rejectMutation.isPending || editMutation.isPending || updateMutation.isPending;
 
+  // KEYBOARD SHORTCUTS: Accelerate review workflow
+  // WHY: Speed up annotation review from ~30 sec to ~10 sec per annotation
+  // PATTERN: Global keyboard listener with input field detection
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in input fields
+      const target = e.target as HTMLElement;
+      const isInputField = target.tagName === 'INPUT' ||
+                          target.tagName === 'TEXTAREA' ||
+                          target.isContentEditable;
+
+      if (isInputField && e.key !== 'Escape') return;
+
+      // Don't trigger if already performing an action
+      if (isLoading) return;
+
+      const key = e.key.toLowerCase();
+
+      switch (key) {
+        case 'a':
+          if (!isEditing && !showRejectForm && !showEnhancedReject && !showBboxEditor) {
+            e.preventDefault();
+            handleApprove();
+          }
+          break;
+
+        case 'r':
+          if (!isEditing && !showRejectForm && !showEnhancedReject && !showBboxEditor) {
+            e.preventDefault();
+            setShowEnhancedReject(true);
+          }
+          break;
+
+        case 'e':
+          if (!isEditing && !showRejectForm && !showEnhancedReject && !showBboxEditor) {
+            e.preventDefault();
+            setIsEditing(true);
+          }
+          break;
+
+        case 'f':
+          if (!isEditing && !showRejectForm && !showEnhancedReject && !showBboxEditor) {
+            e.preventDefault();
+            setShowBboxEditor(true);
+          }
+          break;
+
+        case 'escape':
+          e.preventDefault();
+          // Close any open modals/forms
+          setShowEnhancedReject(false);
+          setShowBboxEditor(false);
+          setShowRejectForm(false);
+          if (isEditing) {
+            handleCancelEdit();
+          }
+          break;
+      }
+    };
+
+    // Attach listener
+    window.addEventListener('keydown', handleKeyPress);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [isEditing, showRejectForm, showEnhancedReject, showBboxEditor, isLoading]);
+
   const getConfidenceBadgeVariant = (score?: number) => {
     if (!score) return 'default';
     if (score >= 0.8) return 'success';
     if (score >= 0.6) return 'warning';
     return 'danger';
   };
+
+  // AUTOMATED QUALITY FLAGS
+  // WHY: Help reviewers quickly identify problematic annotations
+  // PATTERN: Calculate quality metrics and show visual warnings
+  const getBoundingBoxArea = () => {
+    const bbox = annotation.boundingBox;
+    if (!bbox || !bbox.width || !bbox.height) return 0;
+    return bbox.width * bbox.height; // Normalized area (0-1)
+  };
+
+  const isBboxTooSmall = getBoundingBoxArea() < 0.02; // <2% of image
+  const isConfidenceLow = (annotation.confidenceScore ?? 1) < 0.70; // <70%
+  const hasQualityIssues = isBboxTooSmall || isConfidenceLow;
 
   return (
     <Card variant="elevated" className="mb-4">
@@ -125,7 +207,7 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {annotation.confidenceScore !== undefined && (
               <Badge
                 variant={getConfidenceBadgeVariant(annotation.confidenceScore)}
@@ -137,6 +219,18 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
             <Badge variant="info" size="sm">
               Difficulty: {annotation.difficultyLevel}
             </Badge>
+
+            {/* QUALITY WARNING BADGES */}
+            {isBboxTooSmall && (
+              <Badge variant="warning" size="sm">
+                ⚠️ Too Small ({(getBoundingBoxArea() * 100).toFixed(1)}%)
+              </Badge>
+            )}
+            {isConfidenceLow && (
+              <Badge variant="danger" size="sm">
+                ⚠️ Low Confidence
+              </Badge>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -246,9 +340,11 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
             )}
 
             {/* Bounding Box Info */}
-            <div className="bg-blue-50 rounded-lg p-3">
-              <h5 className="text-xs font-semibold text-blue-900 mb-2">Bounding Box (Normalized 0-1)</h5>
-              <div className="grid grid-cols-2 gap-2 text-xs text-blue-800 font-mono">
+            <div className={`rounded-lg p-3 ${hasQualityIssues ? 'bg-yellow-50 border-2 border-yellow-300' : 'bg-blue-50'}`}>
+              <h5 className={`text-xs font-semibold mb-2 ${hasQualityIssues ? 'text-yellow-900' : 'text-blue-900'}`}>
+                Bounding Box (Normalized 0-1)
+              </h5>
+              <div className={`grid grid-cols-2 gap-2 text-xs font-mono ${hasQualityIssues ? 'text-yellow-800' : 'text-blue-800'}`}>
                 <div>
                   X: {annotation.boundingBox.topLeft.x.toFixed(2)}, Y:{' '}
                   {annotation.boundingBox.topLeft.y.toFixed(2)}
@@ -258,6 +354,21 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
                   {annotation.boundingBox.height.toFixed(2)}
                 </div>
               </div>
+
+              {/* Quality Issue Suggestions */}
+              {hasQualityIssues && (
+                <div className="mt-2 pt-2 border-t border-yellow-300">
+                  <p className="text-xs text-yellow-900 font-semibold mb-1">💡 Suggested Action:</p>
+                  <ul className="text-xs text-yellow-800 space-y-1">
+                    {isBboxTooSmall && (
+                      <li>• Consider rejecting: "Too Small (&lt;2% of image)"</li>
+                    )}
+                    {isConfidenceLow && (
+                      <li>• Review carefully: AI confidence below 70%</li>
+                    )}
+                  </ul>
+                </div>
+              )}
             </div>
 
             {/* Rejection Form */}
@@ -339,7 +450,7 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
                   onClick={() => setIsEditing(true)}
                   disabled={isLoading}
                 >
-                  Edit
+                  Edit (E)
                 </Button>
               </>
             )}
@@ -354,7 +465,7 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
                 onClick={() => setShowBboxEditor(true)}
                 disabled={isLoading}
               >
-                🎯 Fix Position
+                🎯 Fix Position (F)
               </Button>
               <Button
                 variant="danger"
