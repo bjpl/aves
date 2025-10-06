@@ -108,13 +108,26 @@ export const BoundingBoxEditor: React.FC<BoundingBoxEditorProps> = ({
     setBox(initialBox);
   };
 
-  const handleSave = () => {
+  const handleSave = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     onSave(box);
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-auto">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+      onClick={(e) => {
+        // Close modal if clicking backdrop
+        if (e.target === e.currentTarget) {
+          onCancel();
+        }
+      }}
+    >
+      <div
+        className="bg-white rounded-lg shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="bg-gray-800 text-white px-6 py-4 rounded-t-lg">
           <h3 className="text-xl font-bold">Adjust Bounding Box - {label}</h3>
@@ -233,19 +246,22 @@ export const BoundingBoxEditor: React.FC<BoundingBoxEditorProps> = ({
         {/* Actions */}
         <div className="bg-gray-50 px-6 py-4 rounded-b-lg flex gap-3">
           <button
-            onClick={handleReset}
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleReset(); }}
             className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-md transition-colors"
           >
             ↺ Reset to Original
           </button>
           <div className="flex-1"></div>
           <button
-            onClick={onCancel}
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCancel(); }}
             className="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-md transition-colors"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={handleSave}
             className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md transition-colors shadow-md"
           >
