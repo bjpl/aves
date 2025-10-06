@@ -97,7 +97,7 @@ export const usePendingAnnotations = () => {
         images?.map(img => [img.id, img.url]) || []
       );
 
-      // Enrich annotations with image URLs and transform bounding_box structure
+      // Enrich annotations with image URLs and transform to match AIAnnotation interface
       const enrichedAnnotations = annotations?.map(annotation => {
         // Parse bounding_box if it's a string
         let bbox = typeof annotation.bounding_box === 'string'
@@ -115,11 +115,22 @@ export const usePendingAnnotations = () => {
           };
         }
 
+        // Transform snake_case to camelCase to match existing component interface
         return {
-          ...annotation,
+          id: annotation.id,
+          imageId: annotation.image_id,
+          spanishTerm: annotation.spanish_term, // camelCase for component
+          englishTerm: annotation.english_term, // camelCase for component
+          boundingBox: bbox,
+          type: annotation.annotation_type,
+          difficultyLevel: annotation.difficulty_level,
+          pronunciation: annotation.pronunciation,
+          confidenceScore: parseFloat(annotation.confidence.toString()),
+          status: annotation.status,
+          isVisible: annotation.status === 'approved',
+          createdAt: new Date(annotation.created_at),
+          updatedAt: new Date(annotation.created_at),
           imageUrl: imageUrlMap.get(annotation.image_id) || '',
-          boundingBox: bbox, // Use camelCase to match component
-          bounding_box: bbox, // Keep snake_case for compatibility
         };
       }) || [];
 
