@@ -116,7 +116,7 @@ export const usePendingAnnotations = () => {
         }
 
         // Transform snake_case to camelCase to match existing component interface
-        return {
+        const transformed = {
           id: annotation.id,
           imageId: annotation.image_id,
           spanishTerm: annotation.spanish_term, // camelCase for component
@@ -132,9 +132,22 @@ export const usePendingAnnotations = () => {
           updatedAt: new Date(annotation.created_at),
           imageUrl: imageUrlMap.get(annotation.image_id) || '',
         };
+
+        // Debug logging to console
+        console.log('✅ Annotation transformed:', {
+          spanish: annotation.spanish_term + ' → ' + transformed.spanishTerm,
+          bbox_raw: annotation.bounding_box,
+          bbox_transformed: transformed.boundingBox,
+          has_topLeft: !!transformed.boundingBox?.topLeft,
+          has_width: transformed.boundingBox?.width,
+          has_height: transformed.boundingBox?.height
+        });
+
+        return transformed;
       }) || [];
 
       info('Pending annotations fetched with image URLs', { count: enrichedAnnotations.length });
+      console.log('Final enriched annotations sample:', enrichedAnnotations[0]);
 
       return enrichedAnnotations;
     },

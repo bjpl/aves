@@ -218,15 +218,15 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
 
             {/* Bounding Box Info */}
             <div className="bg-blue-50 rounded-lg p-3">
-              <h5 className="text-xs font-semibold text-blue-900 mb-2">Bounding Box</h5>
-              <div className="grid grid-cols-2 gap-2 text-xs text-blue-800">
+              <h5 className="text-xs font-semibold text-blue-900 mb-2">Bounding Box (Normalized 0-1)</h5>
+              <div className="grid grid-cols-2 gap-2 text-xs text-blue-800 font-mono">
                 <div>
-                  X: {annotation.boundingBox.topLeft.x.toFixed(0)}, Y:{' '}
-                  {annotation.boundingBox.topLeft.y.toFixed(0)}
+                  X: {annotation.boundingBox.topLeft.x.toFixed(2)}, Y:{' '}
+                  {annotation.boundingBox.topLeft.y.toFixed(2)}
                 </div>
                 <div>
-                  W: {annotation.boundingBox.width.toFixed(0)}, H:{' '}
-                  {annotation.boundingBox.height.toFixed(0)}
+                  W: {annotation.boundingBox.width.toFixed(2)}, H:{' '}
+                  {annotation.boundingBox.height.toFixed(2)}
                 </div>
               </div>
             </div>
