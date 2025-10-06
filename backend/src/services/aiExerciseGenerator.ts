@@ -15,7 +15,7 @@ import {
   ContextualFillExercise,
   ImageLabelingExercise,
   VisualIdentificationExercise
-} from '../../../shared/types/exercise.types';
+} from '../types/exercise.types';
 import { UserContext } from './userContextBuilder';
 import * as logger from '../utils/logger';
 

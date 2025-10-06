@@ -4,7 +4,7 @@
 
 import { Pool } from 'pg';
 import crypto from 'crypto';
-import { ExerciseType } from '../../../shared/types/exercise.types';
+import { ExerciseType } from '../types/exercise.types';
 
 /**
  * User skill level classification

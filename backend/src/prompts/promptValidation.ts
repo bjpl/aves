@@ -3,7 +3,7 @@
  * Validates GPT-4 generated exercise content for quality and correctness
  */
 
-import { ExerciseType } from '../../../shared/types/exercise.types';
+import { ExerciseType } from '../types/exercise.types';
 
 export interface ValidationResult {
   valid: boolean;

@@ -6,7 +6,7 @@
  * Cost: ~$0.003 per exercise generation with GPT-4 Turbo
  */
 
-import { ExerciseType } from '../../../shared/types/exercise.types';
+import { ExerciseType } from '../types/exercise.types';
 
 export interface UserContext {
   level: 'beginner' | 'intermediate' | 'advanced';

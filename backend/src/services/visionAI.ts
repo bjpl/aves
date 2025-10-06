@@ -8,7 +8,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { Pool } from 'pg';
-import { Annotation, BoundingBox, AnnotationType } from '../../../shared/types/annotation.types';
+import { Annotation, BoundingBox, AnnotationType } from '../types/annotation.types';
 import * as logger from '../utils/logger';
 
 /**

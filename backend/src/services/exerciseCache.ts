@@ -6,7 +6,7 @@
  */
 
 import { info, warn } from '../utils/logger';
-import { ExerciseType } from '../../../shared/types/exercise.types';
+import { ExerciseType } from '../types/exercise.types';
 
 export interface GeneratedExercise {
   type: ExerciseType;

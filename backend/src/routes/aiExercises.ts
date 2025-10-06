@@ -11,7 +11,7 @@ import { authenticateToken } from '../middleware/auth';
 import { requireAdmin } from '../middleware/adminAuth';
 import { validateBody, validateParams } from '../middleware/validate';
 import { error as logError, info } from '../utils/logger';
-import { ExerciseType } from '../../../shared/types/exercise.types';
+import { ExerciseType } from '../types/exercise.types';
 
 const router = Router();
 

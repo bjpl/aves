@@ -1,4 +1,4 @@
-import { RateLimitConfig, RateLimiterState } from '../../../shared/types/batch.types';
+import { RateLimitConfig, RateLimiterState } from '../types/batch.types';
 import { info, warn } from '../utils/logger';
 
 /**

@@ -6,7 +6,7 @@ import {
   BatchImageResult,
   BatchJobProgress,
   BatchJobError
-} from '../../../shared/types/batch.types';
+} from '../types/batch.types';
 import { info, warn, error as logError } from '../utils/logger';
 
 interface ProcessingContext {
