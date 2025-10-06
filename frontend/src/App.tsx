@@ -14,7 +14,9 @@ function App() {
   // PATTERN: Hardcoded basename for GitHub Pages deployment
   // WHY: GitHub Pages serves from /aves/ subdirectory
   // CONCEPT: Explicit path ensures consistent routing behavior
-  const basename = '/aves/';
+  // Use /aves/ basename for GitHub Pages, / for local dev
+  const isGitHubPages = window.location.hostname.includes('github.io');
+  const basename = isGitHubPages ? '/aves/' : '/';
 
   return (
     <Router basename={basename}>
