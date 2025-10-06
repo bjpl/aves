@@ -1,6 +1,6 @@
 # Daily Development Reports - Aves Project
 
-## 📅 Report Index - Last 21 Days (Sept 15 - Oct 5, 2025)
+## 📅 Report Index - Last 28 Days (Sept 8 - Oct 5, 2025)
 
 ### **Sprint 2: Deployment & Quality Control (Oct 2-5, 2025)**
 
@@ -38,18 +38,32 @@
 |------|--------|---------|------------------|
 | **Sep 15** | [Initial App Development](./2025-09-15-initial-app-development.md) | 🔥🔥🔥🔥🔥 | 27 commits, App launched! |
 
+### **Pre-Project Phase (Sept 8-14, 2025)**
+
+| Date | Report | Activity | Notes |
+|------|--------|---------|-------|
+| Sep 14 | [Pre-Project](./2025-09-14-pre-project.md) | 🌱 | Project not yet created |
+| Sep 13 | [Pre-Project](./2025-09-13-pre-project.md) | 🌱 | Project not yet created |
+| Sep 12 | [Pre-Project](./2025-09-12-pre-project.md) | 🌱 | Project not yet created |
+| Sep 11 | [Pre-Project](./2025-09-11-pre-project.md) | 🌱 | Project not yet created |
+| Sep 10 | [Pre-Project](./2025-09-10-pre-project.md) | 🌱 | Project not yet created |
+| Sep 9 | [Pre-Project](./2025-09-09-pre-project.md) | 🌱 | Project not yet created |
+| Sep 8 | [Pre-Project](./2025-09-08-pre-project.md) | 🌱 | Project not yet created |
+
 ---
 
-## 📊 21-Day Summary (Sept 15 - Oct 5, 2025)
+## 📊 28-Day Summary (Sept 8 - Oct 5, 2025)
 
 ### **Total Output:**
 ```
 ╔═══════════════════════════════════════════╗
-║      21-DAY DEVELOPMENT SUMMARY            ║
+║      28-DAY PERIOD (FULL PROJECT HISTORY)  ║
 ╠═══════════════════════════════════════════╣
 ║  Total Commits:               60           ║
+║  Project Age:            21 days           ║
 ║  Active Development Days:      5           ║
 ║  Planning/Rest Days:          16           ║
+║  Pre-Project Days:             7           ║
 ║                                           ║
 ║  Lines Added:           ~78,000            ║
 ║  Lines Removed:          ~4,000            ║
@@ -58,22 +72,27 @@
 ║  New Files Created:         ~200           ║
 ║  Test Files:                  69           ║
 ║  Documentation:               30           ║
+║  Daily Reports:               29           ║
 ╚═══════════════════════════════════════════╝
 ```
 
 ### **Productivity Breakdown:**
 ```
+Sep 8-14:    0 lines  (Pre-project ideation)
 Sep 15:  ~8,000 lines  (10% of total) 🚀 Launch
-Planning: 14 days      (0% code, 100% strategy)
+Sep 16-Oct 1: 0 lines  (Planning: 16 days)
 Oct 2:   30,355 lines  (39% of total) 🏗️ Backend
 Oct 3:   16,390 lines  (21% of total) 🧪 Testing
 Oct 4:      448 lines  (<1% of total) 📝 Docs
 Oct 5:      995 lines  (1% of total)  🚀 Deploy
 
 Peak Days:
-├── Sep 15: 27 commits (Launch)
-├── Oct 2: 30K lines (Backend)
-└── Oct 5: 28 commits (Deployment)
+├── Sep 15: 27 commits (Project launch!)
+├── Oct 2: 30K lines (Backend infrastructure)
+└── Oct 5: 28 commits (Cloud deployment)
+
+Development Efficiency:
+└── 74,000 lines in 5 days = 14,800 lines/active day!
 ```
 
 ---
