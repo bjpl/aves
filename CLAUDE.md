@@ -178,6 +178,99 @@
 
 ---
 
+## 🚨 CRITICAL PROJECT RULES (Inherited from Parent Config)
+
+### ⚡ CONCURRENT EXECUTION MANDATE
+
+**ABSOLUTE RULES:**
+1. ALL operations MUST be concurrent/parallel in a single message
+2. **NEVER save working files, text/mds and tests to the root folder**
+3. ALWAYS organize files in appropriate subdirectories
+4. **USE CLAUDE CODE'S TASK TOOL** for spawning agents concurrently, not just MCP
+
+### **GOLDEN RULE: "1 MESSAGE = ALL RELATED OPERATIONS"**
+
+**MANDATORY PATTERNS:**
+- **TodoWrite**: ALWAYS batch ALL todos in ONE call (5-10+ todos minimum)
+- **Task tool (Claude Code)**: ALWAYS spawn ALL agents in ONE message with full instructions
+- **File operations**: ALWAYS batch ALL reads/writes/edits in ONE message
+- **Bash commands**: ALWAYS batch ALL terminal operations in ONE message
+- **Memory operations**: ALWAYS batch ALL memory store/retrieve in ONE message
+
+**Example - Correct Pattern:**
+```javascript
+// ✅ CORRECT: Single message with all related operations
+[Single Message]:
+  Task("Research agent", "Analyze requirements...", "researcher")
+  Task("Coder agent", "Implement features...", "coder")
+  Task("Tester agent", "Write tests...", "tester")
+
+  TodoWrite { todos: [...8-10 todos...] }
+
+  Write "src/component.tsx"
+  Write "tests/component.test.tsx"
+  Bash "npm run build && npm test"
+```
+
+**Example - Wrong Pattern:**
+```javascript
+// ❌ WRONG: Multiple messages for related operations
+Message 1: Task("agent 1")
+Message 2: TodoWrite { todos: [1 todo] }
+Message 3: Write "file.tsx"
+Message 4: Bash "npm test"
+```
+
+---
+
+### 📁 **FILE ORGANIZATION RULES**
+
+**NEVER save to root folder. Use these directories:**
+- `/src` - Source code files
+- `/tests` - Test files
+- `/docs` - Documentation and markdown files
+- `/config` - Configuration files
+- `/scripts` - Utility scripts
+- `/backend` - Backend source code
+- `/frontend` - Frontend source code
+- `/daily_reports` - Daily development reports
+
+**Examples:**
+```
+✅ CORRECT:
+docs/DEPLOYMENT_GUIDE.md
+docs/ANNOTATION_REVIEW_GUIDE.md
+daily_reports/2025-10-06-workflow-optimization-analytics.md
+
+❌ WRONG:
+DEPLOYMENT_GUIDE.md (root)
+README.md (unless main project readme)
+notes.txt (root)
+```
+
+---
+
+### 🎯 **CLAUDE CODE TASK TOOL USAGE**
+
+**Task tool is the PRIMARY way to spawn agents:**
+- Use for actual agent execution and work
+- Each agent runs with full autonomy
+- Agents can use hooks for coordination
+
+**MCP tools are ONLY for coordination setup:**
+- `mcp__claude-flow__swarm_init` - Initialize topology
+- `mcp__claude-flow__agent_spawn` - Define agent types
+- `mcp__claude-flow__task_orchestrate` - High-level planning
+
+**Pattern:**
+```
+Step 1 (Optional): MCP tools set up coordination
+Step 2 (Required): Task tool spawns agents that do work
+Step 3 (Required): Agents use hooks for communication
+```
+
+---
+
 ## 🌐 Flow Nexus Cloud Platform
 
 Flow Nexus extends Claude Flow with cloud-powered features for AI development and deployment.
