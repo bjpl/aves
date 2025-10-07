@@ -6,16 +6,16 @@ PORT=3001
 NODE_ENV=production
 
 # Supabase
-SUPABASE_URL=https://ubqnfiwxghkxltluyczd.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVicW5maXd4Z2hreGx0bHV5Y3pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NTA1NTAsImV4cCI6MjA3NTIyNjU1MH0.GNEjJ_ralYnpIeUVnDSpF64WSlPK-Z_69wIdAgwRj0U
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVicW5maXd4Z2hreGx0bHV5Y3pkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTY1MDU1MCwiZXhwIjoyMDc1MjI2NTUwfQ.385WSN4_WsQgWQau5VS_jXOjf1dTDQwcwDi6RSQiroU
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 # Database (Supabase)
-DATABASE_URL=postgresql://postgres:ymS5gBm9Wz9q1P11@db.ubqnfiwxghkxltluyczd.supabase.co:5432/postgres
+DATABASE_URL=your_supabase_database_connection_string
 
 # Claude AI
-ANTHROPIC_API_KEY=sk-ant-api03-_lKPcJaUmy4ofDY2BQNSHs76B0v5qneIBeko5cx26-oDTktOCejdXFQl-uEoUG3r_JkTCC2FWEp9iRVaO7MCTg--FXXc6wAA
-ANTHROPIC_MODEL=claude-sonnet-4-20250514
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+ANTHROPIC_MODEL=claude-sonnet-4-5-20250629
 ENABLE_VISION_AI=true
 VISION_PROVIDER=claude
 
@@ -23,8 +23,8 @@ VISION_PROVIDER=claude
 ALLOWED_ORIGINS=https://bjpl.github.io
 
 # Unsplash (optional)
-UNSPLASH_ACCESS_KEY=eSjXJ5k6vbf2APMbdCXGqcFIeSIy8stFN4sp3zgFjk8
+UNSPLASH_ACCESS_KEY=your_unsplash_access_key
 
 # JWT
-JWT_SECRET=290d3903773734282eaf8870aa1de666b6c6c8999953bfa9fbde15b1e4d7584f
+JWT_SECRET=your_jwt_secret_key_min_32_characters
 JWT_EXPIRES_IN=24h

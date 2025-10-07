@@ -73,7 +73,7 @@ export class VisionAIService {
       const imageData = await this.fetchImageAsBase64(imageUrl);
 
       const response = await this.client.messages.create({
-        model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
+        model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5-20250629',
         max_tokens: 4096,
         temperature: 0.3,
         messages: [
