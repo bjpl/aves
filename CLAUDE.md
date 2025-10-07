@@ -271,6 +271,134 @@ Step 3 (Required): Agents use hooks for communication
 
 ---
 
+### 📋 **RULE INTERPRETATIONS & CLARIFICATIONS**
+
+#### TodoWrite Batching Policy
+**Rule:** "ALWAYS batch ALL todos in ONE call (5-10+ todos minimum)"
+
+**Interpretation:**
+- **Initial Creation:** MUST start with 8-10+ todo items
+- **Status Updates:** Can update incrementally (mark items complete as you finish)
+- **Adding New Tasks:** Batch additions when discovering multiple related tasks
+
+**Examples:**
+```javascript
+// ✅ COMPLIANT: Initial todo creation
+TodoWrite { todos: [
+  {content: "Fix critical bug", status: "in_progress", activeForm: "Fixing..."},
+  {content: "Add keyboard shortcuts", status: "pending", activeForm: "Adding..."},
+  {content: "Implement quality flags", status: "pending", activeForm: "Implementing..."},
+  {content: "Build analytics API", status: "pending", activeForm: "Building..."},
+  {content: "Create dashboard UI", status: "pending", activeForm: "Creating..."},
+  {content: "Deploy to Railway", status: "pending", activeForm: "Deploying..."},
+  {content: "Write documentation", status: "pending", activeForm: "Writing..."},
+  {content: "Update daily report", status: "pending", activeForm: "Updating..."}
+]}  // 8 items - compliant
+
+// ✅ ACCEPTABLE: Incremental status updates
+TodoWrite { todos: [
+  {..., status: "completed"},  // Just completed task 1
+  {..., status: "in_progress"} // Just started task 2
+]}
+
+// ❌ NON-COMPLIANT: Creating only 2-3 todos
+TodoWrite { todos: [
+  {content: "Do task", status: "pending"},
+  {content: "Test task", status: "pending"}
+]}  // Only 2 items - violates 5-10+ minimum
+```
+
+#### Concurrent Operations Policy
+**Rule:** "ALL operations MUST be concurrent/parallel in a single message"
+
+**Interpretation:**
+- **Related operations:** MUST be in same message (e.g., all file reads for a feature)
+- **Independent operations:** MUST be batched in parallel
+- **Dependent operations:** Can be sequential with `&&` in Bash
+
+**When to batch in single message:**
+```javascript
+// ✅ All reads for same analysis
+Read "file1.ts"
+Read "file2.ts"
+Read "file3.ts"
+
+// ✅ All writes for same feature
+Write "component.tsx"
+Write "component.test.tsx"
+Write "component.styles.css"
+
+// ✅ Multiple independent Bash commands
+Bash "npm run build"
+Bash "npm run test"
+Bash "git status"
+```
+
+**When sequential is acceptable:**
+```bash
+# ✅ Dependent commands can use &&
+Bash "npm run build && npm test && git add ."
+```
+
+---
+
+### 🎯 **PRIORITY HIERARCHY**
+
+When rules conflict or are ambiguous, follow this precedence:
+
+**1. HIGHEST: Mandatory Instructions [1-25]**
+- Universal principles (communication, security, testing)
+- Override all other rules
+- Apply to all development work
+
+**2. HIGH: Critical Project Rules**
+- Specific implementation patterns (batching, file organization)
+- Must follow unless conflicts with Mandatory
+- Project-specific operational guidelines
+
+**3. REFERENCE: Platform Documentation**
+- Optional features (Flow Nexus, SPARC, agents)
+- Use when relevant to current task
+- Reference material, not mandatory
+
+**Resolution Process:**
+1. Check if Mandatory instruction addresses it (precedence)
+2. Apply Critical Project Rule if no conflict
+3. Use professional judgment (MANDATORY-2, MANDATORY-5)
+4. Ask for clarification if genuinely ambiguous (MANDATORY-5)
+
+---
+
+### 📊 **COMPLIANCE CHECKLIST**
+
+Use this for self-assessment during development:
+
+**File Organization:**
+- [ ] No files saved to root folder (except package.json, README.md, etc.)
+- [ ] All docs in `/docs` subdirectory
+- [ ] All reports in `/daily_reports` subdirectory
+- [ ] Source code in `/src`, `/backend`, or `/frontend`
+
+**Concurrent Execution:**
+- [ ] Related file reads batched in single message
+- [ ] Related file writes batched in single message
+- [ ] Independent operations called in parallel
+- [ ] TodoWrite starts with 8-10+ items
+
+**Version Control:**
+- [ ] Commits made after each significant change
+- [ ] Commit messages follow What/Why/How/Impact format
+- [ ] No secrets committed to repository
+- [ ] Changes pushed to remote regularly
+
+**Quality:**
+- [ ] Code builds without errors before committing
+- [ ] Tests run (if applicable)
+- [ ] Documentation updated with changes
+- [ ] Error handling implemented
+
+---
+
 ## 🌐 Flow Nexus Cloud Platform
 
 Flow Nexus extends Claude Flow with cloud-powered features for AI development and deployment.
