@@ -21,6 +21,7 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1'
   },
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
+  globalTeardown: '<rootDir>/src/__tests__/globalTeardown.ts',
   transformIgnorePatterns: [
     'node_modules/(?!(uuid)/)'
   ],

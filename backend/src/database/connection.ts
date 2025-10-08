@@ -41,7 +41,7 @@ export const pool = new Pool({
   query_timeout: parseInt(process.env.DB_QUERY_TIMEOUT || '10000'), // 10 seconds
 
   // Connection Management
-  allowExitOnIdle: false,
+  allowExitOnIdle: process.env.DB_ALLOW_EXIT_ON_IDLE === 'true',
 });
 
 // ============================================================================

@@ -5,6 +5,9 @@
 process.env.NODE_ENV = 'test';
 process.env.PORT = '3001';
 
+// Allow database pool to exit on idle for faster test cleanup
+process.env.DB_ALLOW_EXIT_ON_IDLE = 'true';
+
 // Mock console methods to reduce noise in test output (optional)
 // Uncomment if you want to suppress console output in tests
 /*
