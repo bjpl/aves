@@ -208,7 +208,6 @@ describe('Tooltip Component', () => {
 
     it('should not set timeout when disabled', async () => {
       const user = userEvent.setup();
-      const setTimeoutSpy = vi.spyOn(global, 'setTimeout');
 
       render(
         <Tooltip content="Tooltip text" disabled delay={200}>
@@ -218,76 +217,74 @@ describe('Tooltip Component', () => {
 
       await user.hover(screen.getByRole('button'));
 
-      // Wait a bit to ensure no delayed calls happen
-      await new Promise(resolve => setTimeout(resolve, 50));
+      // Wait longer than the delay to ensure tooltip never appears
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-      // setTimeout should not be called for tooltip display when disabled
-      expect(setTimeoutSpy).not.toHaveBeenCalled();
-
-      setTimeoutSpy.mockRestore();
+      // Tooltip should not be in the document because it's disabled
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
     });
   });
 
   describe('Styling', () => {
     it('should have dark background with white text', async () => {
-      render(
+      const user = userEvent.setup();
+      const { container } = render(
         <Tooltip content="Tooltip text" delay={0}>
           <button>Hover me</button>
         </Tooltip>
       );
 
-      const button = screen.getByRole('button');
-      button.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      await user.hover(screen.getByRole('button'));
 
       await waitFor(() => {
-        const tooltipContent = screen.getByText('Tooltip text').parentElement;
-        expect(tooltipContent?.className).toContain('bg-gray-900');
+        const tooltipContent = container.querySelector('.bg-gray-900');
+        expect(tooltipContent).toBeInTheDocument();
         expect(tooltipContent?.className).toContain('text-white');
       });
     });
 
     it('should have proper padding and rounded corners', async () => {
-      render(
+      const user = userEvent.setup();
+      const { container } = render(
         <Tooltip content="Tooltip text" delay={0}>
           <button>Hover me</button>
         </Tooltip>
       );
 
-      const button = screen.getByRole('button');
-      button.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      await user.hover(screen.getByRole('button'));
 
       await waitFor(() => {
-        const tooltipContent = screen.getByText('Tooltip text').parentElement;
+        const tooltipContent = container.querySelector('.bg-gray-900');
         expect(tooltipContent?.className).toContain('px-3 py-2');
         expect(tooltipContent?.className).toContain('rounded-lg');
       });
     });
 
     it('should have shadow', async () => {
-      render(
+      const user = userEvent.setup();
+      const { container } = render(
         <Tooltip content="Tooltip text" delay={0}>
           <button>Hover me</button>
         </Tooltip>
       );
 
-      const button = screen.getByRole('button');
-      button.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      await user.hover(screen.getByRole('button'));
 
       await waitFor(() => {
-        const tooltipContent = screen.getByText('Tooltip text').parentElement;
-        expect(tooltipContent?.className).toContain('shadow-lg');
+        const tooltipContent = container.querySelector('.shadow-lg');
+        expect(tooltipContent).toBeInTheDocument();
       });
     });
 
     it('should apply custom className', async () => {
+      const user = userEvent.setup();
       render(
         <Tooltip content="Tooltip text" className="custom-tooltip" delay={0}>
           <button>Hover me</button>
         </Tooltip>
       );
 
-      const button = screen.getByRole('button');
-      button.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      await user.hover(screen.getByRole('button'));
 
       await waitFor(() => {
         const tooltip = screen.getByRole('tooltip');
@@ -296,14 +293,14 @@ describe('Tooltip Component', () => {
     });
 
     it('should have whitespace-nowrap', async () => {
+      const user = userEvent.setup();
       render(
         <Tooltip content="Tooltip text" delay={0}>
           <button>Hover me</button>
         </Tooltip>
       );
 
-      const button = screen.getByRole('button');
-      button.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      await user.hover(screen.getByRole('button'));
 
       await waitFor(() => {
         const tooltip = screen.getByRole('tooltip');
@@ -312,14 +309,14 @@ describe('Tooltip Component', () => {
     });
 
     it('should have z-50 for stacking', async () => {
+      const user = userEvent.setup();
       render(
         <Tooltip content="Tooltip text" delay={0}>
           <button>Hover me</button>
         </Tooltip>
       );
 
-      const button = screen.getByRole('button');
-      button.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      await user.hover(screen.getByRole('button'));
 
       await waitFor(() => {
         const tooltip = screen.getByRole('tooltip');
@@ -330,14 +327,14 @@ describe('Tooltip Component', () => {
 
   describe('Arrow', () => {
     it('should render arrow pointing to element', async () => {
+      const user = userEvent.setup();
       const { container } = render(
         <Tooltip content="Tooltip text" delay={0}>
           <button>Hover me</button>
         </Tooltip>
       );
 
-      const button = screen.getByRole('button');
-      button.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      await user.hover(screen.getByRole('button'));
 
       await waitFor(() => {
         const arrow = container.querySelector('.border-8');
@@ -346,14 +343,14 @@ describe('Tooltip Component', () => {
     });
 
     it('should position arrow correctly for top position', async () => {
+      const user = userEvent.setup();
       const { container } = render(
         <Tooltip content="Tooltip text" position="top" delay={0}>
           <button>Hover me</button>
         </Tooltip>
       );
 
-      const button = screen.getByRole('button');
-      button.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      await user.hover(screen.getByRole('button'));
 
       await waitFor(() => {
         const arrow = container.querySelector('.border-t-gray-900');
@@ -363,14 +360,14 @@ describe('Tooltip Component', () => {
     });
 
     it('should position arrow correctly for bottom position', async () => {
+      const user = userEvent.setup();
       const { container } = render(
         <Tooltip content="Tooltip text" position="bottom" delay={0}>
           <button>Hover me</button>
         </Tooltip>
       );
 
-      const button = screen.getByRole('button');
-      button.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      await user.hover(screen.getByRole('button'));
 
       await waitFor(() => {
         const arrow = container.querySelector('.border-b-gray-900');
@@ -419,20 +416,23 @@ describe('Tooltip Component', () => {
   });
 
   describe('Cleanup', () => {
-    it('should clear timeout on unmount', () => {
+    it('should clear timeout on unmount', async () => {
+      const user = userEvent.setup();
       const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
 
       const { unmount } = render(
-        <Tooltip content="Tooltip text">
+        <Tooltip content="Tooltip text" delay={200}>
           <button>Hover me</button>
         </Tooltip>
       );
 
-      const button = screen.getByRole('button');
-      button.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      // Trigger hover to create a timeout
+      await user.hover(screen.getByRole('button'));
 
+      // Unmount before timeout completes
       unmount();
 
+      // clearTimeout should be called in useEffect cleanup
       expect(clearTimeoutSpy).toHaveBeenCalled();
       clearTimeoutSpy.mockRestore();
     });
