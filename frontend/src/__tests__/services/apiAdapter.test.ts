@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import axios from 'axios';
-import { apiAdapter } from '../../services/apiAdapter';
+import type { ApiAdapter } from '../../services/apiAdapter';
 import { clientDataService } from '../../services/clientDataService';
 import type {
   Annotation,
@@ -19,6 +19,9 @@ import { NetworkError } from '../../types/error.types';
 vi.mock('axios');
 vi.mock('../../services/clientDataService');
 vi.mock('../../utils/logger');
+
+// Dynamic import to load apiAdapter AFTER mocks are set up
+let apiAdapter: InstanceType<typeof ApiAdapter>;
 
 describe('ApiAdapter - Backend Mode', () => {
   const mockAxiosInstance = {
@@ -42,20 +45,43 @@ describe('ApiAdapter - Backend Mode', () => {
     }
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    vi.resetModules(); // Reset module cache to allow reimport
+
     // Mock axios.create to return our mock instance
     vi.mocked(axios.create).mockReturnValue(mockAxiosInstance as any);
-    vi.mocked(axios.isAxiosError).mockReturnValue(true);
+    // Make axios.isAxiosError recognize our mock errors
+    vi.mocked(axios.isAxiosError).mockImplementation((error: any) => {
+      return error && (error.response !== undefined || error.isAxiosError === true);
+    });
 
     // Mock window.location for backend mode
     Object.defineProperty(window, 'location', {
       value: {
         hostname: 'localhost',
-        href: 'http://localhost:5173'
+        href: 'http://localhost:5173',
+        pathname: '/'
       },
-      writable: true
+      writable: true,
+      configurable: true
     });
+
+    // Mock sessionStorage
+    Object.defineProperty(global, 'sessionStorage', {
+      value: {
+        getItem: vi.fn(),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+        clear: vi.fn()
+      },
+      writable: true,
+      configurable: true
+    });
+
+    // Dynamically import apiAdapter AFTER mocks are set up
+    const module = await import('../../services/apiAdapter');
+    apiAdapter = module.apiAdapter;
   });
 
   afterEach(() => {
@@ -615,17 +641,36 @@ describe('ApiAdapter - Backend Mode', () => {
 });
 
 describe('ApiAdapter - Client Mode', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    vi.resetModules();
 
     // Mock window.location for GitHub Pages
     Object.defineProperty(window, 'location', {
       value: {
         hostname: 'username.github.io',
-        href: 'https://username.github.io/aves/'
+        href: 'https://username.github.io/aves/',
+        pathname: '/aves/'
       },
-      writable: true
+      writable: true,
+      configurable: true
     });
+
+    // Mock sessionStorage
+    Object.defineProperty(global, 'sessionStorage', {
+      value: {
+        getItem: vi.fn(),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+        clear: vi.fn()
+      },
+      writable: true,
+      configurable: true
+    });
+
+    // Dynamically import apiAdapter AFTER mocks are set up
+    const module = await import('../../services/apiAdapter');
+    apiAdapter = module.apiAdapter;
   });
 
   it('should use client storage in GitHub Pages mode', () => {
@@ -657,8 +702,32 @@ describe('ApiAdapter - Client Mode', () => {
 });
 
 describe('ApiAdapter - Mode Switching', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    vi.resetModules();
+
+    // Mock window.location for backend mode
+    Object.defineProperty(window, 'location', {
+      value: {
+        hostname: 'localhost',
+        href: 'http://localhost:5173',
+        pathname: '/'
+      },
+      writable: true,
+      configurable: true
+    });
+
+    // Mock sessionStorage
+    Object.defineProperty(global, 'sessionStorage', {
+      value: {
+        getItem: vi.fn(),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+        clear: vi.fn()
+      },
+      writable: true,
+      configurable: true
+    });
   });
 
   it('should switch to client mode on 503 error', async () => {
@@ -676,6 +745,13 @@ describe('ApiAdapter - Mode Switching', () => {
     };
 
     vi.mocked(axios.create).mockReturnValue(mockInstance as any);
+
+    // Mock import.meta.env
+    vi.stubEnv('VITE_API_URL', 'http://localhost:3001');
+
+    // Dynamically import apiAdapter AFTER mock is set up
+    const module = await import('../../services/apiAdapter');
+    const adapter = module.apiAdapter;
 
     // The interceptor should handle 503 and switch modes
     expect(mockInstance.interceptors.response.use).toHaveBeenCalled();
