@@ -83,6 +83,7 @@ export class AIExerciseGenerator {
   private client: Anthropic;
   private config: Required<AIExerciseConfig>;
   private stats: GenerationStats;
+  private _pool?: Pool;
 
   // Claude Sonnet pricing (as of 2025)
   private readonly PRICING = {
@@ -91,7 +92,8 @@ export class AIExerciseGenerator {
   };
 
   constructor(_pool?: Pool, config?: AIExerciseConfig) {
-    // _pool parameter kept for future cache integration (unused for now)
+    // Store pool for database queries (used in visual discrimination)
+    this._pool = _pool;
     // Merge default config with provided config
     this.config = {
       apiKey: config?.apiKey || process.env.ANTHROPIC_API_KEY || '',
@@ -254,32 +256,170 @@ export class AIExerciseGenerator {
    * @returns Visual discrimination exercise
    */
   async generateVisualDiscrimination(context: UserContext): Promise<VisualDiscriminationExercise> {
-    // For visual discrimination, we need actual bird images from the database
-    // This method would typically query the database for suitable images
-    // For now, we'll generate the structure with placeholder data
-
     const exerciseId = this.generateExerciseId('visual_discrimination');
 
-    // TODO: Query database for bird species images based on context
-    // For demonstration, using placeholder structure
-    return {
-      id: exerciseId,
-      type: 'visual_discrimination',
-      targetTerm: 'cardenal',
-      options: [
-        { id: 'opt1', imageUrl: '/images/cardinal.jpg', species: 'cardinal' },
-        { id: 'opt2', imageUrl: '/images/bluebird.jpg', species: 'bluebird' },
-        { id: 'opt3', imageUrl: '/images/robin.jpg', species: 'robin' },
-        { id: 'opt4', imageUrl: '/images/sparrow.jpg', species: 'sparrow' }
-      ],
-      correctOptionId: 'opt1',
-      instructions: 'Select the image that matches the Spanish term: cardenal',
-      metadata: {
-        difficulty: context.difficulty,
-        generatedAt: new Date().toISOString(),
-        userLevel: context.level
+    try {
+      // Query database for bird species images based on user context
+      const targetSpecies = await this.selectTargetSpecies(context);
+      const distractorSpecies = await this.selectDistractorSpecies(targetSpecies, 3, context);
+
+      // Combine target and distractors
+      const allSpecies = [targetSpecies, ...distractorSpecies];
+
+      // Shuffle options (Fisher-Yates shuffle)
+      for (let i = allSpecies.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [allSpecies[i], allSpecies[j]] = [allSpecies[j], allSpecies[i]];
       }
+
+      // Build options array
+      const options = allSpecies.map((species, index) => ({
+        id: `opt${index + 1}`,
+        imageUrl: species.imageUrl,
+        species: species.commonNameEnglish
+      }));
+
+      // Find correct option ID
+      const correctOptionId = options.find(opt => opt.species === targetSpecies.commonNameEnglish)?.id || 'opt1';
+
+      return {
+        id: exerciseId,
+        type: 'visual_discrimination',
+        targetTerm: targetSpecies.commonNameSpanish,
+        options,
+        correctOptionId,
+        instructions: `Selecciona la imagen que coincide con el término en español: ${targetSpecies.commonNameSpanish}`,
+        metadata: {
+          difficulty: context.difficulty,
+          generatedAt: new Date().toISOString(),
+          userLevel: context.level,
+          targetSpeciesId: targetSpecies.id,
+          scientificName: targetSpecies.scientificName
+        }
+      };
+    } catch (error) {
+      logger.error('Failed to generate visual discrimination exercise from database', {
+        error: error instanceof Error ? error : { error },
+        userId: context.userId
+      });
+
+      // Fallback to hardcoded placeholder if database query fails
+      return {
+        id: exerciseId,
+        type: 'visual_discrimination',
+        targetTerm: 'cardenal',
+        options: [
+          { id: 'opt1', imageUrl: '/images/placeholder/cardinal.jpg', species: 'cardinal' },
+          { id: 'opt2', imageUrl: '/images/placeholder/bluebird.jpg', species: 'bluebird' },
+          { id: 'opt3', imageUrl: '/images/placeholder/robin.jpg', species: 'robin' },
+          { id: 'opt4', imageUrl: '/images/placeholder/sparrow.jpg', species: 'sparrow' }
+        ],
+        correctOptionId: 'opt1',
+        instructions: 'Select the image that matches the Spanish term: cardenal',
+        metadata: {
+          difficulty: context.difficulty,
+          generatedAt: new Date().toISOString(),
+          userLevel: context.level,
+          fallback: true
+        }
+      };
+    }
+  }
+
+  /**
+   * Select target species for visual discrimination based on user context
+   * Prioritizes weak topics, then new topics, then random
+   */
+  private async selectTargetSpecies(context: UserContext): Promise<any> {
+    const pool = this._pool;
+
+    if (!pool) {
+      throw new Error('Database pool not available');
+    }
+
+    let query: string;
+    let params: any[];
+
+    // Try weak topics first
+    if (context.weakTopics.length > 0) {
+      query = `
+        SELECT DISTINCT s.id, s.scientific_name, s.common_name_spanish, s.common_name_english, i.image_url
+        FROM species s
+        JOIN images i ON s.id = i.species_id
+        WHERE s.common_name_spanish = ANY($1)
+        ORDER BY RANDOM()
+        LIMIT 1
+      `;
+      params = [context.weakTopics];
+    }
+    // Try new topics
+    else if (context.newTopics.length > 0) {
+      query = `
+        SELECT DISTINCT s.id, s.scientific_name, s.common_name_spanish, s.common_name_english, i.image_url
+        FROM species s
+        JOIN images i ON s.id = i.species_id
+        WHERE s.common_name_spanish = ANY($1)
+        ORDER BY RANDOM()
+        LIMIT 1
+      `;
+      params = [context.newTopics];
+    }
+    // Random species matching difficulty
+    else {
+      query = `
+        SELECT DISTINCT s.id, s.scientific_name, s.common_name_spanish, s.common_name_english, i.image_url
+        FROM species s
+        JOIN images i ON s.id = i.species_id
+        ORDER BY RANDOM()
+        LIMIT 1
+      `;
+      params = [];
+    }
+
+    const result = await pool.query(query, params);
+
+    if (result.rows.length === 0) {
+      throw new Error('No species found in database');
+    }
+
+    return {
+      id: result.rows[0].id,
+      scientificName: result.rows[0].scientific_name,
+      commonNameSpanish: result.rows[0].common_name_spanish,
+      commonNameEnglish: result.rows[0].common_name_english,
+      imageUrl: result.rows[0].image_url
     };
+  }
+
+  /**
+   * Select distractor species (wrong answers) for visual discrimination
+   * Ensures distractors are different from target and visually distinct
+   */
+  private async selectDistractorSpecies(targetSpecies: any, count: number, context: UserContext): Promise<any[]> {
+    const pool = this._pool;
+
+    if (!pool) {
+      throw new Error('Database pool not available');
+    }
+
+    const query = `
+      SELECT DISTINCT s.id, s.scientific_name, s.common_name_spanish, s.common_name_english, i.image_url
+      FROM species s
+      JOIN images i ON s.id = i.species_id
+      WHERE s.id != $1
+      ORDER BY RANDOM()
+      LIMIT $2
+    `;
+
+    const result = await pool.query(query, [targetSpecies.id, count]);
+
+    return result.rows.map(row => ({
+      id: row.id,
+      scientificName: row.scientific_name,
+      commonNameSpanish: row.common_name_spanish,
+      commonNameEnglish: row.common_name_english,
+      imageUrl: row.image_url
+    }));
   }
 
   /**

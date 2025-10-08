@@ -8,6 +8,7 @@ import {
   BatchJobError
 } from '../types/batch.types';
 import { info, warn, error as logError } from '../utils/logger';
+import { VisionAIService } from './VisionAIService';
 
 interface ProcessingContext {
   jobId: string;
@@ -29,9 +30,11 @@ interface ProcessingContext {
 export class BatchProcessor {
   private activeJobs: Map<string, AbortController> = new Map();
   private rateLimiter: RateLimiter;
+  private visionAI: VisionAIService;
 
   constructor(tier: 'free' | 'paid' = 'paid') {
     this.rateLimiter = createRateLimiter(tier);
+    this.visionAI = new VisionAIService();
   }
 
   /**
@@ -144,16 +147,50 @@ export class BatchProcessor {
         };
       }
 
-      // TODO: Replace with actual Vision AI service call
-      // For now, simulate processing
-      await this.simulateVisionAICall(imageId);
+      // Get image URL from database
+      const imageQuery = 'SELECT image_url FROM images WHERE id = $1';
+      const imageResult = await pool.query(imageQuery, [imageId]);
 
-      info('Image processed successfully', { imageId, attempt });
+      if (imageResult.rows.length === 0) {
+        throw new Error(`Image not found: ${imageId}`);
+      }
+
+      const imageUrl = imageResult.rows[0].image_url;
+
+      // Generate annotations using Vision AI Service
+      const annotations = await this.visionAI.generateAnnotations(imageUrl, imageId);
+
+      // Store annotations in database
+      const insertQuery = `
+        INSERT INTO annotations (
+          image_id, label_spanish, label_english, bounding_box,
+          annotation_type, difficulty_level, pronunciation, confidence
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `;
+
+      for (const annotation of annotations) {
+        await pool.query(insertQuery, [
+          imageId,
+          annotation.spanishTerm,
+          annotation.englishTerm,
+          JSON.stringify(annotation.boundingBox),
+          annotation.type,
+          annotation.difficultyLevel,
+          annotation.pronunciation || null,
+          annotation.confidence || null
+        ]);
+      }
+
+      info('Image processed successfully with Vision AI', {
+        imageId,
+        attempt,
+        annotationsCreated: annotations.length
+      });
 
       return {
         imageId,
         status: 'success',
-        annotationsCreated: Math.floor(Math.random() * 5) + 1, // Mock data
+        annotationsCreated: annotations.length,
         processingTime: Date.now() - startTime
       };
 
@@ -405,16 +442,9 @@ export class BatchProcessor {
     return result.rows;
   }
 
-  private async simulateVisionAICall(imageId: string): Promise<void> {
-    // Simulate API call delay
-    await this.sleep(Math.random() * 1000 + 500);
-
-    // Simulate 5% failure rate for testing
-    if (Math.random() < 0.05) {
-      throw new Error(`Vision AI error for image ${imageId}`);
-    }
-  }
-
+  /**
+   * Sleep utility for delays and backoff
+   */
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }

@@ -12,6 +12,8 @@ import { requireAdmin } from '../middleware/adminAuth';
 import { validateBody, validateParams } from '../middleware/validate';
 import { error as logError, info } from '../utils/logger';
 import { ExerciseType } from '../types/exercise.types';
+import { UserContextBuilder, UserContext } from '../services/userContextBuilder';
+import { AIExerciseGenerator } from '../services/aiExerciseGenerator';
 
 const router = Router();
 
@@ -62,49 +64,84 @@ function generateCacheKey(userId: string, exerciseType: string, difficulty: numb
 
 /**
  * Build user context for exercise generation
- * This would normally query user performance data
+ * Uses UserContextBuilder service to analyze user performance and create personalized context
  */
-async function buildUserContext(userId: string): Promise<{
-  userId: string;
-  level: 'beginner' | 'intermediate' | 'advanced';
-  difficulty: number;
-  weakTopics: string[];
-  masteredTopics: string[];
-}> {
-  // TODO: Implement actual context building based on user performance
-  // For now, return default context
-  return {
-    userId,
-    level: 'beginner',
-    difficulty: 2,
-    weakTopics: [],
-    masteredTopics: []
-  };
+async function buildUserContext(userId: string): Promise<UserContext> {
+  const contextBuilder = new UserContextBuilder(pool);
+
+  try {
+    const context = await contextBuilder.buildContext(userId);
+
+    info('User context built successfully', {
+      userId,
+      summary: contextBuilder.getContextSummary(context)
+    });
+
+    return context;
+  } catch (error) {
+    logError('Failed to build user context, using defaults', error as Error);
+
+    // Fallback to default context if context building fails
+    return {
+      userId,
+      level: 'beginner',
+      difficulty: 2,
+      weakTopics: [],
+      masteredTopics: [],
+      newTopics: [],
+      recentErrors: [],
+      streak: 0,
+      performance: {
+        totalExercises: 0,
+        correctAnswers: 0,
+        accuracy: 0,
+        avgTimePerExercise: 0,
+        currentStreak: 0,
+        longestStreak: 0
+      },
+      hash: 'default'
+    };
+  }
 }
 
 /**
- * Mock exercise generator (replace with actual AI service)
+ * Generate exercise using AI (Claude Sonnet 4.5)
+ * Leverages AIExerciseGenerator service for intelligent, context-aware exercise creation
  */
 async function generateExerciseWithAI(
   type: ExerciseType,
-  context: any
+  context: UserContext
 ): Promise<any> {
-  // TODO: Implement actual GPT-4 exercise generation
-  // This is a placeholder that returns a mock exercise
+  const generator = new AIExerciseGenerator(pool);
 
-  const mockExercise = {
-    id: `ex_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    type,
-    instructions: 'Complete this exercise',
-    prompt: 'Sample AI-generated exercise',
-    metadata: {
-      difficulty: context.difficulty,
-      generated: true,
-      timestamp: new Date().toISOString()
-    }
-  };
+  try {
+    const exercise = await generator.generateExercise(type, context);
 
-  return mockExercise;
+    info('AI exercise generated successfully', {
+      exerciseId: exercise.id,
+      type: exercise.type,
+      userId: context.userId,
+      difficulty: context.difficulty
+    });
+
+    return exercise;
+  } catch (error) {
+    logError('Failed to generate AI exercise, using fallback', error as Error);
+
+    // Fallback to basic exercise structure if AI generation fails
+    return {
+      id: `fallback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type,
+      instructions: 'Complete this exercise',
+      prompt: 'Sample exercise (AI generation unavailable)',
+      metadata: {
+        difficulty: context.difficulty,
+        generated: false,
+        fallback: true,
+        timestamp: new Date().toISOString()
+      }
+    };
+  }
 }
 
 // ============================================================================
