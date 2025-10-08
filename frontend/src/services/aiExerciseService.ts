@@ -211,6 +211,14 @@ class AIExerciseService {
     }
     return sessionId;
   }
+
+  /**
+   * Reset session ID (for testing purposes)
+   * @internal
+   */
+  __resetSessionId(): void {
+    (this as { -readonly [K in keyof this]: this[K] }).sessionId = this.getOrCreateSessionId();
+  }
 }
 
 // Export singleton instance

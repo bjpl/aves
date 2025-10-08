@@ -29,8 +29,8 @@ describe('Tabs Component', () => {
     it('should render active tab panel by default', () => {
       render(<TabsExample />);
       expect(screen.getByText('Content 1')).toBeInTheDocument();
-      expect(screen.queryByText('Content 2')).not.toBeVisible();
-      expect(screen.queryByText('Content 3')).not.toBeVisible();
+      expect(screen.queryByText('Content 2')).not.toBeInTheDocument();
+      expect(screen.queryByText('Content 3')).not.toBeInTheDocument();
     });
   });
 
@@ -40,8 +40,8 @@ describe('Tabs Component', () => {
       render(<TabsExample />);
 
       await user.click(screen.getByRole('tab', { name: /tab 2/i }));
-      expect(screen.getByText('Content 2')).toBeVisible();
-      expect(screen.queryByText('Content 1')).not.toBeVisible();
+      expect(screen.getByText('Content 2')).toBeInTheDocument();
+      expect(screen.queryByText('Content 1')).not.toBeInTheDocument();
     });
 
     it('should update active state when switching tabs', async () => {
@@ -84,10 +84,10 @@ describe('Tabs Component', () => {
       const user = userEvent.setup();
       render(<ControlledTabs />);
 
-      expect(screen.getByText('Content 1')).toBeVisible();
+      expect(screen.getByText('Content 1')).toBeInTheDocument();
 
       await user.click(screen.getByText('External Control'));
-      expect(screen.getByText('Content 2')).toBeVisible();
+      expect(screen.getByText('Content 2')).toBeInTheDocument();
     });
 
     it('should call onChange when tab is clicked in controlled mode', async () => {
@@ -141,8 +141,8 @@ describe('Tabs Component', () => {
       );
 
       await user.click(screen.getByRole('tab', { name: /tab 2/i }));
-      expect(screen.getByText('Content 1')).toBeVisible();
-      expect(screen.queryByText('Content 2')).not.toBeVisible();
+      expect(screen.getByText('Content 1')).toBeInTheDocument();
+      expect(screen.queryByText('Content 2')).not.toBeInTheDocument();
     });
 
     it('should apply disabled styles', () => {
@@ -231,11 +231,12 @@ describe('Tabs Component', () => {
     it('should show active panel and hide others', () => {
       render(<TabsExample />);
 
-      const panel1 = screen.getByText('Content 1').parentElement;
-      const panel2 = screen.getByText('Content 2').parentElement;
+      // Content 1 should be visible
+      expect(screen.getByText('Content 1')).toBeInTheDocument();
 
-      expect(panel1?.className).toContain('block');
-      expect(panel2?.className).toContain('hidden');
+      // Content 2 and 3 should not be mounted (component returns null for inactive panels)
+      expect(screen.queryByText('Content 2')).not.toBeInTheDocument();
+      expect(screen.queryByText('Content 3')).not.toBeInTheDocument();
     });
 
     it('should have role="tabpanel"', () => {

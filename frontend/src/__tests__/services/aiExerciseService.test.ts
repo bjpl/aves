@@ -40,9 +40,8 @@ describe('AIExerciseService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    service = aiExerciseService;
 
-    // Mock sessionStorage
+    // Mock sessionStorage BEFORE getting service reference
     const sessionStorageMock = {
       getItem: vi.fn(() => 'test-session-123'),
       setItem: vi.fn()
@@ -53,6 +52,10 @@ describe('AIExerciseService', () => {
     (import.meta as any).env = {
       VITE_API_URL: 'http://localhost:3001'
     };
+
+    // Get service reference and reset session ID to pick up mocked sessionStorage
+    service = aiExerciseService;
+    (service as any).__resetSessionId();
   });
 
   afterEach(() => {

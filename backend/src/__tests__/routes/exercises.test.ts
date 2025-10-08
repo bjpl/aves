@@ -3,12 +3,25 @@ import express from 'express';
 import exercisesRouter from '../../routes/exercises';
 import { pool } from '../../database/connection';
 
-// Mock the database pool
-jest.mock('../../database/connection', () => ({
-  pool: {
-    query: jest.fn()
-  }
-}));
+// Mock the database pool with transaction support
+jest.mock('../../database/connection', () => {
+  const mockClient = {
+    query: jest.fn(),
+    release: jest.fn()
+  };
+
+  return {
+    pool: {
+      query: jest.fn(),
+      connect: jest.fn().mockResolvedValue(mockClient)
+    },
+    // Export mockClient so tests can access it
+    __mockClient: mockClient
+  };
+});
+
+// Get mockClient reference from the mocked module
+const mockClient = (require('../../database/connection') as any).__mockClient;
 
 const app = express();
 app.use(express.json());
@@ -17,6 +30,9 @@ app.use('/api', exercisesRouter);
 describe('Exercise API Routes', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset mock client for each test
+    mockClient.query.mockReset();
+    mockClient.release.mockReset();
   });
 
   describe('POST /api/exercises/session/start', () => {
@@ -78,18 +94,20 @@ describe('Exercise API Routes', () => {
 
   describe('POST /api/exercises/result', () => {
     it('should record exercise result successfully', async () => {
-      (pool.query as jest.Mock)
+      mockClient.query
+        .mockResolvedValueOnce(undefined) // BEGIN
         .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // INSERT result
-        .mockResolvedValueOnce({ rows: [] }); // UPDATE session
+        .mockResolvedValueOnce({ rows: [] }) // UPDATE session
+        .mockResolvedValueOnce(undefined); // COMMIT
 
       const resultData = {
         sessionId: 'test-session',
         exerciseType: 'visual_discrimination',
-        annotationId: 'ann-123',
+        annotationId: 123,
         spanishTerm: 'pico',
         userAnswer: 'ann-123',
         isCorrect: true,
-        timeTaken: 5.2
+        timeTaken: 5200
       };
 
       const response = await request(app)
@@ -98,13 +116,16 @@ describe('Exercise API Routes', () => {
         .expect(200);
 
       expect(response.body).toEqual({ success: true });
-      expect(pool.query).toHaveBeenCalledTimes(2);
+      expect(mockClient.query).toHaveBeenCalledWith('BEGIN');
+      expect(mockClient.query).toHaveBeenCalledWith('COMMIT');
     });
 
     it('should handle incorrect answers', async () => {
-      (pool.query as jest.Mock)
+      mockClient.query
+        .mockResolvedValueOnce(undefined) // BEGIN
         .mockResolvedValueOnce({ rows: [{ id: 1 }] })
-        .mockResolvedValueOnce({ rows: [] });
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce(undefined); // COMMIT
 
       const resultData = {
         sessionId: 'test-session',
@@ -121,14 +142,16 @@ describe('Exercise API Routes', () => {
         .expect(200);
 
       // Verify UPDATE query increments exercises_completed but not correct_answers
-      const updateCall = (pool.query as jest.Mock).mock.calls[1];
+      const updateCall = mockClient.query.mock.calls[2]; // After BEGIN and INSERT
       expect(updateCall[1]).toEqual(['test-session', 0]);
     });
 
     it('should stringify userAnswer as JSON', async () => {
-      (pool.query as jest.Mock)
+      mockClient.query
+        .mockResolvedValueOnce(undefined) // BEGIN
         .mockResolvedValueOnce({ rows: [{ id: 1 }] })
-        .mockResolvedValueOnce({ rows: [] });
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce(undefined); // COMMIT
 
       const resultData = {
         sessionId: 'test-session',
@@ -147,22 +170,26 @@ describe('Exercise API Routes', () => {
         .send(resultData)
         .expect(200);
 
-      const insertCall = (pool.query as jest.Mock).mock.calls[0];
+      const insertCall = mockClient.query.mock.calls[1]; // After BEGIN
       const userAnswerParam = insertCall[1][4];
       expect(typeof userAnswerParam).toBe('string');
       expect(JSON.parse(userAnswerParam)).toEqual(resultData.userAnswer);
     });
 
     it('should handle database errors gracefully', async () => {
-      (pool.query as jest.Mock).mockRejectedValueOnce(new Error('Insert failed'));
+      mockClient.query
+        .mockResolvedValueOnce(undefined) // BEGIN
+        .mockRejectedValueOnce(new Error('Insert failed')); // INSERT fails
 
       const response = await request(app)
         .post('/api/exercises/result')
         .send({
           sessionId: 'test-session',
           exerciseType: 'visual_discrimination',
+          spanishTerm: 'pico',
           userAnswer: 'test',
-          isCorrect: true
+          isCorrect: true,
+          timeTaken: 5.0
         })
         .expect(500);
 
@@ -188,9 +215,9 @@ describe('Exercise API Routes', () => {
 
       expect(response.body).toMatchObject({
         sessionId: 'test-session-123',
-        totalExercises: '10',
-        correctAnswers: '8',
-        avgTimePerExercise: '4.5',
+        totalExercises: 10,
+        correctAnswers: 8,
+        avgTimePerExercise: 4.5,
         accuracy: '80.0'
       });
     });
@@ -224,7 +251,7 @@ describe('Exercise API Routes', () => {
         totalExercises: 0,
         correctAnswers: 0,
         avgTimePerExercise: 0,
-        accuracy: 0
+        accuracy: '0'
       });
     });
 
@@ -256,7 +283,7 @@ describe('Exercise API Routes', () => {
 
       expect(response.body.difficultTerms).toHaveLength(2);
       expect(response.body.difficultTerms[0].spanish_term).toBe('pico');
-      expect(response.body.difficultTerms[0].success_rate).toBe('40.0');
+      expect(response.body.difficultTerms[0].success_rate).toBe(40);
     });
 
     it('should only return terms with 3+ attempts', async () => {

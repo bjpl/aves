@@ -8,15 +8,13 @@ import { Pool } from 'pg';
 import { VisionAI } from '../../services/visionAI';
 import { AnnotationType } from '../../../../shared/types/annotation.types';
 
-// Mock OpenAI
-jest.mock('openai', () => {
+// Mock Anthropic SDK (not OpenAI!)
+jest.mock('@anthropic-ai/sdk', () => {
   return {
     __esModule: true,
     default: jest.fn().mockImplementation(() => ({
-      chat: {
-        completions: {
-          create: jest.fn()
-        }
+      messages: {
+        create: jest.fn()
       }
     }))
   };
@@ -41,16 +39,30 @@ describe('VisionAI Service', () => {
       query: jest.fn()
     } as any;
 
-    // Setup OpenAI mock
-    const OpenAI = require('openai').default;
+    // Setup Anthropic mock
+    const Anthropic = require('@anthropic-ai/sdk').default;
     mockCreate = jest.fn();
-    OpenAI.mockImplementation(() => ({
-      chat: {
-        completions: {
-          create: mockCreate
-        }
+    Anthropic.mockImplementation(() => ({
+      messages: {
+        create: mockCreate
       }
     }));
+
+    // Mock global fetch for image fetching
+    // Create a fake JPEG image (minimal valid JPEG header)
+    const fakeImageBuffer = Buffer.from([
+      0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46,
+      0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01,
+      0x00, 0x01, 0x00, 0x00, 0xFF, 0xD9
+    ]);
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      headers: {
+        get: jest.fn().mockReturnValue('image/jpeg')
+      },
+      arrayBuffer: jest.fn().mockResolvedValue(fakeImageBuffer)
+    } as any);
 
     // Create VisionAI instance
     visionAI = new VisionAI(pool, {
@@ -302,23 +314,22 @@ describe('VisionAI Service', () => {
 
   describe('annotateImage', () => {
     beforeEach(() => {
-      // Mock successful GPT-4o response
+      // Mock successful Claude response (Anthropic format)
       mockCreate.mockResolvedValue({
-        choices: [{
-          message: {
-            content: JSON.stringify([
-              {
-                spanishTerm: 'el pico',
-                englishTerm: 'beak',
-                boundingBox: { x: 0.4, y: 0.3, width: 0.1, height: 0.08 },
-                type: 'anatomical',
-                difficultyLevel: 1,
-                pronunciation: 'el PEE-koh'
-              }
-            ])
-          }
+        content: [{
+          type: 'text',
+          text: JSON.stringify([
+            {
+              spanishTerm: 'el pico',
+              englishTerm: 'beak',
+              boundingBox: { x: 0.4, y: 0.3, width: 0.1, height: 0.08 },
+              type: 'anatomical',
+              difficultyLevel: 1,
+              pronunciation: 'el PEE-koh'
+            }
+          ])
         }],
-        usage: { total_tokens: 500 }
+        usage: { input_tokens: 100, output_tokens: 400 }
       });
     });
 
@@ -335,20 +346,19 @@ describe('VisionAI Service', () => {
       mockCreate
         .mockRejectedValueOnce(new Error('Network error'))
         .mockResolvedValueOnce({
-          choices: [{
-            message: {
-              content: JSON.stringify([
-                {
-                  spanishTerm: 'el pico',
-                  englishTerm: 'beak',
-                  boundingBox: { x: 0.4, y: 0.3, width: 0.1, height: 0.08 },
-                  type: 'anatomical',
-                  difficultyLevel: 1
-                }
-              ])
-            }
+          content: [{
+            type: 'text',
+            text: JSON.stringify([
+              {
+                spanishTerm: 'el pico',
+                englishTerm: 'beak',
+                boundingBox: { x: 0.4, y: 0.3, width: 0.1, height: 0.08 },
+                type: 'anatomical',
+                difficultyLevel: 1
+              }
+            ])
           }],
-          usage: { total_tokens: 500 }
+          usage: { input_tokens: 100, output_tokens: 400 }
         });
 
       const result = await visionAI.annotateImage('https://example.com/bird.jpg', 'img_123');
@@ -359,27 +369,26 @@ describe('VisionAI Service', () => {
 
     it('should filter out invalid annotations', async () => {
       mockCreate.mockResolvedValue({
-        choices: [{
-          message: {
-            content: JSON.stringify([
-              {
-                spanishTerm: 'el pico',
-                englishTerm: 'beak',
-                boundingBox: { x: 0.4, y: 0.3, width: 0.1, height: 0.08 },
-                type: 'anatomical',
-                difficultyLevel: 1
-              },
-              {
-                spanishTerm: '', // Invalid
-                englishTerm: 'invalid',
-                boundingBox: { x: 0.4, y: 0.3, width: 0.1, height: 0.08 },
-                type: 'anatomical',
-                difficultyLevel: 1
-              }
-            ])
-          }
+        content: [{
+          type: 'text',
+          text: JSON.stringify([
+            {
+              spanishTerm: 'el pico',
+              englishTerm: 'beak',
+              boundingBox: { x: 0.4, y: 0.3, width: 0.1, height: 0.08 },
+              type: 'anatomical',
+              difficultyLevel: 1
+            },
+            {
+              spanishTerm: '', // Invalid
+              englishTerm: 'invalid',
+              boundingBox: { x: 0.4, y: 0.3, width: 0.1, height: 0.08 },
+              type: 'anatomical',
+              difficultyLevel: 1
+            }
+          ])
         }],
-        usage: { total_tokens: 500 }
+        usage: { input_tokens: 100, output_tokens: 400 }
       });
 
       const result = await visionAI.annotateImage('https://example.com/bird.jpg', 'img_123');
@@ -390,20 +399,19 @@ describe('VisionAI Service', () => {
 
     it('should throw error if all annotations are invalid', async () => {
       mockCreate.mockResolvedValue({
-        choices: [{
-          message: {
-            content: JSON.stringify([
-              {
-                spanishTerm: '', // Invalid
-                englishTerm: 'invalid',
-                boundingBox: { x: 0.4, y: 0.3, width: 0.1, height: 0.08 },
-                type: 'anatomical',
-                difficultyLevel: 1
-              }
-            ])
-          }
+        content: [{
+          type: 'text',
+          text: JSON.stringify([
+            {
+              spanishTerm: '', // Invalid
+              englishTerm: 'invalid',
+              boundingBox: { x: 0.4, y: 0.3, width: 0.1, height: 0.08 },
+              type: 'anatomical',
+              difficultyLevel: 1
+            }
+          ])
         }],
-        usage: { total_tokens: 500 }
+        usage: { input_tokens: 100, output_tokens: 400 }
       });
 
       await expect(
@@ -414,13 +422,11 @@ describe('VisionAI Service', () => {
 
   describe('caching', () => {
     beforeEach(() => {
-      const OpenAI = require('openai').default;
+      const Anthropic = require('@anthropic-ai/sdk').default;
       mockCreate = jest.fn();
-      OpenAI.mockImplementation(() => ({
-        chat: {
-          completions: {
-            create: mockCreate
-          }
+      Anthropic.mockImplementation(() => ({
+        messages: {
+          create: mockCreate
         }
       }));
 
@@ -431,20 +437,19 @@ describe('VisionAI Service', () => {
       });
 
       mockCreate.mockResolvedValue({
-        choices: [{
-          message: {
-            content: JSON.stringify([
-              {
-                spanishTerm: 'el pico',
-                englishTerm: 'beak',
-                boundingBox: { x: 0.4, y: 0.3, width: 0.1, height: 0.08 },
-                type: 'anatomical',
-                difficultyLevel: 1
-              }
-            ])
-          }
+        content: [{
+          type: 'text',
+          text: JSON.stringify([
+            {
+              spanishTerm: 'el pico',
+              englishTerm: 'beak',
+              boundingBox: { x: 0.4, y: 0.3, width: 0.1, height: 0.08 },
+              type: 'anatomical',
+              difficultyLevel: 1
+            }
+          ])
         }],
-        usage: { total_tokens: 500 }
+        usage: { input_tokens: 100, output_tokens: 400 }
       });
     });
 
