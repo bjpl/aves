@@ -1,0 +1,43 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Testing
+coverage
+*.test.ts
+*.test.js
+__tests__
+
+# Development
+.env
+.env.local
+.env.development
+*.md
+docs
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Build artifacts
+dist
+*.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+# Misc
+.dockerignore
+Dockerfile
+docker-compose.yml
