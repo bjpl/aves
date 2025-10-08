@@ -265,7 +265,7 @@ describe('GET /api/auth/verify', () => {
       .set('Authorization', 'NotBearer token')
       .expect(401);
 
-    expect(response.body.error).toBe('Access token required');
+    expect(response.body.error).toBe('Invalid token');
   });
 });
 
