@@ -1,0 +1,137 @@
+{
+  "timestamp": "2025-10-17T05:23:00.000Z",
+  "environment": {
+    "node_version": ">=18.0.0",
+    "os": "Linux 6.6.87.2-microsoft-standard-WSL2",
+    "platform": "linux"
+  },
+  "frontend": {
+    "framework": "vitest",
+    "version": "1.6.1",
+    "test_files": {
+      "total": 47,
+      "unit_tests": 35,
+      "component_tests": 27,
+      "integration_tests": 3,
+      "e2e_tests": 6
+    },
+    "test_count": {
+      "estimated_total": "400+",
+      "passing": "~395",
+      "failing": 2,
+      "skipped": 0
+    },
+    "code_metrics": {
+      "total_lines": 6562,
+      "average_lines_per_file": 139,
+      "test_file_patterns": [
+        "**/__tests__/**/*.test.{ts,tsx}",
+        "**/e2e/**/*.spec.ts"
+      ]
+    },
+    "execution": {
+      "timeout_threshold": "120s",
+      "parallel_execution": true,
+      "watch_mode": true
+    },
+    "known_failures": [
+      {
+        "file": "clientDataService.test.ts",
+        "test": "should create object stores on first initialization",
+        "reason": "Spy call expectation mismatch"
+      },
+      {
+        "file": "exerciseGenerator.test.ts",
+        "test": "should generate unique exercise IDs",
+        "reason": "Timing-based ID generation collision"
+      }
+    ]
+  },
+  "backend": {
+    "framework": "jest",
+    "version": "29.7.0",
+    "test_files": {
+      "total": 18,
+      "unit_tests": 13,
+      "integration_tests": 5
+    },
+    "test_count": {
+      "estimated_total": "200+",
+      "status": "timeout_during_execution"
+    },
+    "code_metrics": {
+      "total_lines": 6514,
+      "average_lines_per_file": 362
+    },
+    "execution": {
+      "timeout_issues": true,
+      "requires_database": true,
+      "requires_env_vars": true
+    }
+  },
+  "test_utilities": {
+    "react_query_helpers": {
+      "location": "tests/examples/react-query-examples.test.tsx",
+      "utilities": [
+        "renderWithQuery",
+        "createTestQueryClient",
+        "mockQuerySuccess",
+        "mockQueryError",
+        "assertQueryHasData",
+        "waitForQueryToSettle"
+      ]
+    },
+    "axios_helpers": {
+      "location": "frontend/src/test-utils/",
+      "files": [
+        "axios-mock-config.ts",
+        "async-test-helpers.ts",
+        "react-query-test-utils.ts"
+      ]
+    },
+    "mock_factories": {
+      "location": "frontend/src/test/mocks/",
+      "factories": [
+        "createMockExercise"
+      ]
+    }
+  },
+  "coverage_targets": {
+    "statements": ">80%",
+    "branches": ">75%",
+    "functions": ">80%",
+    "lines": ">80%"
+  },
+  "performance_baseline": {
+    "frontend_suite_duration": "120s+ (timeout)",
+    "average_test_duration": "~300ms",
+    "slowest_suites": [
+      "clientDataService.test.ts",
+      "annotations tests",
+      "component integration tests"
+    ]
+  },
+  "technical_debt": {
+    "jest_backend_timeout": "Tests timeout frequently",
+    "deprecated_vite_cjs": "Vite CJS Node API deprecated warning",
+    "timing_based_tests": "ID generation tests have timing issues",
+    "mock_complexity": "High boilerplate in some mock setups"
+  },
+  "recommendations": {
+    "high_priority": [
+      "Fix backend test timeouts",
+      "Resolve timing-based test failures",
+      "Reduce mock boilerplate"
+    ],
+    "medium_priority": [
+      "Improve test execution speed",
+      "Add more test utilities",
+      "Standardize test patterns"
+    ],
+    "low_priority": [
+      "Update Vite configuration",
+      "Add visual regression tests",
+      "Enhance E2E coverage"
+    ]
+  }
+}
