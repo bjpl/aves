@@ -340,36 +340,47 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
             )}
 
             {/* Bounding Box Info */}
-            <div className={`rounded-lg p-3 ${hasQualityIssues ? 'bg-yellow-50 border-2 border-yellow-300' : 'bg-blue-50'}`}>
-              <h5 className={`text-xs font-semibold mb-2 ${hasQualityIssues ? 'text-yellow-900' : 'text-blue-900'}`}>
-                Bounding Box (Normalized 0-1)
-              </h5>
-              <div className={`grid grid-cols-2 gap-2 text-xs font-mono ${hasQualityIssues ? 'text-yellow-800' : 'text-blue-800'}`}>
-                <div>
-                  X: {annotation.boundingBox.topLeft.x.toFixed(2)}, Y:{' '}
-                  {annotation.boundingBox.topLeft.y.toFixed(2)}
+            {annotation.boundingBox && annotation.boundingBox.topLeft ? (
+              <div className={`rounded-lg p-3 ${hasQualityIssues ? 'bg-yellow-50 border-2 border-yellow-300' : 'bg-blue-50'}`}>
+                <h5 className={`text-xs font-semibold mb-2 ${hasQualityIssues ? 'text-yellow-900' : 'text-blue-900'}`}>
+                  Bounding Box (Normalized 0-1)
+                </h5>
+                <div className={`grid grid-cols-2 gap-2 text-xs font-mono ${hasQualityIssues ? 'text-yellow-800' : 'text-blue-800'}`}>
+                  <div>
+                    X: {annotation.boundingBox.topLeft.x.toFixed(2)}, Y:{' '}
+                    {annotation.boundingBox.topLeft.y.toFixed(2)}
+                  </div>
+                  <div>
+                    W: {annotation.boundingBox.width.toFixed(2)}, H:{' '}
+                    {annotation.boundingBox.height.toFixed(2)}
+                  </div>
                 </div>
-                <div>
-                  W: {annotation.boundingBox.width.toFixed(2)}, H:{' '}
-                  {annotation.boundingBox.height.toFixed(2)}
-                </div>
-              </div>
 
-              {/* Quality Issue Suggestions */}
-              {hasQualityIssues && (
-                <div className="mt-2 pt-2 border-t border-yellow-300">
-                  <p className="text-xs text-yellow-900 font-semibold mb-1">💡 Suggested Action:</p>
-                  <ul className="text-xs text-yellow-800 space-y-1">
-                    {isBboxTooSmall && (
-                      <li>• Consider rejecting: "Too Small (&lt;2% of image)"</li>
-                    )}
-                    {isConfidenceLow && (
-                      <li>• Review carefully: AI confidence below 70%</li>
-                    )}
-                  </ul>
-                </div>
-              )}
-            </div>
+                {/* Quality Issue Suggestions */}
+                {hasQualityIssues && (
+                  <div className="mt-2 pt-2 border-t border-yellow-300">
+                    <p className="text-xs text-yellow-900 font-semibold mb-1">💡 Suggested Action:</p>
+                    <ul className="text-xs text-yellow-800 space-y-1">
+                      {isBboxTooSmall && (
+                        <li>• Consider rejecting: "Too Small (&lt;2% of image)"</li>
+                      )}
+                      {isConfidenceLow && (
+                        <li>• Review carefully: AI confidence below 70%</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-lg p-3 bg-red-50 border-2 border-red-300">
+                <h5 className="text-xs font-semibold mb-2 text-red-900">
+                  ⚠️ Missing Bounding Box
+                </h5>
+                <p className="text-xs text-red-800">
+                  This annotation is missing bounding box data. It should be rejected or have a bounding box added via "Fix Position".
+                </p>
+              </div>
+            )}
 
             {/* Rejection Form */}
             {showRejectForm && (
@@ -536,14 +547,26 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
                 updates: { boundingBox: backendFormat }
               });
 
-              console.log('🔧 BBOX Editor - Update result:', result);
+              console.log('✅ BBOX Editor - Update successful!', result);
 
               setEditedBbox(newBox);
               setShowBboxEditor(false);
               onActionComplete?.();
-            } catch (error) {
+            } catch (error: any) {
               console.error('❌ Failed to update bounding box:', error);
-              console.error('Error details:', error);
+
+              // Show detailed error information
+              const errorMessage = error?.response?.data?.error || error?.message || 'Unknown error';
+              const statusCode = error?.response?.status;
+
+              alert(
+                `Failed to save annotation position!\n\n` +
+                `Status: ${statusCode || 'N/A'}\n` +
+                `Error: ${errorMessage}\n\n` +
+                `Check browser console (F12) for more details.`
+              );
+
+              // Don't close the editor so user can try again
             }
           }}
           onCancel={() => setShowBboxEditor(false)}

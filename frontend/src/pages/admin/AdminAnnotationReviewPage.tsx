@@ -8,7 +8,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { usePendingAnnotations, useApproveAnnotation, useRejectAnnotation, useEditAnnotation } from '../../hooks/useSupabaseAnnotations';
+import { useAIAnnotationsPending } from '../../hooks/useAIAnnotations';
 import { AnnotationReviewCard } from '../../components/admin/AnnotationReviewCard';
 import { AnnotationAnalyticsDashboard } from '../../components/admin/AnnotationAnalyticsDashboard';
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
@@ -19,10 +19,7 @@ type TabType = 'review' | 'analytics';
 
 export const AdminAnnotationReviewPage: React.FC = () => {
   const { user, loading: authLoading } = useSupabaseAuth();
-  const { data: annotations, isLoading, error, refetch } = usePendingAnnotations();
-  const approveMutation = useApproveAnnotation();
-  const rejectMutation = useRejectAnnotation();
-  const editMutation = useEditAnnotation();
+  const { data: annotations, isLoading, error, refetch } = useAIAnnotationsPending();
 
   const [filter, setFilter] = useState<FilterType>('pending');
   const [sort, setSort] = useState<SortType>('newest');
@@ -77,43 +74,6 @@ export const AdminAnnotationReviewPage: React.FC = () => {
   const filteredAnnotations = annotations || [];
   const pendingCount = filteredAnnotations.filter(a => a.status === 'pending').length;
   const approvedCount = filteredAnnotations.filter(a => a.status === 'approved').length;
-
-  const handleApprove = async (annotationId: string, notes?: string) => {
-    try {
-      await approveMutation.mutateAsync({ annotationId, notes });
-      refetch();
-    } catch (error) {
-      console.error('Failed to approve annotation:', error);
-    }
-  };
-
-  const handleReject = async (annotationId: string, reason: string) => {
-    try {
-      await rejectMutation.mutateAsync({ annotationId, reason });
-      refetch();
-    } catch (error) {
-      console.error('Failed to reject annotation:', error);
-    }
-  };
-
-  const handleEdit = async (annotationId: string, updates: any) => {
-    try {
-      await editMutation.mutateAsync({ annotationId, updates });
-      refetch();
-    } catch (error) {
-      console.error('Failed to edit annotation:', error);
-    }
-  };
-
-  const handleBulkApprove = async () => {
-    const confirmMsg = `Approve ${selectedIds.size} annotations?`;
-    if (!window.confirm(confirmMsg)) return;
-
-    for (const id of selectedIds) {
-      await handleApprove(id);
-    }
-    setSelectedIds(new Set());
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -209,12 +169,6 @@ export const AdminAnnotationReviewPage: React.FC = () => {
                   {selectedIds.size} selected
                 </span>
                 <button
-                  onClick={handleBulkApprove}
-                  className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md"
-                >
-                  Bulk Approve
-                </button>
-                <button
                   onClick={() => setSelectedIds(new Set())}
                   className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-md"
                 >
@@ -239,9 +193,17 @@ export const AdminAnnotationReviewPage: React.FC = () => {
                 key={annotation.id}
                 annotation={annotation}
                 imageUrl={annotation.imageUrl || ''}
-                onApprove={handleApprove}
-                onReject={handleReject}
-                onEdit={handleEdit}
+                onActionComplete={() => refetch()}
+                isSelected={selectedIds.has(annotation.id)}
+                onSelect={(selected) => {
+                  const newSelected = new Set(selectedIds);
+                  if (selected) {
+                    newSelected.add(annotation.id);
+                  } else {
+                    newSelected.delete(annotation.id);
+                  }
+                  setSelectedIds(newSelected);
+                }}
               />
             ))}
           </div>

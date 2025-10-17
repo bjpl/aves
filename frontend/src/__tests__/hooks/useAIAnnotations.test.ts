@@ -82,7 +82,7 @@ describe('useAIAnnotations', () => {
       });
 
       expect(result.current.data).toEqual(mockAnnotations);
-      expect(mockAxios.get).toHaveBeenCalledWith('/api/annotations/ai', {
+      expect(mockAxios.get).toHaveBeenCalledWith('/api/ai/annotations', {
         params: undefined,
       });
     });
@@ -105,7 +105,7 @@ describe('useAIAnnotations', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockAxios.get).toHaveBeenCalledWith('/api/annotations/ai', {
+      expect(mockAxios.get).toHaveBeenCalledWith('/api/ai/annotations', {
         params: filters,
       });
     });
@@ -149,7 +149,7 @@ describe('useAIAnnotations', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockAxios.get).toHaveBeenCalledWith('/api/annotations/ai', {
+      expect(mockAxios.get).toHaveBeenCalledWith('/api/ai/annotations', {
         params: { status: 'pending' },
       });
     });
@@ -178,7 +178,7 @@ describe('useAIAnnotations', () => {
       });
 
       expect(result.current.data).toEqual(mockStats);
-      expect(mockAxios.get).toHaveBeenCalledWith('/api/annotations/ai/stats');
+      expect(mockAxios.get).toHaveBeenCalledWith('/api/ai/annotations/stats');
     });
 
     it('should return default stats on error', async () => {
@@ -224,7 +224,7 @@ describe('useAIAnnotations', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockAxios.post).toHaveBeenCalledWith('/api/annotations/ai/ann-1/approve');
+      expect(mockAxios.post).toHaveBeenCalledWith('/api/ai/annotations/ann-1/approve');
     });
 
     it('should handle approval error', async () => {
@@ -306,7 +306,9 @@ describe('useAIAnnotations', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockAxios.post).toHaveBeenCalledWith('/api/annotations/ai/ann-1/reject', {
+      expect(mockAxios.post).toHaveBeenCalledWith('/api/ai/annotations/ann-1/reject', {
+        category: undefined,
+        notes: undefined,
         reason: 'Incorrect term',
       });
     });
@@ -326,7 +328,9 @@ describe('useAIAnnotations', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockAxios.post).toHaveBeenCalledWith('/api/annotations/ai/ann-1/reject', {
+      expect(mockAxios.post).toHaveBeenCalledWith('/api/ai/annotations/ann-1/reject', {
+        category: undefined,
+        notes: undefined,
         reason: undefined,
       });
     });
@@ -359,7 +363,7 @@ describe('useAIAnnotations', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockAxios.patch).toHaveBeenCalledWith('/api/annotations/ai/ann-1', {
+      expect(mockAxios.post).toHaveBeenCalledWith('/api/ai/annotations/ann-1/edit', {
         spanishTerm: 'ala',
         englishTerm: 'wing',
       });
@@ -384,7 +388,7 @@ describe('useAIAnnotations', () => {
       });
 
       expect(result.current.data).toEqual({ approved: 3 });
-      expect(mockAxios.post).toHaveBeenCalledWith('/api/annotations/ai/batch/approve', {
+      expect(mockAxios.post).toHaveBeenCalledWith('/api/ai/annotations/batch/approve', {
         annotationIds,
       });
     });
@@ -424,7 +428,7 @@ describe('useAIAnnotations', () => {
       });
 
       expect(result.current.data).toEqual({ rejected: 2 });
-      expect(mockAxios.post).toHaveBeenCalledWith('/api/annotations/ai/batch/reject', {
+      expect(mockAxios.post).toHaveBeenCalledWith('/api/ai/annotations/batch/reject', {
         annotationIds: ['ann-1', 'ann-2'],
         reason: 'Low confidence',
       });

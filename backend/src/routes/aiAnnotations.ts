@@ -8,8 +8,7 @@ import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
 import { pool } from '../database/connection';
 import { visionAIService, AIAnnotation } from '../services/VisionAIService';
-import { authenticateToken } from '../middleware/auth';
-import { requireAdmin } from '../middleware/adminAuth';
+import { authenticateSupabaseToken, requireSupabaseAdmin } from '../middleware/supabaseAuth';
 import { validateBody, validateParams } from '../middleware/validate';
 import { error as logError, info } from '../utils/logger';
 
@@ -112,8 +111,8 @@ const AnnotationIdParamSchema = z.object({
  */
 router.post(
   '/ai/annotations/generate/:imageId',
-  authenticateToken,
-  requireAdmin,
+  authenticateSupabaseToken,
+  requireSupabaseAdmin,
   aiGenerationLimiter,
   validateParams(ImageIdParamSchema),
   validateBody(GenerateAnnotationsSchema),
@@ -226,46 +225,110 @@ router.post(
  */
 router.get(
   '/ai/annotations/pending',
-  authenticateToken,
-  requireAdmin,
+  authenticateSupabaseToken,
+  requireSupabaseAdmin,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
       const offset = parseInt(req.query.offset as string) || 0;
       const status = req.query.status || 'pending';
 
-      // Get total count
+      // Get total count from ai_annotation_items
       const countResult = await pool.query(
-        'SELECT COUNT(*) as total FROM ai_annotations WHERE status = $1',
+        'SELECT COUNT(*) as total FROM ai_annotation_items WHERE status = $1',
         [status]
       );
       const total = parseInt(countResult.rows[0].total);
 
-      // Get annotations
+      // Get individual annotation items (not jobs)
       const query = `
         SELECT
-          job_id as "jobId",
-          image_id as "imageId",
-          annotation_data as "annotationData",
-          status,
-          confidence_score as "confidenceScore",
-          reviewed_by as "reviewedBy",
-          reviewed_at as "reviewedAt",
-          notes,
-          created_at as "createdAt",
-          updated_at as "updatedAt"
-        FROM ai_annotations
-        WHERE status = $1
-        ORDER BY created_at DESC
+          ai.id,
+          ai.image_id as "imageId",
+          ai.spanish_term as "spanishTerm",
+          ai.english_term as "englishTerm",
+          ai.bounding_box as "boundingBox",
+          ai.annotation_type as "type",
+          ai.difficulty_level as "difficultyLevel",
+          ai.pronunciation,
+          ai.confidence as "confidenceScore",
+          ai.status,
+          ai.created_at as "createdAt",
+          ai.updated_at as "updatedAt",
+          img.url as "imageUrl"
+        FROM ai_annotation_items ai
+        LEFT JOIN images img ON ai.image_id = img.id
+        WHERE ai.status = $1
+        ORDER BY ai.created_at DESC
         LIMIT $2 OFFSET $3
       `;
 
       const result = await pool.query(query, [status, limit, offset]);
 
-      const annotations = result.rows.map(row => ({
-        ...row,
-        annotationData: JSON.parse(row.annotationData)
-      }));
+      const annotations = result.rows.map((row, index) => {
+        // Ensure bounding box is in frontend format {topLeft, bottomRight, width, height}
+        let boundingBox = row.boundingBox;
+
+        info(`🔍 GET /pending - Row ${index} bounding box BEFORE conversion`, {
+          id: row.id,
+          spanishTerm: row.spanishTerm,
+          boundingBoxType: typeof boundingBox,
+          boundingBoxKeys: boundingBox ? Object.keys(boundingBox) : [],
+          hasTopLeft: boundingBox?.topLeft !== undefined,
+          hasX: boundingBox?.x !== undefined,
+          rawValue: JSON.stringify(boundingBox)
+        });
+
+        if (boundingBox) {
+          // If already in frontend format (has topLeft), keep it
+          if (boundingBox.topLeft) {
+            info(`✅ GET /pending - Row ${index} already in frontend format`, { id: row.id });
+            // Already correct format
+            boundingBox = boundingBox;
+          }
+          // If in backend format {x, y, width, height}, convert to frontend format
+          else if (boundingBox.x !== undefined) {
+            info(`🔄 GET /pending - Row ${index} converting from backend format`, { id: row.id });
+            boundingBox = {
+              topLeft: { x: boundingBox.x, y: boundingBox.y },
+              bottomRight: {
+                x: boundingBox.x + boundingBox.width,
+                y: boundingBox.y + boundingBox.height
+              },
+              width: boundingBox.width,
+              height: boundingBox.height
+            };
+          }
+          // Unknown format - log error
+          else {
+            logError('GET /pending - Unknown bounding box format!', new Error(`ID: ${row.id}, bbox: ${JSON.stringify(boundingBox)}`));
+          }
+        } else {
+          info(`⚠️ GET /pending - Row ${index} has NULL or undefined bounding box`, { id: row.id });
+        }
+
+        info(`🔍 GET /pending - Row ${index} bounding box AFTER conversion`, {
+          id: row.id,
+          boundingBox: JSON.stringify(boundingBox)
+        });
+
+        return {
+          id: row.id,
+          imageId: row.imageId,
+          spanishTerm: row.spanishTerm,
+          englishTerm: row.englishTerm,
+          boundingBox: boundingBox,
+          type: row.type,
+          difficultyLevel: row.difficultyLevel,
+          pronunciation: row.pronunciation,
+          confidenceScore: row.confidenceScore,
+          status: row.status,
+          aiGenerated: true,
+          imageUrl: row.imageUrl,
+          createdAt: row.createdAt,
+          updatedAt: row.updatedAt
+        };
+      });
 
       res.json({
         annotations,
@@ -300,8 +363,8 @@ router.get(
  */
 router.get(
   '/ai/annotations/:jobId',
-  authenticateToken,
-  requireAdmin,
+  authenticateSupabaseToken,
+  requireSupabaseAdmin,
   validateParams(JobIdParamSchema),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -332,7 +395,7 @@ router.get(
 
       const job = {
         ...result.rows[0],
-        annotationData: JSON.parse(result.rows[0].annotationData)
+        annotationData: result.rows[0].annotationData // Already parsed by pg client
       };
 
       // Also get individual items
@@ -356,7 +419,7 @@ router.get(
 
       const items = itemsResult.rows.map(row => ({
         ...row,
-        boundingBox: JSON.parse(row.boundingBox)
+        boundingBox: row.boundingBox // Already parsed by pg client
       }));
 
       res.json({
@@ -391,8 +454,8 @@ router.get(
  */
 router.post(
   '/ai/annotations/:annotationId/approve',
-  authenticateToken,
-  requireAdmin,
+  authenticateSupabaseToken,
+  requireSupabaseAdmin,
   validateParams(AnnotationIdParamSchema),
   validateBody(ApproveAnnotationSchema),
   async (req: Request, res: Response): Promise<void> => {
@@ -505,8 +568,8 @@ router.post(
  */
 router.post(
   '/ai/annotations/:annotationId/reject',
-  authenticateToken,
-  requireAdmin,
+  authenticateSupabaseToken,
+  requireSupabaseAdmin,
   validateParams(AnnotationIdParamSchema),
   validateBody(RejectAnnotationSchema),
   async (req: Request, res: Response): Promise<void> => {
@@ -590,8 +653,8 @@ router.post(
  */
 router.patch(
   '/ai/annotations/:annotationId',
-  authenticateToken,
-  requireAdmin,
+  authenticateSupabaseToken,
+  requireSupabaseAdmin,
   validateParams(AnnotationIdParamSchema),
   validateBody(EditAnnotationSchema),
   async (req: Request, res: Response): Promise<void> => {
@@ -721,8 +784,8 @@ router.patch(
  */
 router.post(
   '/ai/annotations/:annotationId/edit',
-  authenticateToken,
-  requireAdmin,
+  authenticateSupabaseToken,
+  requireSupabaseAdmin,
   validateParams(AnnotationIdParamSchema),
   validateBody(EditAnnotationSchema),
   async (req: Request, res: Response): Promise<void> => {
@@ -842,8 +905,8 @@ router.post(
  */
 router.post(
   '/ai/annotations/batch/approve',
-  authenticateToken,
-  requireAdmin,
+  authenticateSupabaseToken,
+  requireSupabaseAdmin,
   validateBody(BulkApproveSchema),
   async (req: Request, res: Response): Promise<void> => {
     const client = await pool.connect();
@@ -972,8 +1035,8 @@ router.post(
  */
 router.get(
   '/ai/annotations/stats',
-  authenticateToken,
-  requireAdmin,
+  authenticateSupabaseToken,
+  requireSupabaseAdmin,
   async (req: Request, res: Response): Promise<void> => {
     try {
       // Get counts by status
@@ -1062,8 +1125,8 @@ router.get(
  */
 router.get(
   '/annotations/analytics',
-  authenticateToken,
-  requireAdmin,
+  authenticateSupabaseToken,
+  requireSupabaseAdmin,
   async (req: Request, res: Response): Promise<void> => {
     try {
       // OVERVIEW: Total counts and status breakdown

@@ -63,7 +63,7 @@ export const useAIAnnotations = (filters?: AIAnnotationFilters) => {
     queryKey: aiAnnotationKeys.list(filters),
     queryFn: async (): Promise<AIAnnotation[]> => {
       try {
-        const response = await axios.get<{ data: AIAnnotation[] }>('/api/annotations/ai', {
+        const response = await axios.get<{ data: AIAnnotation[] }>('/api/ai/annotations', {
           params: filters,
         });
         return response.data.data;
@@ -82,7 +82,21 @@ export const useAIAnnotations = (filters?: AIAnnotationFilters) => {
  * Hook: Fetch pending AI annotations for review
  */
 export const useAIAnnotationsPending = () => {
-  return useAIAnnotations({ status: 'pending' });
+  return useQuery({
+    queryKey: aiAnnotationKeys.pending(),
+    queryFn: async (): Promise<AIAnnotation[]> => {
+      try {
+        const response = await axios.get<{ annotations: AIAnnotation[] }>('/api/ai/annotations/pending');
+        return response.data.annotations;
+      } catch (err) {
+        logError('Error fetching pending AI annotations:', err instanceof Error ? err : new Error(String(err)));
+        return [];
+      }
+    },
+    staleTime: 1 * 60 * 1000, // 1 minute - pending annotations change frequently
+    gcTime: 3 * 60 * 1000,
+    placeholderData: [],
+  });
 };
 
 /**
@@ -101,7 +115,7 @@ export const useAIAnnotationStats = () => {
             rejected: number;
             avgConfidence: number;
           };
-        }>('/api/annotations/ai/stats');
+        }>('/api/ai/annotations/stats');
         return response.data.data;
       } catch (err) {
         logError('Error fetching AI annotation stats:', err instanceof Error ? err : new Error(String(err)));
@@ -128,7 +142,7 @@ export const useApproveAnnotation = () => {
   return useMutation({
     mutationFn: async (annotationId: string): Promise<AIAnnotation> => {
       const response = await axios.post<{ data: AIAnnotation }>(
-        `/api/annotations/ai/${annotationId}/approve`
+        `/api/ai/annotations/${annotationId}/approve`
       );
       return response.data.data;
     },
@@ -183,7 +197,7 @@ export const useRejectAnnotation = () => {
       reason?: string;
     }): Promise<AIAnnotation> => {
       const response = await axios.post<{ data: AIAnnotation }>(
-        `/api/annotations/ai/${annotationId}/reject`,
+        `/api/ai/annotations/${annotationId}/reject`,
         { category, notes, reason }
       );
       return response.data.data;
@@ -234,7 +248,7 @@ export const useUpdateAnnotation = () => {
       updates: Partial<Annotation>;
     }): Promise<{ message: string; annotationId: string }> => {
       const response = await axios.patch<{ message: string; annotationId: string }>(
-        `/api/annotations/ai/${annotationId}`,
+        `/api/ai/annotations/${annotationId}`,
         updates
       );
       return response.data;
@@ -289,7 +303,7 @@ export const useEditAnnotation = () => {
       updates: Partial<Annotation>;
     }): Promise<AIAnnotation> => {
       const response = await axios.post<{ data: AIAnnotation }>(
-        `/api/annotations/ai/${annotationId}/edit`,
+        `/api/ai/annotations/${annotationId}/edit`,
         updates
       );
       return response.data.data;
@@ -314,7 +328,7 @@ export const useBatchApprove = () => {
   return useMutation({
     mutationFn: async (annotationIds: string[]): Promise<{ approved: number }> => {
       const response = await axios.post<{ data: { approved: number } }>(
-        '/api/annotations/ai/batch/approve',
+        '/api/ai/annotations/batch/approve',
         { annotationIds }
       );
       return response.data.data;
@@ -362,7 +376,7 @@ export const useBatchReject = () => {
       reason?: string;
     }): Promise<{ rejected: number }> => {
       const response = await axios.post<{ data: { rejected: number } }>(
-        '/api/annotations/ai/batch/reject',
+        '/api/ai/annotations/batch/reject',
         { annotationIds, reason }
       );
       return response.data.data;
