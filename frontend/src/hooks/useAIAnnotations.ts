@@ -191,12 +191,18 @@ export const useApproveAnnotation = () => {
     onSuccess: (data, annotationId) => {
       console.log('✅ APPROVE MUTATION: onSuccess called!', { data, annotationId });
 
-      // Invalidate and refetch
-      queryClient.invalidateQueries({ queryKey: aiAnnotationKeys.all });
-      queryClient.invalidateQueries({ queryKey: aiAnnotationKeys.stats() });
+      // Invalidate and FORCE REFETCH (even if not stale)
+      queryClient.invalidateQueries({
+        queryKey: aiAnnotationKeys.all,
+        refetchType: 'active' // Force refetch active queries
+      });
+      queryClient.invalidateQueries({
+        queryKey: aiAnnotationKeys.stats(),
+        refetchType: 'active' // Force refetch stats
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.annotations.all });
 
-      console.log('✅ APPROVE MUTATION: Queries invalidated, refetch should happen now');
+      console.log('✅ APPROVE MUTATION: Queries invalidated with FORCED refetch');
     },
     onError: (err, annotationId, context) => {
       console.error('❌ APPROVE MUTATION: onError called!', {
@@ -256,8 +262,14 @@ export const useRejectAnnotation = () => {
       return { previousData };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: aiAnnotationKeys.all });
-      queryClient.invalidateQueries({ queryKey: aiAnnotationKeys.stats() });
+      queryClient.invalidateQueries({
+        queryKey: aiAnnotationKeys.all,
+        refetchType: 'active'
+      });
+      queryClient.invalidateQueries({
+        queryKey: aiAnnotationKeys.stats(),
+        refetchType: 'active'
+      });
     },
     onError: (err, _variables, context) => {
       if (context?.previousData) {
@@ -321,8 +333,14 @@ export const useUpdateAnnotation = () => {
     },
     // REFETCH: Get fresh data from server on success
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: aiAnnotationKeys.all });
-      queryClient.invalidateQueries({ queryKey: aiAnnotationKeys.stats() });
+      queryClient.invalidateQueries({
+        queryKey: aiAnnotationKeys.all,
+        refetchType: 'active'
+      });
+      queryClient.invalidateQueries({
+        queryKey: aiAnnotationKeys.stats(),
+        refetchType: 'active'
+      });
     },
   });
 };
@@ -348,8 +366,14 @@ export const useEditAnnotation = () => {
       return response.data.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: aiAnnotationKeys.all });
-      queryClient.invalidateQueries({ queryKey: aiAnnotationKeys.stats() });
+      queryClient.invalidateQueries({
+        queryKey: aiAnnotationKeys.all,
+        refetchType: 'active'
+      });
+      queryClient.invalidateQueries({
+        queryKey: aiAnnotationKeys.stats(),
+        refetchType: 'active'
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.annotations.all });
     },
     onError: (error) => {
@@ -387,8 +411,14 @@ export const useBatchApprove = () => {
       return { previousData };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: aiAnnotationKeys.all });
-      queryClient.invalidateQueries({ queryKey: aiAnnotationKeys.stats() });
+      queryClient.invalidateQueries({
+        queryKey: aiAnnotationKeys.all,
+        refetchType: 'active'
+      });
+      queryClient.invalidateQueries({
+        queryKey: aiAnnotationKeys.stats(),
+        refetchType: 'active'
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.annotations.all });
     },
     onError: (err, _variables, context) => {
@@ -435,8 +465,14 @@ export const useBatchReject = () => {
       return { previousData };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: aiAnnotationKeys.all });
-      queryClient.invalidateQueries({ queryKey: aiAnnotationKeys.stats() });
+      queryClient.invalidateQueries({
+        queryKey: aiAnnotationKeys.all,
+        refetchType: 'active'
+      });
+      queryClient.invalidateQueries({
+        queryKey: aiAnnotationKeys.stats(),
+        refetchType: 'active'
+      });
     },
     onError: (err, _variables, context) => {
       if (context?.previousData) {
