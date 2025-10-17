@@ -106,6 +106,8 @@ export const useAIAnnotationStats = () => {
   return useQuery({
     queryKey: aiAnnotationKeys.stats(),
     queryFn: async () => {
+      console.log('📊 STATS QUERY: Fetching annotation stats...');
+
       try {
         const response = await axios.get<{
           data: {
@@ -116,8 +118,11 @@ export const useAIAnnotationStats = () => {
             avgConfidence: number;
           };
         }>('/api/ai/annotations/stats');
+
+        console.log('📊 STATS QUERY: Stats received:', response.data.data);
         return response.data.data;
       } catch (err) {
+        console.error('❌ STATS QUERY: Error fetching stats:', err);
         logError('Error fetching AI annotation stats:', err instanceof Error ? err : new Error(String(err)));
         return {
           total: 0,
@@ -141,38 +146,72 @@ export const useApproveAnnotation = () => {
 
   return useMutation({
     mutationFn: async (annotationId: string): Promise<AIAnnotation> => {
-      const response = await axios.post<{ data: AIAnnotation }>(
-        `/api/ai/annotations/${annotationId}/approve`
-      );
-      return response.data.data;
+      console.log('🚀 APPROVE MUTATION: Starting approve request for:', annotationId);
+
+      try {
+        const response = await axios.post<{ data: AIAnnotation }>(
+          `/api/ai/annotations/${annotationId}/approve`
+        );
+
+        console.log('✅ APPROVE MUTATION: Request successful!', response.data);
+        return response.data.data;
+      } catch (error: any) {
+        console.error('❌ APPROVE MUTATION: Request failed!', {
+          error,
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
+        throw error;
+      }
     },
     onMutate: async (annotationId) => {
+      console.log('🔄 APPROVE MUTATION: onMutate called for:', annotationId);
+
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: aiAnnotationKeys.all });
 
       // Optimistically update the cache
       const previousData = queryClient.getQueryData<AIAnnotation[]>(aiAnnotationKeys.pending());
 
+      console.log('🔄 APPROVE MUTATION: Previous pending count:', previousData?.length || 0);
+
       if (previousData) {
+        const filtered = previousData.filter((a) => a.id !== annotationId);
+        console.log('🔄 APPROVE MUTATION: New pending count after filter:', filtered.length);
+
         queryClient.setQueryData<AIAnnotation[]>(
           aiAnnotationKeys.pending(),
-          previousData.filter((a) => a.id !== annotationId)
+          filtered
         );
       }
 
       return { previousData };
     },
-    onSuccess: () => {
+    onSuccess: (data, annotationId) => {
+      console.log('✅ APPROVE MUTATION: onSuccess called!', { data, annotationId });
+
       // Invalidate and refetch
       queryClient.invalidateQueries({ queryKey: aiAnnotationKeys.all });
       queryClient.invalidateQueries({ queryKey: aiAnnotationKeys.stats() });
       queryClient.invalidateQueries({ queryKey: queryKeys.annotations.all });
+
+      console.log('✅ APPROVE MUTATION: Queries invalidated, refetch should happen now');
     },
-    onError: (err, _annotationId, context) => {
+    onError: (err, annotationId, context) => {
+      console.error('❌ APPROVE MUTATION: onError called!', {
+        err,
+        annotationId,
+        hasContext: !!context,
+        hasPreviousData: !!context?.previousData
+      });
+
       // Rollback on error
       if (context?.previousData) {
+        console.log('🔄 APPROVE MUTATION: Rolling back optimistic update');
         queryClient.setQueryData(aiAnnotationKeys.pending(), context.previousData);
       }
+
       logError('Error approving annotation', err instanceof Error ? err : new Error(String(err)));
     },
   });

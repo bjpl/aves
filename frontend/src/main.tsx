@@ -7,6 +7,19 @@ import './App.css';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { queryClient } from './config/queryClient';
 
+// Load diagnostic utilities in development
+if (import.meta.env.DEV) {
+  import('./utils/diagnostics/localStorageDebug').then(module => {
+    (window as any).debugLocalStorage = module.debugLocalStorage;
+    console.log('🔧 Dev Tools Loaded: Run debugLocalStorage() in console to inspect localStorage');
+  });
+
+  import('./utils/diagnostics/testApprove').then(module => {
+    (window as any).testApproveRequest = module.testApproveRequest;
+    console.log('🔧 Test Tools Loaded: Run testApproveRequest("uuid") to test approve endpoint');
+  });
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>
