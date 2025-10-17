@@ -103,6 +103,8 @@ export const useAIAnnotationsPending = () => {
  * Hook: Get AI annotation statistics
  */
 export const useAIAnnotationStats = () => {
+  console.log('🎯 STATS HOOK: useAIAnnotationStats mounted/called');
+
   return useQuery({
     queryKey: aiAnnotationKeys.stats(),
     queryFn: async () => {

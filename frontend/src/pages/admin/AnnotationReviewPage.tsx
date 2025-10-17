@@ -28,6 +28,7 @@ export const AnnotationReviewPage: React.FC = () => {
   // Fetch data based on active tab
   const { data: annotations = [], isLoading, error } = useAIAnnotations({ status: activeTab });
   const { data: stats } = useAIAnnotationStats();
+  console.log('📍 PAGE: AnnotationReviewPage mounted with stats:', stats);
 
   // Pagination
   const totalPages = Math.ceil(annotations.length / ITEMS_PER_PAGE);
