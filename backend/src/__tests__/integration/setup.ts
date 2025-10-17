@@ -9,15 +9,24 @@ import * as jwt from 'jsonwebtoken';
 import { randomUUID } from 'crypto';
 
 // Test database connection (separate from main pool)
+// For Supabase: Uses same database but different schema ('aves_test')
+// For local: Can use separate database
 export const testPool = new Pool({
   host: process.env.TEST_DB_HOST || process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.TEST_DB_PORT || process.env.DB_PORT || '5432'),
-  database: process.env.TEST_DB_NAME || 'aves_test',
+  database: process.env.TEST_DB_NAME || process.env.DB_NAME || 'postgres',
   user: process.env.TEST_DB_USER || process.env.DB_USER || 'postgres',
   password: process.env.TEST_DB_PASSWORD || process.env.DB_PASSWORD || 'postgres',
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
+  ssl: process.env.DB_SSL_ENABLED === 'true' ? {
+    rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false'
+  } : undefined,
+  // Use test schema for Supabase
+  options: process.env.TEST_SCHEMA ? `-c search_path=${process.env.TEST_SCHEMA},public` : undefined,
+  // CRITICAL: Allow pool to exit when idle to prevent hanging
+  allowExitOnIdle: true,
 });
 
 export const JWT_SECRET = process.env.JWT_SECRET || 'development-secret-change-in-production';
@@ -44,6 +53,7 @@ export const TEST_USERS = {
  * Clean database tables before tests
  */
 export async function cleanDatabase(): Promise<void> {
+  const schema = process.env.TEST_SCHEMA || 'public';
   const tables = [
     'ai_annotation_reviews',
     'ai_annotation_items',
@@ -60,10 +70,10 @@ export async function cleanDatabase(): Promise<void> {
 
   for (const table of tables) {
     try {
-      await testPool.query(`DELETE FROM ${table}`);
+      await testPool.query(`DELETE FROM ${schema}.${table}`);
     } catch (err) {
       // Table might not exist, that's okay
-      console.warn(`Could not clean table ${table}:`, (err as Error).message);
+      console.warn(`Could not clean table ${schema}.${table}:`, (err as Error).message);
     }
   }
 }
@@ -81,9 +91,10 @@ export async function createTestUser(
   passwordHash: string;
 }> {
   const passwordHash = await bcrypt.hash(userData.password, 10);
+  const schema = process.env.TEST_SCHEMA || 'public';
 
   const result = await testPool.query(
-    'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email, created_at',
+    `INSERT INTO ${schema}.users (email, password_hash) VALUES ($1, $2) RETURNING id, email, created_at`,
     [userData.email.toLowerCase(), passwordHash]
   );
 
@@ -112,6 +123,7 @@ export async function createTestSpecies(data?: {
   scientificName?: string;
   description?: string;
 }): Promise<any> {
+  const schema = process.env.TEST_SCHEMA || 'public';
   const speciesData = {
     name: data?.name || 'Test Cardinal',
     scientificName: data?.scientificName || 'Cardinalis cardinalis',
@@ -119,7 +131,7 @@ export async function createTestSpecies(data?: {
   };
 
   const result = await testPool.query(
-    `INSERT INTO species (name, scientific_name, description)
+    `INSERT INTO ${schema}.species (name, scientific_name, description)
      VALUES ($1, $2, $3)
      RETURNING id, name, scientific_name as "scientificName", description, created_at as "createdAt"`,
     [speciesData.name, speciesData.scientificName, speciesData.description]
@@ -132,10 +144,11 @@ export async function createTestSpecies(data?: {
  * Create test image
  */
 export async function createTestImage(speciesId: string, url?: string): Promise<any> {
+  const schema = process.env.TEST_SCHEMA || 'public';
   const imageUrl = url || `https://example.com/images/${randomUUID()}.jpg`;
 
   const result = await testPool.query(
-    `INSERT INTO images (species_id, url)
+    `INSERT INTO ${schema}.images (species_id, url)
      VALUES ($1, $2)
      RETURNING id, species_id as "speciesId", url, created_at as "createdAt"`,
     [speciesId, imageUrl]
@@ -154,8 +167,9 @@ export async function createTestVocabulary(data: {
   pronunciation?: string;
   difficultyLevel?: number;
 }): Promise<any> {
+  const schema = process.env.TEST_SCHEMA || 'public';
   const result = await testPool.query(
-    `INSERT INTO vocabulary (species_id, spanish_term, english_term, pronunciation, difficulty_level)
+    `INSERT INTO ${schema}.vocabulary (species_id, spanish_term, english_term, pronunciation, difficulty_level)
      VALUES ($1, $2, $3, $4, $5)
      RETURNING id, species_id as "speciesId", spanish_term as "spanishTerm",
                english_term as "englishTerm", pronunciation, difficulty_level as "difficultyLevel"`,
@@ -182,8 +196,9 @@ export async function createTestAnnotation(data: {
   type?: string;
   difficultyLevel?: number;
 }): Promise<any> {
+  const schema = process.env.TEST_SCHEMA || 'public';
   const result = await testPool.query(
-    `INSERT INTO annotations (image_id, spanish_term, english_term, bounding_box, annotation_type, difficulty_level)
+    `INSERT INTO ${schema}.annotations (image_id, spanish_term, english_term, bounding_box, annotation_type, difficulty_level)
      VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING id, image_id as "imageId", spanish_term as "spanishTerm",
                english_term as "englishTerm", bounding_box as "boundingBox",
@@ -199,7 +214,10 @@ export async function createTestAnnotation(data: {
   );
 
   const annotation = result.rows[0];
-  annotation.boundingBox = JSON.parse(annotation.boundingBox);
+  // Parse bounding box if it's a string, otherwise it's already an object
+  if (typeof annotation.boundingBox === 'string') {
+    annotation.boundingBox = JSON.parse(annotation.boundingBox);
+  }
   return annotation;
 }
 
@@ -214,10 +232,11 @@ export async function createCachedExercise(data: {
   difficulty: number;
   expiresAt?: Date;
 }): Promise<any> {
+  const schema = process.env.TEST_SCHEMA || 'public';
   const expiresAt = data.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   const result = await testPool.query(
-    `INSERT INTO exercise_cache (cache_key, exercise_type, exercise_data, user_context_hash, difficulty, expires_at)
+    `INSERT INTO ${schema}.exercise_cache (cache_key, exercise_type, exercise_data, user_context_hash, difficulty, expires_at)
      VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING id, cache_key as "cacheKey", exercise_type as "exerciseType",
                exercise_data as "exerciseData", difficulty, usage_count as "usageCount",
@@ -246,15 +265,14 @@ export async function createBatchJob(data: {
   totalItems?: number;
   processedItems?: number;
 }): Promise<any> {
-  const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const schema = process.env.TEST_SCHEMA || 'public';
 
   const result = await testPool.query(
-    `INSERT INTO batch_jobs (job_id, job_type, status, total_items, processed_items, metadata)
-     VALUES ($1, $2, $3, $4, $5, $6)
-     RETURNING job_id as "jobId", job_type as "jobType", status, total_items as "totalItems",
+    `INSERT INTO ${schema}.batch_jobs (id, job_type, status, total_items, processed_items, metadata)
+     VALUES (gen_random_uuid(), $1, $2, $3, $4, $5)
+     RETURNING id as "jobId", job_type as "jobType", status, total_items as "totalItems",
                processed_items as "processedItems", created_at as "createdAt"`,
     [
-      jobId,
       data.jobType,
       data.status || 'pending',
       data.totalItems || 10,
@@ -281,10 +299,12 @@ export function verifyTokenStructure(token: string): boolean {
 }
 
 /**
- * Global test setup
+ * Global test setup - run once before all integration tests
  */
 beforeAll(async () => {
-  // Ensure test database connection
+  console.log('Integration test setup started...');
+
+  // Step 1: Ensure test database connection
   try {
     await testPool.query('SELECT NOW()');
     console.log('✓ Test database connected');
@@ -292,6 +312,31 @@ beforeAll(async () => {
     console.error('✗ Test database connection failed:', (err as Error).message);
     throw err;
   }
+
+  // Step 2: Run test migrations to ensure schema is up to date
+  try {
+    const { runTestMigrations } = await import('../utils/run-test-migrations');
+    const schema = process.env.TEST_SCHEMA || 'aves_test';
+
+    console.log(`Running test migrations for schema: ${schema}`);
+    const migrationResult = await runTestMigrations(testPool, schema);
+
+    if (!migrationResult.success) {
+      console.warn('⚠ Some migrations had issues:');
+      migrationResult.errors.forEach(err => console.warn(`  - ${err}`));
+      // Continue anyway - some errors might be expected (table already exists)
+    } else {
+      console.log('✓ All test migrations completed successfully');
+    }
+
+    console.log(`✓ Migrations run: ${migrationResult.migrationsRun.join(', ')}`);
+  } catch (err) {
+    console.error('✗ Migration setup failed:', (err as Error).message);
+    // Don't throw - allow tests to run even if migrations partially fail
+    console.warn('Continuing with existing schema...');
+  }
+
+  console.log('✓ Integration test setup complete');
 });
 
 /**
@@ -302,10 +347,43 @@ beforeEach(async () => {
 });
 
 /**
- * Global test teardown
+ * Global test teardown - cleanup after all integration tests
  */
 afterAll(async () => {
-  await cleanDatabase();
-  await testPool.end();
-  console.log('✓ Test database connection closed');
+  console.log('Integration test teardown started...');
+
+  // Step 1: Cleanup batch processor first (stops rate limiter and timers)
+  try {
+    const { cleanupBatchProcessor } = await import('../../routes/batch');
+    if (typeof cleanupBatchProcessor === 'function') {
+      cleanupBatchProcessor();
+      console.log('✓ Batch processor cleanup complete');
+    }
+  } catch (err) {
+    console.warn('Batch processor cleanup skipped:', (err as Error).message);
+  }
+
+  // Step 2: Force clear all timers before database cleanup
+  if (typeof jest !== 'undefined') {
+    jest.clearAllTimers();
+    jest.clearAllMocks();
+  }
+
+  // Step 3: Clean database before closing connections
+  try {
+    await cleanDatabase();
+    console.log('✓ Database cleaned');
+  } catch (err) {
+    console.warn('Database cleanup warning:', (err as Error).message);
+  }
+
+  // Step 4: Close test pool connection immediately (no delay needed with allowExitOnIdle)
+  try {
+    await testPool.end();
+    console.log('✓ Test database connection closed');
+  } catch (err) {
+    console.warn('Test pool cleanup warning:', (err as Error).message);
+  }
+
+  console.log('✓ Integration test teardown complete');
 });

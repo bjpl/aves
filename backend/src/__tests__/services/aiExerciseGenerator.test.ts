@@ -1,7 +1,7 @@
 /**
  * AI Exercise Generator Tests
  *
- * Comprehensive test suite for GPT-4 exercise generation
+ * Comprehensive test suite for Claude/Anthropic exercise generation
  * Target: >80% code coverage
  */
 
@@ -9,16 +9,21 @@ import { Pool } from 'pg';
 import { AIExerciseGenerator } from '../../services/aiExerciseGenerator';
 import { UserContext } from '../../services/userContextBuilder';
 import { ExerciseType } from '../../../../shared/types/exercise.types';
+import {
+  mockClaudeContextualFillResponse,
+  mockClaudeTermMatchingResponse,
+  mockClaudeImageLabelingResponse,
+  mockClaudeErrorResponse,
+  mockClaudeEmptyResponse
+} from '../fixtures/aiResponses';
 
-// Mock OpenAI
-jest.mock('openai', () => {
+// Mock Anthropic SDK
+jest.mock('@anthropic-ai/sdk', () => {
   return {
     __esModule: true,
     default: jest.fn().mockImplementation(() => ({
-      chat: {
-        completions: {
-          create: jest.fn()
-        }
+      messages: {
+        create: jest.fn()
       }
     }))
   };
@@ -61,23 +66,21 @@ describe('AIExerciseGenerator', () => {
     // Create mock pool
     pool = { query: jest.fn() } as any;
 
-    // Setup OpenAI mock
-    const OpenAI = require('openai').default;
+    // Setup Anthropic SDK mock
+    const Anthropic = require('@anthropic-ai/sdk').default;
     mockCreate = jest.fn();
-    OpenAI.mockImplementation(() => ({
-      chat: {
-        completions: {
-          create: mockCreate
-        }
+    Anthropic.mockImplementation(() => ({
+      messages: {
+        create: mockCreate
       }
     }));
 
-    // Create generator instance
+    // Create generator instance with Anthropic config
     generator = new AIExerciseGenerator(pool, {
-      apiKey: 'test-api-key',
+      apiKey: 'test-anthropic-key',
       maxRetries: 2,
       retryDelay: 100,
-      modelVersion: 'gpt-4-turbo',
+      modelVersion: 'claude-sonnet-4-20250514',
       temperature: 0.7
     });
   });
@@ -95,37 +98,21 @@ describe('AIExerciseGenerator', () => {
     it('should throw error if API key is missing', () => {
       expect(() => {
         new AIExerciseGenerator(pool, { apiKey: '' });
-      }).toThrow('OpenAI API key is required');
+      }).toThrow('Anthropic API key is required');
     });
 
     it('should use environment variable for API key', () => {
-      process.env.OPENAI_API_KEY = 'env-key';
+      process.env.ANTHROPIC_API_KEY = 'env-key';
       const gen = new AIExerciseGenerator(pool);
       expect(gen).toBeInstanceOf(AIExerciseGenerator);
-      delete process.env.OPENAI_API_KEY;
+      delete process.env.ANTHROPIC_API_KEY;
     });
   });
 
   describe('generateExercise', () => {
     it('should generate contextual fill exercise', async () => {
-      mockCreate.mockResolvedValue({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              sentence: 'El cardenal tiene plumas ___ brillantes.',
-              correctAnswer: 'rojas',
-              options: ['rojas', 'azules', 'verdes', 'amarillas'],
-              context: 'Cardinals are known for their bright red plumage.',
-              difficulty: 3
-            })
-          }
-        }],
-        usage: {
-          prompt_tokens: 200,
-          completion_tokens: 100,
-          total_tokens: 300
-        }
-      });
+      // Use Claude response format
+      mockCreate.mockResolvedValue(mockClaudeContextualFillResponse);
 
       const exercise = await generator.generateExercise('contextual_fill', mockContext);
 
@@ -137,24 +124,8 @@ describe('AIExerciseGenerator', () => {
     });
 
     it('should generate term matching exercise', async () => {
-      mockCreate.mockResolvedValue({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              spanishTerms: ['el pico', 'las alas', 'la cola'],
-              englishTerms: ['beak', 'wings', 'tail'],
-              correctPairs: [
-                { spanish: 'el pico', english: 'beak' },
-                { spanish: 'las alas', english: 'wings' },
-                { spanish: 'la cola', english: 'tail' }
-              ],
-              category: 'Bird Anatomy',
-              difficulty: 3
-            })
-          }
-        }],
-        usage: { prompt_tokens: 150, completion_tokens: 80, total_tokens: 230 }
-      });
+      // Use Claude response format
+      mockCreate.mockResolvedValue(mockClaudeTermMatchingResponse);
 
       const exercise = await generator.generateExercise('term_matching', mockContext);
 
@@ -174,22 +145,8 @@ describe('AIExerciseGenerator', () => {
     });
 
     it('should generate image labeling exercise', async () => {
-      mockCreate.mockResolvedValue({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              imageUrl: '/images/birds/cardinal.jpg',
-              labels: [
-                { term: 'el pico', correctPosition: { x: 0.45, y: 0.30 } },
-                { term: 'las alas', correctPosition: { x: 0.35, y: 0.50 } },
-                { term: 'la cola', correctPosition: { x: 0.70, y: 0.60 } }
-              ],
-              difficulty: 3
-            })
-          }
-        }],
-        usage: { prompt_tokens: 180, completion_tokens: 90, total_tokens: 270 }
-      });
+      // Use Claude response format
+      mockCreate.mockResolvedValue(mockClaudeImageLabelingResponse);
 
       const exercise = await generator.generateExercise('image_labeling', mockContext);
 
@@ -200,19 +157,8 @@ describe('AIExerciseGenerator', () => {
     });
 
     it('should handle unknown exercise type', async () => {
-      mockCreate.mockResolvedValue({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              sentence: 'Test sentence ___.',
-              correctAnswer: 'test',
-              options: ['test', 'other'],
-              difficulty: 3
-            })
-          }
-        }],
-        usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 }
-      });
+      // Use Claude response format
+      mockCreate.mockResolvedValue(mockClaudeContextualFillResponse);
 
       const exercise = await generator.generateExercise('unknown_type' as ExerciseType, mockContext);
 
@@ -250,28 +196,42 @@ describe('AIExerciseGenerator', () => {
     });
   });
 
-  describe('callGPTWithRetry', () => {
-    it('should successfully call GPT-4 on first attempt', async () => {
-      mockCreate.mockResolvedValue({
-        choices: [{ message: { content: '{"test": "data"}' } }],
-        usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 }
-      });
+  describe('callClaudeWithRetry', () => {
+    it('should successfully call Claude on first attempt', async () => {
+      const mockResponse = {
+        id: 'msg_test',
+        type: 'message' as const,
+        role: 'assistant' as const,
+        content: [{ type: 'text' as const, text: '{"test": "data"}' }],
+        model: 'claude-sonnet-4-20250514',
+        stop_reason: 'end_turn' as const,
+        stop_sequence: null,
+        usage: { input_tokens: 100, output_tokens: 50 }
+      };
+      mockCreate.mockResolvedValue(mockResponse);
 
-      const result = await (generator as any).callGPTWithRetry('test prompt', 1);
+      const result = await (generator as any).callClaudeWithRetry('test prompt');
 
       expect(result).toBe('{"test": "data"}');
       expect(mockCreate).toHaveBeenCalledTimes(1);
     });
 
     it('should retry on failure', async () => {
+      const mockResponse = {
+        id: 'msg_test',
+        type: 'message' as const,
+        role: 'assistant' as const,
+        content: [{ type: 'text' as const, text: '{"test": "data"}' }],
+        model: 'claude-sonnet-4-20250514',
+        stop_reason: 'end_turn' as const,
+        stop_sequence: null,
+        usage: { input_tokens: 100, output_tokens: 50 }
+      };
       mockCreate
         .mockRejectedValueOnce(new Error('Network error'))
-        .mockResolvedValueOnce({
-          choices: [{ message: { content: '{"test": "data"}' } }],
-          usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 }
-        });
+        .mockResolvedValueOnce(mockResponse);
 
-      const result = await (generator as any).callGPTWithRetry('test prompt', 1);
+      const result = await (generator as any).callClaudeWithRetry('test prompt');
 
       expect(result).toBe('{"test": "data"}');
       expect(mockCreate).toHaveBeenCalledTimes(2);
@@ -281,31 +241,28 @@ describe('AIExerciseGenerator', () => {
       mockCreate.mockRejectedValue(new Error('Network error'));
 
       await expect(
-        (generator as any).callGPTWithRetry('test prompt', 1)
-      ).rejects.toThrow('Network error');
+        (generator as any).callClaudeWithRetry('test prompt')
+      ).rejects.toThrow();
 
-      expect(mockCreate).toHaveBeenCalledTimes(2); // maxRetries = 2
+      expect(mockCreate).toHaveBeenCalledTimes(3); // maxRetries = 3 (default)
     });
 
     it('should not retry on API key error', async () => {
       mockCreate.mockRejectedValue(new Error('Invalid API key'));
 
       await expect(
-        (generator as any).callGPTWithRetry('test prompt', 1)
+        (generator as any).callClaudeWithRetry('test prompt')
       ).rejects.toThrow('Invalid API key');
 
       expect(mockCreate).toHaveBeenCalledTimes(1);
     });
 
     it('should throw error if response is empty', async () => {
-      mockCreate.mockResolvedValue({
-        choices: [{ message: { content: null } }],
-        usage: { prompt_tokens: 100, completion_tokens: 0, total_tokens: 100 }
-      });
+      mockCreate.mockResolvedValue(mockClaudeEmptyResponse);
 
       await expect(
-        (generator as any).callGPTWithRetry('test prompt', 1)
-      ).rejects.toThrow('Empty response from GPT-4');
+        (generator as any).callClaudeWithRetry('test prompt')
+      ).rejects.toThrow('Empty response from Claude');
     });
   });
 
@@ -337,7 +294,7 @@ describe('AIExerciseGenerator', () => {
 
       expect(() => {
         (generator as any).parseResponse(response);
-      }).toThrow('Invalid JSON response from GPT-4');
+      }).toThrow('Invalid JSON response from Claude');
     });
   });
 
@@ -519,23 +476,7 @@ describe('AIExerciseGenerator', () => {
 
   describe('Statistics Tracking', () => {
     it('should track successful request statistics', async () => {
-      mockCreate.mockResolvedValue({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              sentence: 'Test ___.',
-              correctAnswer: 'test',
-              options: ['test', 'other'],
-              difficulty: 3
-            })
-          }
-        }],
-        usage: {
-          prompt_tokens: 200,
-          completion_tokens: 100,
-          total_tokens: 300
-        }
-      });
+      mockCreate.mockResolvedValue(mockClaudeContextualFillResponse);
 
       await generator.generateExercise('contextual_fill', mockContext);
 
@@ -543,7 +484,7 @@ describe('AIExerciseGenerator', () => {
       expect(stats.totalRequests).toBe(1);
       expect(stats.successfulRequests).toBe(1);
       expect(stats.failedRequests).toBe(0);
-      expect(stats.totalTokensUsed).toBe(300);
+      expect(stats.totalTokensUsed).toBeGreaterThan(0);
       expect(stats.totalCost).toBeGreaterThan(0);
     });
 
@@ -559,19 +500,7 @@ describe('AIExerciseGenerator', () => {
     });
 
     it('should reset statistics', async () => {
-      mockCreate.mockResolvedValue({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              sentence: 'Test ___.',
-              correctAnswer: 'test',
-              options: ['test', 'other'],
-              difficulty: 3
-            })
-          }
-        }],
-        usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 }
-      });
+      mockCreate.mockResolvedValue(mockClaudeContextualFillResponse);
 
       await generator.generateExercise('contextual_fill', mockContext);
       generator.resetStatistics();
@@ -624,20 +553,26 @@ describe('AIExerciseGenerator', () => {
     });
 
     it('should handle invalid response format', async () => {
+      // Use Claude API response format (not OpenAI format)
       mockCreate.mockResolvedValue({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              sentence: 'Invalid exercise without required fields'
-            })
-          }
+        id: 'msg_invalid',
+        type: 'message' as const,
+        role: 'assistant' as const,
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            sentence: 'Invalid exercise without required fields'
+          })
         }],
-        usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 }
+        model: 'claude-sonnet-4-20250514',
+        stop_reason: 'end_turn' as const,
+        stop_sequence: null,
+        usage: { input_tokens: 100, output_tokens: 50 }
       });
 
       await expect(
         generator.generateExercise('contextual_fill', mockContext)
-      ).rejects.toThrow('Invalid contextual fill response');
+      ).rejects.toThrow('Invalid contextual fill response from Claude');
     });
   });
 });

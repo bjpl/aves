@@ -19,6 +19,7 @@ import {
   TEST_USERS,
   delay,
 } from './setup';
+import { withTimeout, cleanupAsyncTests } from '../utils/asyncTestUtils';
 
 // Create test app
 const app = express();
@@ -41,6 +42,11 @@ describe('Integration: Admin Dashboard Flow', () => {
     adminId = admin.id;
     userToken = user.token;
     userId = user.id;
+  });
+
+  afterEach(async () => {
+    // Cleanup any timers or pending operations after each test
+    await cleanupAsyncTests();
   });
 
   describe('Batch Job Management', () => {
@@ -67,7 +73,7 @@ describe('Integration: Admin Dashboard Flow', () => {
 
       // Verify job in database
       const dbResult = await testPool.query(
-        'SELECT * FROM batch_jobs WHERE job_id = $1',
+        'SELECT * FROM batch_jobs WHERE id = $1',
         [response.body.jobId]
       );
 
@@ -168,7 +174,7 @@ describe('Integration: Admin Dashboard Flow', () => {
 
       // Verify database update
       const dbResult = await testPool.query(
-        'SELECT status, processed_items FROM batch_jobs WHERE job_id = $1',
+        'SELECT status, processed_items FROM batch_jobs WHERE id = $1',
         [job.jobId]
       );
 
@@ -208,7 +214,7 @@ describe('Integration: Admin Dashboard Flow', () => {
 
       // Verify database update
       const dbResult = await testPool.query(
-        'SELECT status FROM batch_jobs WHERE job_id = $1',
+        'SELECT status FROM batch_jobs WHERE id = $1',
         [job.jobId]
       );
 
@@ -222,12 +228,16 @@ describe('Integration: Admin Dashboard Flow', () => {
       const species = await createTestSpecies();
       const image = await createTestImage(species.id);
 
-      // Generate some AI annotations
-      await request(app)
-        .post(`/api/ai/annotations/generate/${image.id}`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({ imageUrl: image.url })
-        .expect(202);
+      // Generate some AI annotations with timeout
+      await withTimeout(
+        request(app)
+          .post(`/api/ai/annotations/generate/${image.id}`)
+          .set('Authorization', `Bearer ${adminToken}`)
+          .send({ imageUrl: image.url })
+          .expect(202),
+        5000,
+        'AI annotation generation timed out'
+      );
 
       await delay(1500);
 
@@ -393,27 +403,35 @@ describe('Integration: Admin Dashboard Flow', () => {
 
       const jobId = jobResponse.body.jobId;
 
-      // Step 2: Start processing (trigger AI generations)
+      // Step 2: Start processing (trigger AI generations) with timeout protection
       for (const image of images) {
-        await request(app)
-          .post(`/api/ai/annotations/generate/${image.id}`)
-          .set('Authorization', `Bearer ${adminToken}`)
-          .send({ imageUrl: image.url })
-          .expect(202);
+        await withTimeout(
+          request(app)
+            .post(`/api/ai/annotations/generate/${image.id}`)
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send({ imageUrl: image.url })
+            .expect(202),
+          5000,
+          `AI annotation generation timed out for image ${image.id}`
+        );
       }
 
-      // Step 3: Update job progress
-      await request(app)
-        .patch(`/api/batch/jobs/${jobId}`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          status: 'processing',
-          processedItems: images.length,
-        })
-        .expect(200);
+      // Step 3: Update job progress with timeout
+      await withTimeout(
+        request(app)
+          .patch(`/api/batch/jobs/${jobId}`)
+          .set('Authorization', `Bearer ${adminToken}`)
+          .send({
+            status: 'processing',
+            processedItems: images.length,
+          })
+          .expect(200),
+        5000,
+        'Job progress update timed out'
+      );
 
-      // Step 4: Wait for processing
-      await delay(2000);
+      // Step 4: Wait for processing (reduced from 2000ms to 1500ms)
+      await delay(1500);
 
       // Step 5: Check pending annotations
       const pendingResponse = await request(app)
@@ -568,7 +586,7 @@ describe('Integration: Admin Dashboard Flow', () => {
 
       // Verify final state
       const finalState = await testPool.query(
-        'SELECT processed_items FROM batch_jobs WHERE job_id = $1',
+        'SELECT processed_items FROM batch_jobs WHERE id = $1',
         [job.jobId]
       );
 

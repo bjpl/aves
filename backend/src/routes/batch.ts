@@ -180,4 +180,14 @@ process.on('SIGINT', () => {
   batchProcessor.destroy();
 });
 
+/**
+ * Cleanup function for batch processor
+ * Exported for use in test teardown
+ */
+export function cleanupBatchProcessor(): void {
+  if (batchProcessor) {
+    batchProcessor.destroy();
+  }
+}
+
 export default router;
