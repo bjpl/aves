@@ -2,7 +2,7 @@
 // WHY: Critical for image search functionality in admin interface
 // PATTERN: Test API calls, rate limiting, error handling, attribution
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import axios from 'axios';
 import { UnsplashService, unsplashService } from '../../services/unsplashService';
 import type { UnsplashPhoto } from '../../../../shared/types/image.types';
@@ -46,14 +46,14 @@ describe('UnsplashService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Mock process.env for API key BEFORE creating service
-    Object.defineProperty(process.env, 'REACT_APP_UNSPLASH_ACCESS_KEY', {
-      value: 'test-api-key',
-      writable: true,
-      configurable: true
-    });
+    // Use Vitest's proper env mocking
+    vi.stubEnv('REACT_APP_UNSPLASH_ACCESS_KEY', 'test-api-key');
 
     service = new UnsplashService();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   describe('searchPhotos', () => {
@@ -138,11 +138,7 @@ describe('UnsplashService', () => {
     });
 
     it('should return empty results if no API key configured', async () => {
-      Object.defineProperty(process.env, 'REACT_APP_UNSPLASH_ACCESS_KEY', {
-        value: '',
-        writable: true,
-        configurable: true
-      });
+      vi.stubEnv('REACT_APP_UNSPLASH_ACCESS_KEY', '');
       const newService = new UnsplashService();
 
       const result = await newService.searchPhotos('cardinal');
@@ -214,11 +210,7 @@ describe('UnsplashService', () => {
     });
 
     it('should return null if no API key configured', async () => {
-      Object.defineProperty(process.env, 'REACT_APP_UNSPLASH_ACCESS_KEY', {
-        value: '',
-        writable: true,
-        configurable: true
-      });
+      vi.stubEnv('REACT_APP_UNSPLASH_ACCESS_KEY', '');
       const newService = new UnsplashService();
 
       const result = await newService.getPhoto('photo-123');

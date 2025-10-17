@@ -2,16 +2,19 @@ import axios from 'axios';
 import { UnsplashPhoto, ImageSearchResult } from '../../../shared/types/image.types';
 import { error as logError, warn } from '../utils/logger';
 
-// Note: In production, these should be environment variables
-const UNSPLASH_ACCESS_KEY = process.env.REACT_APP_UNSPLASH_ACCESS_KEY || '';
 const UNSPLASH_API_URL = 'https://api.unsplash.com';
 
 export class UnsplashService {
   private rateLimitRemaining: number = 50;
   private rateLimitResetTime: Date | null = null;
 
+  // Read API key at runtime for testability
+  private get apiKey(): string {
+    return process.env.REACT_APP_UNSPLASH_ACCESS_KEY || '';
+  }
+
   async searchPhotos(query: string, page: number = 1, perPage: number = 10): Promise<ImageSearchResult> {
-    if (!UNSPLASH_ACCESS_KEY) {
+    if (!this.apiKey) {
       warn('Unsplash API key not configured');
       return { query, results: [], total: 0, totalPages: 0 };
     }
@@ -19,7 +22,7 @@ export class UnsplashService {
     try {
       const response = await axios.get(`${UNSPLASH_API_URL}/search/photos`, {
         headers: {
-          Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`
+          Authorization: `Client-ID ${this.apiKey}`
         },
         params: {
           query,
@@ -49,14 +52,14 @@ export class UnsplashService {
   }
 
   async getPhoto(photoId: string): Promise<UnsplashPhoto | null> {
-    if (!UNSPLASH_ACCESS_KEY) {
+    if (!this.apiKey) {
       return null;
     }
 
     try {
       const response = await axios.get(`${UNSPLASH_API_URL}/photos/${photoId}`, {
         headers: {
-          Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`
+          Authorization: `Client-ID ${this.apiKey}`
         }
       });
 
@@ -73,7 +76,7 @@ export class UnsplashService {
       try {
         await axios.get(`${UNSPLASH_API_URL}/photos/${photo.id}/download`, {
           headers: {
-            Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`
+            Authorization: `Client-ID ${this.apiKey}`
           }
         });
       } catch (error) {
