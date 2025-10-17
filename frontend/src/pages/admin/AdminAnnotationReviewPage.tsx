@@ -8,7 +8,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAIAnnotationsPending } from '../../hooks/useAIAnnotations';
+import { useAIAnnotationsPending, useAIAnnotationStats } from '../../hooks/useAIAnnotations';
 import { AnnotationReviewCard } from '../../components/admin/AnnotationReviewCard';
 import { AnnotationAnalyticsDashboard } from '../../components/admin/AnnotationAnalyticsDashboard';
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
@@ -20,6 +20,7 @@ type TabType = 'review' | 'analytics';
 export const AdminAnnotationReviewPage: React.FC = () => {
   const { user, loading: authLoading } = useSupabaseAuth();
   const { data: annotations, isLoading, error, refetch } = useAIAnnotationsPending();
+  const { data: stats, isLoading: statsLoading } = useAIAnnotationStats();
 
   const [filter, setFilter] = useState<FilterType>('pending');
   const [sort, setSort] = useState<SortType>('newest');
@@ -72,8 +73,11 @@ export const AdminAnnotationReviewPage: React.FC = () => {
   }
 
   const filteredAnnotations = annotations || [];
-  const pendingCount = filteredAnnotations.filter(a => a.status === 'pending').length;
-  const approvedCount = filteredAnnotations.filter(a => a.status === 'approved').length;
+
+  // Use stats from API instead of calculating from filtered list
+  const pendingCount = stats?.pending || 0;
+  const approvedCount = stats?.approved || 0;
+  const totalCount = stats?.total || 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -97,7 +101,7 @@ export const AdminAnnotationReviewPage: React.FC = () => {
                 <div className="text-xs text-gray-600">Approved</div>
               </div>
               <div>
-                <div className="text-3xl font-bold text-blue-600">{filteredAnnotations.length}</div>
+                <div className="text-3xl font-bold text-blue-600">{totalCount}</div>
                 <div className="text-xs text-gray-600">Total</div>
               </div>
             </div>
@@ -158,7 +162,7 @@ export const AdminAnnotationReviewPage: React.FC = () => {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                All ({filteredAnnotations.length})
+                All ({totalCount})
               </button>
             </div>
 

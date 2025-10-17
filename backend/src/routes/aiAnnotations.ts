@@ -1039,12 +1039,12 @@ router.get(
   requireSupabaseAdmin,
   async (req: Request, res: Response): Promise<void> => {
     try {
-      // Get counts by status
+      // Get counts by status from ai_annotation_items (not ai_annotations jobs table)
       const countsQuery = `
         SELECT
           status,
           COUNT(*) as count
-        FROM ai_annotations
+        FROM ai_annotation_items
         GROUP BY status
       `;
 
@@ -1055,8 +1055,7 @@ router.get(
         pending: 0,
         approved: 0,
         rejected: 0,
-        processing: 0,
-        failed: 0
+        edited: 0
       };
 
       for (const row of countsResult.rows) {
@@ -1064,11 +1063,11 @@ router.get(
         stats.total += parseInt(row.count);
       }
 
-      // Get average confidence
+      // Get average confidence from ai_annotation_items
       const confidenceQuery = `
-        SELECT AVG(confidence_score) as avg_confidence
-        FROM ai_annotations
-        WHERE confidence_score IS NOT NULL
+        SELECT AVG(confidence) as avg_confidence
+        FROM ai_annotation_items
+        WHERE confidence IS NOT NULL
       `;
 
       const confidenceResult = await pool.query(confidenceQuery);
@@ -1090,7 +1089,8 @@ router.get(
       const activityResult = await pool.query(activityQuery);
       stats.recentActivity = activityResult.rows;
 
-      res.json(stats);
+      // Wrap in data property to match frontend expectation
+      res.json({ data: stats });
 
     } catch (err) {
       logError('Error fetching annotation stats', err as Error);
