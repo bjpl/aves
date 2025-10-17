@@ -64,6 +64,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   // Debounced hover handler for reduced redraws
   const handleMouseMoveInternal = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!interactive) return;
+    if (!e.currentTarget) return; // Guard against null in debounced calls
 
     const rect = e.currentTarget.getBoundingClientRect();
     const scaleX = dimensions.width / rect.width;
@@ -102,6 +103,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!interactive) return;
+    if (!e.currentTarget) return; // Guard against null
 
     const rect = e.currentTarget.getBoundingClientRect();
     const scaleX = dimensions.width / rect.width;

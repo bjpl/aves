@@ -8,9 +8,9 @@
 
 import axios from 'axios';
 
-// Determine environment and backend URL
-const isGitHubPages = window.location.hostname.includes('github.io');
-const isAdmin = window.location.pathname.includes('/admin');
+// Determine environment and backend URL (with test-safe fallbacks)
+const isGitHubPages = typeof window !== 'undefined' && window.location?.hostname?.includes('github.io') || false;
+const isAdmin = typeof window !== 'undefined' && window.location?.pathname?.includes('/admin') || false;
 
 // Get backend URL from environment variables
 const env = import.meta.env as Record<string, unknown> | undefined;
@@ -27,13 +27,15 @@ if (isAdmin || !isGitHubPages) {
   baseURL = '';
 }
 
-console.log('🔧 Axios Config:', {
-  isGitHubPages,
-  isAdmin,
-  apiUrl,
-  baseURL,
-  pathname: window.location.pathname
-});
+if (typeof window !== 'undefined') {
+  console.log('🔧 Axios Config:', {
+    isGitHubPages,
+    isAdmin,
+    apiUrl,
+    baseURL,
+    pathname: window.location.pathname
+  });
+}
 
 // Create configured axios instance
 export const api = axios.create({
