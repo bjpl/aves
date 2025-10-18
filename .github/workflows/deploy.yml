@@ -44,7 +44,6 @@ jobs:
         run: npm test -- --run --reporter=verbose
         env:
           CI: true
-        continue-on-error: true
 
       - name: Install backend dependencies
         working-directory: ./backend
@@ -61,7 +60,7 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           directory: ./backend/coverage
-        continue-on-error: true
+          fail_ci_if_error: false
 
       - name: Build for GitHub Pages
         working-directory: ./frontend

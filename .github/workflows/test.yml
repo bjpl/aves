@@ -107,12 +107,12 @@ jobs:
     - name: Run linting
       run: |
         cd backend
-        npm run lint || true  # Don't fail on lint errors for now
+        npm run lint
 
     - name: Run type checking
       run: |
         cd backend
-        npm run typecheck || true  # Don't fail on type errors for now
+        npm run typecheck
 
     - name: Run tests
       run: |
