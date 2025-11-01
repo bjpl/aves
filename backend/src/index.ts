@@ -106,9 +106,31 @@ app.use(
   })
 );
 
+// CORS configuration - Allow multiple origins for development and production
+const allowedOrigins = [
+  'http://localhost:5173',           // Local development
+  'http://localhost:3000',           // Alternative local port
+  'https://aves-frontend.vercel.app', // Production (if using Vercel)
+  'https://bjpl.github.io',          // GitHub Pages (if applicable)
+  process.env.FRONTEND_URL          // Environment-specific URL
+].filter(Boolean); // Remove undefined values
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, Postman, or curl)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      // Log blocked origins for debugging
+      console.warn(`CORS blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Rate limiting - Environment configurable
