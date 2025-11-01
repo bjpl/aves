@@ -227,11 +227,11 @@ export const BoundingBoxEditor: React.FC<BoundingBoxEditorProps> = ({
             <div className="grid grid-cols-4 gap-4 text-sm font-mono">
               <div>
                 <span className="text-gray-600">X:</span>{' '}
-                <span className="text-blue-600 font-bold">{box.topLeft.x.toFixed(3)}</span>
+                <span className="text-blue-600 font-bold">{box.x.toFixed(3)}</span>
               </div>
               <div>
                 <span className="text-gray-600">Y:</span>{' '}
-                <span className="text-blue-600 font-bold">{box.topLeft.y.toFixed(3)}</span>
+                <span className="text-blue-600 font-bold">{box.y.toFixed(3)}</span>
               </div>
               <div>
                 <span className="text-gray-600">W:</span>{' '}
