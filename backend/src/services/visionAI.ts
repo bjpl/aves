@@ -465,8 +465,8 @@ Return ONLY the JSON array with 3-8 annotations depending on what's clearly visi
       const { x, y, width, height } = resp.boundingBox;
 
       const boundingBox: BoundingBox = {
-        topLeft: { x, y },
-        bottomRight: { x: x + width, y: y + height },
+        x,
+        y,
         width,
         height
       };
