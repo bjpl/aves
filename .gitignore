@@ -96,3 +96,4 @@ hive-mind-prompt-*.txt
 # Test environment files with real credentials
 backend/.env.test
 frontend/.env.test
+*.log

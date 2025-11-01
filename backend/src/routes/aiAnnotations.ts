@@ -484,10 +484,6 @@ router.get(
       user: (req as any).user?.id
     });
 
-    // Quick test - return immediately
-    res.json({ data: { total: 48, pending: 48, approved: 0, rejected: 0, avgConfidence: "0.88", recentActivity: [] } });
-    return;
-
     try {
       info('📊 Inside try block - about to query database');
       // Get counts by status from ai_annotation_items (not ai_annotations jobs table)

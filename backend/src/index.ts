@@ -14,6 +14,7 @@ import imagesRouter from './routes/images';
 import batchRouter from './routes/batch';
 import { testConnection } from './database/connection';
 import { error as logError, info } from './utils/logger';
+import { devAuthBypass } from './middleware/devAuth';
 
 dotenv.config();
 
@@ -146,6 +147,12 @@ app.use('/api/', limiter);
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Development auth bypass (ONLY in development!)
+if (process.env.NODE_ENV === 'development' && process.env.DEV_AUTH_BYPASS === 'true') {
+  info('⚠️  DEV AUTH BYPASS ENABLED - DO NOT USE IN PRODUCTION!');
+  app.use('/api', devAuthBypass);
+}
 
 // Health check
 app.get('/health', (_req, res) => {

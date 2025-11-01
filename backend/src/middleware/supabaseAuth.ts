@@ -49,6 +49,17 @@ export const authenticateSupabaseToken = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    // Development bypass for testing
+    if (process.env.NODE_ENV === 'development' && process.env.BYPASS_AUTH === 'true') {
+      info('🔓 Development auth bypass enabled', { path: req.path });
+      req.user = {
+        userId: 'dev-admin-user',
+        email: 'admin@aves.test'
+      };
+      next();
+      return;
+    }
+
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
@@ -102,6 +113,16 @@ export const requireSupabaseAdmin = async (
   try {
     if (!req.user?.userId) {
       res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+
+    // Development bypass for testing
+    if (process.env.NODE_ENV === 'development' && process.env.BYPASS_AUTH === 'true') {
+      info('🔓 Development admin bypass enabled', {
+        userId: req.user.userId,
+        path: req.path
+      });
+      next();
       return;
     }
 
