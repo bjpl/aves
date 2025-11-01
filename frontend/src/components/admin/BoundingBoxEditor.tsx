@@ -9,10 +9,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 interface BoundingBox {
-  topLeft: { x: number; y: number };
-  bottomRight: { x: number; y: number };
-  width: number;
-  height: number;
+  x: number;      // Top-left X (0-1 normalized)
+  y: number;      // Top-left Y (0-1 normalized)
+  width: number;  // Width (0-1 normalized)
+  height: number; // Height (0-1 normalized)
 }
 
 interface BoundingBoxEditorProps {
@@ -56,13 +56,13 @@ export const BoundingBoxEditor: React.FC<BoundingBoxEditorProps> = ({
 
     if (isDragging) {
       // Move entire box
-      const newX = Math.max(0, Math.min(1 - box.width, box.topLeft.x + deltaX));
-      const newY = Math.max(0, Math.min(1 - box.height, box.topLeft.y + deltaY));
+      const newX = Math.max(0, Math.min(1 - box.width, box.x + deltaX));
+      const newY = Math.max(0, Math.min(1 - box.height, box.y + deltaY));
 
       setBox({
         ...box,
-        topLeft: { x: newX, y: newY },
-        bottomRight: { x: newX + box.width, y: newY + box.height }
+        x: newX,
+        y: newY
       });
     } else if (isResizing) {
       // Resize box based on handle
@@ -70,27 +70,27 @@ export const BoundingBoxEditor: React.FC<BoundingBoxEditorProps> = ({
 
       if (isResizing.includes('n')) {
         // North - adjust top
-        const newTop = Math.max(0, Math.min(box.bottomRight.y - 0.05, box.topLeft.y + deltaY));
-        newBox.topLeft.y = newTop;
-        newBox.height = newBox.bottomRight.y - newTop;
+        const newTop = Math.max(0, Math.min(box.y + box.height - 0.05, box.y + deltaY));
+        const heightChange = box.y - newTop;
+        newBox.y = newTop;
+        newBox.height += heightChange;
       }
       if (isResizing.includes('s')) {
         // South - adjust bottom
-        const newBottom = Math.max(box.topLeft.y + 0.05, Math.min(1, box.bottomRight.y + deltaY));
-        newBox.bottomRight.y = newBottom;
-        newBox.height = newBottom - newBox.topLeft.y;
+        const newHeight = Math.max(0.05, Math.min(1 - box.y, box.height + deltaY));
+        newBox.height = newHeight;
       }
       if (isResizing.includes('w')) {
         // West - adjust left
-        const newLeft = Math.max(0, Math.min(box.bottomRight.x - 0.05, box.topLeft.x + deltaX));
-        newBox.topLeft.x = newLeft;
-        newBox.width = newBox.bottomRight.x - newLeft;
+        const newLeft = Math.max(0, Math.min(box.x + box.width - 0.05, box.x + deltaX));
+        const widthChange = box.x - newLeft;
+        newBox.x = newLeft;
+        newBox.width += widthChange;
       }
       if (isResizing.includes('e')) {
         // East - adjust right
-        const newRight = Math.max(box.topLeft.x + 0.05, Math.min(1, box.bottomRight.x + deltaX));
-        newBox.bottomRight.x = newRight;
-        newBox.width = newRight - newBox.topLeft.x;
+        const newWidth = Math.max(0.05, Math.min(1 - box.x, box.width + deltaX));
+        newBox.width = newWidth;
       }
 
       setBox(newBox);
@@ -162,8 +162,8 @@ export const BoundingBoxEditor: React.FC<BoundingBoxEditorProps> = ({
                 isDragging ? 'cursor-move border-green-400' : 'cursor-move border-yellow-400'
               }`}
               style={{
-                left: `${box.topLeft.x * 100}%`,
-                top: `${box.topLeft.y * 100}%`,
+                left: `${box.x * 100}%`,
+                top: `${box.y * 100}%`,
                 width: `${box.width * 100}%`,
                 height: `${box.height * 100}%`,
                 boxShadow: isDragging

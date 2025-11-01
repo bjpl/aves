@@ -105,8 +105,8 @@ export const ResponsiveAnnotationCanvas: React.FC<ResponsiveAnnotationCanvasProp
       if (!annotation.isVisible) return;
 
       const { boundingBox } = annotation;
-      const x = boundingBox.topLeft.x * scale;
-      const y = boundingBox.topLeft.y * scale;
+      const x = boundingBox.x * scale;
+      const y = boundingBox.y * scale;
       const width = boundingBox.width * scale;
       const height = boundingBox.height * scale;
 
@@ -176,8 +176,8 @@ export const ResponsiveAnnotationCanvas: React.FC<ResponsiveAnnotationCanvasProp
       if (!annotation.isVisible) continue;
 
       const { boundingBox } = annotation;
-      const x = boundingBox.topLeft.x * scale;
-      const y = boundingBox.topLeft.y * scale;
+      const x = boundingBox.x * scale;
+      const y = boundingBox.y * scale;
       const width = boundingBox.width * scale;
       const height = boundingBox.height * scale;
 

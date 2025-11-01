@@ -100,28 +100,17 @@ export const usePendingAnnotations = () => {
       // Enrich annotations with image URLs and transform to match AIAnnotation interface
       const enrichedAnnotations = annotations?.map(annotation => {
         // Parse bounding_box if it's a string
-        let bbox = typeof annotation.bounding_box === 'string'
+        const bbox = typeof annotation.bounding_box === 'string'
           ? JSON.parse(annotation.bounding_box)
           : annotation.bounding_box;
 
-        // Transform from {x, y, width, height} to {topLeft, bottomRight, width, height}
-        // This matches the expected Annotation interface
-        if (bbox && bbox.x !== undefined && !bbox.topLeft) {
-          bbox = {
-            topLeft: { x: bbox.x, y: bbox.y },
-            bottomRight: { x: bbox.x + bbox.width, y: bbox.y + bbox.height },
-            width: bbox.width,
-            height: bbox.height
-          };
-        }
-
         // Transform snake_case to camelCase to match existing component interface
-        const transformed = {
+        return {
           id: annotation.id,
           imageId: annotation.image_id,
-          spanishTerm: annotation.spanish_term, // camelCase for component
-          englishTerm: annotation.english_term, // camelCase for component
-          boundingBox: bbox,
+          spanishTerm: annotation.spanish_term,
+          englishTerm: annotation.english_term,
+          boundingBox: bbox, // Already in {x, y, width, height} format
           type: annotation.annotation_type,
           difficultyLevel: annotation.difficulty_level,
           pronunciation: annotation.pronunciation,
@@ -132,18 +121,6 @@ export const usePendingAnnotations = () => {
           updatedAt: new Date(annotation.created_at),
           imageUrl: imageUrlMap.get(annotation.image_id) || '',
         };
-
-        // Debug logging to console
-        console.log('✅ Annotation transformed:', {
-          spanish: annotation.spanish_term + ' → ' + transformed.spanishTerm,
-          bbox_raw: annotation.bounding_box,
-          bbox_transformed: transformed.boundingBox,
-          has_topLeft: !!transformed.boundingBox?.topLeft,
-          has_width: transformed.boundingBox?.width,
-          has_height: transformed.boundingBox?.height
-        });
-
-        return transformed;
       }) || [];
 
       info('Pending annotations fetched with image URLs', { count: enrichedAnnotations.length });

@@ -47,8 +47,8 @@ export const InteractiveLayer: React.FC<InteractiveLayerProps> = ({
       ctx.lineWidth = 2;
       ctx.setLineDash([5, 5]);
 
-      const x = boundingBox.topLeft.x;
-      const y = boundingBox.topLeft.y;
+      const x = boundingBox.x;
+      const y = boundingBox.y;
       const width = boundingBox.width;
       const height = boundingBox.height;
 

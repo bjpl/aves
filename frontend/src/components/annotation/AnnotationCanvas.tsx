@@ -47,13 +47,13 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   const getAnnotationAtPoint = (point: Coordinate): Annotation | null => {
     for (const annotation of annotations) {
       const { boundingBox } = annotation;
-      const { topLeft, width, height } = boundingBox;
+      const { x, y, width, height } = boundingBox;
 
       if (
-        point.x >= topLeft.x &&
-        point.x <= topLeft.x + width &&
-        point.y >= topLeft.y &&
-        point.y <= topLeft.y + height
+        point.x >= x &&
+        point.x <= x + width &&
+        point.y >= y &&
+        point.y <= y + height
       ) {
         return annotation;
       }
@@ -85,8 +85,8 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
       if (annotation) {
         const { boundingBox } = annotation;
         dirtyRectTracker.markDirty(
-          boundingBox.topLeft.x,
-          boundingBox.topLeft.y - 30,
+          boundingBox.x,
+          boundingBox.y - 30,
           Math.max(boundingBox.width, 150),
           boundingBox.height + 30
         );
@@ -119,8 +119,8 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
       onAnnotationClick?.(annotation);
 
       dirtyRectTracker.markDirty(
-        annotation.boundingBox.topLeft.x,
-        annotation.boundingBox.topLeft.y,
+        annotation.boundingBox.x,
+        annotation.boundingBox.y,
         annotation.boundingBox.width,
         annotation.boundingBox.height
       );

@@ -14,6 +14,18 @@ import { error as logError, info } from '../utils/logger';
 
 const router = Router();
 
+// Debug middleware to log all requests to this router
+router.use((req: Request, res: Response, next) => {
+  info('🔍 AI Annotations Router Request', {
+    method: req.method,
+    path: req.path,
+    url: req.url,
+    originalUrl: req.originalUrl,
+    baseUrl: req.baseUrl
+  });
+  next();
+});
+
 // Rate limiter for AI generation endpoints (expensive operations)
 const aiGenerationLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
@@ -135,58 +147,188 @@ router.post(
         [jobId, imageId, JSON.stringify([]), 'processing']
       );
 
-      // Start async annotation generation (fire and forget)
+      // Start async annotation generation with retry mechanism and proper error handling
       // In production, this should use a job queue like Bull or BullMQ
       (async () => {
+        const MAX_RETRIES = 3;
+        const BASE_DELAY_MS = 1000; // 1 second
+        let retryCount = 0;
+
+        /**
+         * Updates job status with proper error handling
+         * Ensures status is ALWAYS updated, never stuck in processing
+         */
+        const updateJobStatus = async (
+          status: string,
+          data: any,
+          confidenceScore?: number,
+          errorMessage?: string
+        ): Promise<void> => {
+          const maxStatusUpdateRetries = 3;
+          let statusUpdateAttempt = 0;
+
+          while (statusUpdateAttempt < maxStatusUpdateRetries) {
+            try {
+              await pool.query(
+                `UPDATE ai_annotations
+                 SET status = $1, annotation_data = $2, confidence_score = $3,
+                     error_message = $4, updated_at = CURRENT_TIMESTAMP
+                 WHERE job_id = $5`,
+                [status, JSON.stringify(data), confidenceScore || null, errorMessage || null, jobId]
+              );
+              info('Job status updated successfully', { jobId, status, attempt: statusUpdateAttempt + 1 });
+              return; // Success - exit function
+            } catch (updateError) {
+              statusUpdateAttempt++;
+              logError(`Failed to update job status (attempt ${statusUpdateAttempt}/${maxStatusUpdateRetries})`,
+                updateError as Error, { jobId, status });
+
+              if (statusUpdateAttempt >= maxStatusUpdateRetries) {
+                // CRITICAL: All retries exhausted - log to monitoring system
+                logError('CRITICAL: Failed to update job status after all retries - job may be stuck',
+                  updateError as Error, { jobId, status });
+                // In production, send alert to monitoring system (e.g., Sentry, PagerDuty)
+                break;
+              }
+
+              // Exponential backoff for status update retries
+              await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, statusUpdateAttempt)));
+            }
+          }
+        };
+
+        /**
+         * Generate annotations with exponential backoff retry
+         */
+        const generateWithRetry = async (): Promise<AIAnnotation[]> => {
+          while (retryCount < MAX_RETRIES) {
+            try {
+              info('Attempting AI annotation generation', { jobId, attempt: retryCount + 1, maxRetries: MAX_RETRIES });
+              const annotations = await visionAIService.generateAnnotations(imageUrl, imageId);
+
+              if (!annotations || annotations.length === 0) {
+                throw new Error('AI service returned no annotations');
+              }
+
+              return annotations;
+            } catch (error) {
+              retryCount++;
+              const isLastRetry = retryCount >= MAX_RETRIES;
+
+              logError(`AI annotation generation attempt ${retryCount}/${MAX_RETRIES} failed`,
+                error as Error, { jobId, imageId, isLastRetry });
+
+              if (isLastRetry) {
+                throw error; // Final attempt failed - throw to outer catch
+              }
+
+              // Exponential backoff: 1s, 2s, 4s
+              const delayMs = BASE_DELAY_MS * Math.pow(2, retryCount - 1);
+              info('Retrying AI annotation generation after delay', {
+                jobId,
+                nextAttempt: retryCount + 1,
+                delayMs
+              });
+              await new Promise(resolve => setTimeout(resolve, delayMs));
+            }
+          }
+
+          throw new Error('Max retries exceeded'); // Should never reach here
+        };
+
+        // Main processing logic
         try {
-          const annotations = await visionAIService.generateAnnotations(imageUrl, imageId);
+          // Generate annotations with retry
+          const annotations = await generateWithRetry();
 
           // Calculate overall confidence
           const avgConfidence = annotations.reduce((sum, a) => sum + (a.confidence || 0), 0) / annotations.length;
 
           // Update job with results
-          await pool.query(
-            `UPDATE ai_annotations
-             SET annotation_data = $1, status = $2, confidence_score = $3, updated_at = CURRENT_TIMESTAMP
-             WHERE job_id = $4`,
-            [JSON.stringify(annotations), 'pending', avgConfidence.toFixed(2), jobId]
-          );
+          await updateJobStatus('pending', annotations, parseFloat(avgConfidence.toFixed(2)));
 
           // Insert individual annotation items
           for (const annotation of annotations) {
-            await pool.query(
-              `INSERT INTO ai_annotation_items (
-                job_id, image_id, spanish_term, english_term, bounding_box,
-                annotation_type, difficulty_level, pronunciation, confidence
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-              [
+            try {
+              await pool.query(
+                `INSERT INTO ai_annotation_items (
+                  job_id, image_id, spanish_term, english_term, bounding_box,
+                  annotation_type, difficulty_level, pronunciation, confidence
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+                [
+                  jobId,
+                  imageId,
+                  annotation.spanishTerm,
+                  annotation.englishTerm,
+                  JSON.stringify(annotation.boundingBox),
+                  annotation.type,
+                  annotation.difficultyLevel,
+                  annotation.pronunciation || null,
+                  annotation.confidence || 0.8
+                ]
+              );
+            } catch (insertError) {
+              logError('Failed to insert annotation item', insertError as Error, {
                 jobId,
-                imageId,
-                annotation.spanishTerm,
-                annotation.englishTerm,
-                JSON.stringify(annotation.boundingBox),
-                annotation.type,
-                annotation.difficultyLevel,
-                annotation.pronunciation || null,
-                annotation.confidence || 0.8
-              ]
-            );
+                annotationTerm: annotation.spanishTerm
+              });
+              // Continue with other annotations even if one fails
+            }
           }
 
-          info('AI annotation generation completed', { jobId, annotationCount: annotations.length });
+          info('AI annotation generation completed successfully', {
+            jobId,
+            annotationCount: annotations.length,
+            retriesUsed: retryCount,
+            avgConfidence: avgConfidence.toFixed(2)
+          });
 
         } catch (error) {
-          logError('AI annotation generation failed', error as Error);
+          const errorMessage = (error as Error).message;
+          const errorDetails = {
+            message: errorMessage,
+            retriesAttempted: retryCount,
+            timestamp: new Date().toISOString()
+          };
 
-          // Update job status to failed
-          await pool.query(
-            `UPDATE ai_annotations
-             SET status = $1, annotation_data = $2, updated_at = CURRENT_TIMESTAMP
-             WHERE job_id = $3`,
-            ['failed', JSON.stringify({ error: (error as Error).message }), jobId]
-          );
+          logError('AI annotation generation failed after all retries', error as Error, {
+            jobId,
+            imageId,
+            retriesAttempted: retryCount
+          });
+
+          // Update job status to failed with comprehensive error handling
+          await updateJobStatus('failed', errorDetails, undefined, errorMessage);
         }
       })();
+
+      // Set up job timeout (5 minutes) to prevent stuck jobs
+      setTimeout(async () => {
+        try {
+          const checkResult = await pool.query(
+            'SELECT status FROM ai_annotations WHERE job_id = $1',
+            [jobId]
+          );
+
+          if (checkResult.rows.length > 0 && checkResult.rows[0].status === 'processing') {
+            logError('Job timeout - marking as failed', new Error('Processing timeout'), { jobId });
+
+            await pool.query(
+              `UPDATE ai_annotations
+               SET status = 'failed',
+                   error_message = 'Processing timeout after 5 minutes',
+                   annotation_data = $1,
+                   updated_at = CURRENT_TIMESTAMP
+               WHERE job_id = $2`,
+              [JSON.stringify({ error: 'Processing timeout after 5 minutes', timeout: true }), jobId]
+            );
+
+            info('Job marked as failed due to timeout', { jobId });
+          }
+        } catch (timeoutError) {
+          logError('Failed to check/update job timeout status', timeoutError as Error, { jobId });
+        }
+      }, 5 * 60 * 1000); // 5 minutes
 
       res.status(202).json({
         jobId,
@@ -265,70 +407,22 @@ router.get(
 
       const result = await pool.query(query, [status, limit, offset]);
 
-      const annotations = result.rows.map((row, index) => {
-        // Ensure bounding box is in frontend format {topLeft, bottomRight, width, height}
-        let boundingBox = row.boundingBox;
-
-        info(`🔍 GET /pending - Row ${index} bounding box BEFORE conversion`, {
-          id: row.id,
-          spanishTerm: row.spanishTerm,
-          boundingBoxType: typeof boundingBox,
-          boundingBoxKeys: boundingBox ? Object.keys(boundingBox) : [],
-          hasTopLeft: boundingBox?.topLeft !== undefined,
-          hasX: boundingBox?.x !== undefined,
-          rawValue: JSON.stringify(boundingBox)
-        });
-
-        if (boundingBox) {
-          // If already in frontend format (has topLeft), keep it
-          if (boundingBox.topLeft) {
-            info(`✅ GET /pending - Row ${index} already in frontend format`, { id: row.id });
-            // Already correct format
-            boundingBox = boundingBox;
-          }
-          // If in backend format {x, y, width, height}, convert to frontend format
-          else if (boundingBox.x !== undefined) {
-            info(`🔄 GET /pending - Row ${index} converting from backend format`, { id: row.id });
-            boundingBox = {
-              topLeft: { x: boundingBox.x, y: boundingBox.y },
-              bottomRight: {
-                x: boundingBox.x + boundingBox.width,
-                y: boundingBox.y + boundingBox.height
-              },
-              width: boundingBox.width,
-              height: boundingBox.height
-            };
-          }
-          // Unknown format - log error
-          else {
-            logError('GET /pending - Unknown bounding box format!', new Error(`ID: ${row.id}, bbox: ${JSON.stringify(boundingBox)}`));
-          }
-        } else {
-          info(`⚠️ GET /pending - Row ${index} has NULL or undefined bounding box`, { id: row.id });
-        }
-
-        info(`🔍 GET /pending - Row ${index} bounding box AFTER conversion`, {
-          id: row.id,
-          boundingBox: JSON.stringify(boundingBox)
-        });
-
-        return {
-          id: row.id,
-          imageId: row.imageId,
-          spanishTerm: row.spanishTerm,
-          englishTerm: row.englishTerm,
-          boundingBox: boundingBox,
-          type: row.type,
-          difficultyLevel: row.difficultyLevel,
-          pronunciation: row.pronunciation,
-          confidenceScore: row.confidenceScore,
-          status: row.status,
-          aiGenerated: true,
-          imageUrl: row.imageUrl,
-          createdAt: row.createdAt,
-          updatedAt: row.updatedAt
-        };
-      });
+      const annotations = result.rows.map(row => ({
+        id: row.id,
+        imageId: row.imageId,
+        spanishTerm: row.spanishTerm,
+        englishTerm: row.englishTerm,
+        boundingBox: row.boundingBox, // Already in {x, y, width, height} format
+        type: row.type,
+        difficultyLevel: row.difficultyLevel,
+        pronunciation: row.pronunciation,
+        confidenceScore: row.confidenceScore,
+        status: row.status,
+        aiGenerated: true,
+        imageUrl: row.imageUrl,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt
+      }));
 
       res.json({
         annotations,
@@ -686,16 +780,8 @@ router.patch(
         updateValues.push(updates.englishTerm);
       }
       if (updates.boundingBox) {
-        // Convert backend format { x, y, width, height } to storage format { topLeft, bottomRight, width, height }
-        const bbox = updates.boundingBox;
-        const storageFormat = {
-          topLeft: { x: bbox.x, y: bbox.y },
-          bottomRight: { x: bbox.x + bbox.width, y: bbox.y + bbox.height },
-          width: bbox.width,
-          height: bbox.height
-        };
         updateFields.push(`bounding_box = $${paramIndex++}`);
-        updateValues.push(JSON.stringify(storageFormat));
+        updateValues.push(JSON.stringify(updates.boundingBox));
       }
       if (updates.pronunciation !== undefined) {
         updateFields.push(`pronunciation = $${paramIndex++}`);
@@ -1038,6 +1124,12 @@ router.get(
   authenticateSupabaseToken,
   requireSupabaseAdmin,
   async (req: Request, res: Response): Promise<void> => {
+    info('📊 Stats endpoint called', {
+      path: req.path,
+      headers: req.headers,
+      user: (req as any).user?.id
+    });
+
     try {
       // Get counts by status from ai_annotation_items (not ai_annotations jobs table)
       const countsQuery = `
@@ -1048,7 +1140,9 @@ router.get(
         GROUP BY status
       `;
 
+      info('📊 Executing counts query');
       const countsResult = await pool.query(countsQuery);
+      info('📊 Counts query result', { rows: countsResult.rows.length });
 
       const stats: any = {
         total: 0,
@@ -1070,8 +1164,13 @@ router.get(
         WHERE confidence IS NOT NULL
       `;
 
+      info('📊 Executing confidence query');
       const confidenceResult = await pool.query(confidenceQuery);
-      stats.avgConfidence = parseFloat(confidenceResult.rows[0].avg_confidence || '0').toFixed(2);
+
+      // Handle null result when no data exists
+      const avgConfidence = confidenceResult.rows[0]?.avg_confidence;
+      stats.avgConfidence = avgConfidence ? parseFloat(avgConfidence).toFixed(2) : '0.00';
+      info('📊 Confidence query result', { avgConfidence: stats.avgConfidence });
 
       // Get recent activity
       const activityQuery = `
@@ -1086,10 +1185,13 @@ router.get(
         LIMIT 10
       `;
 
+      info('📊 Executing activity query');
       const activityResult = await pool.query(activityQuery);
       stats.recentActivity = activityResult.rows;
+      info('📊 Activity query result', { rows: activityResult.rows.length });
 
       // Wrap in data property to match frontend expectation
+      info('📊 Sending stats response', { stats });
       res.json({ data: stats });
 
     } catch (err) {
@@ -1124,10 +1226,15 @@ router.get(
  * }
  */
 router.get(
-  '/annotations/analytics',
+  '/ai/annotations/analytics',
   authenticateSupabaseToken,
   requireSupabaseAdmin,
   async (req: Request, res: Response): Promise<void> => {
+    info('📈 Analytics endpoint called', {
+      path: req.path,
+      user: (req as any).user?.id
+    });
+
     try {
       // OVERVIEW: Total counts and status breakdown
       const overviewQuery = `

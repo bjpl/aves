@@ -52,7 +52,7 @@ export const useAnnotationAnalytics = () => {
     queryKey: annotationAnalyticsKeys.analytics(),
     queryFn: async (): Promise<AnnotationAnalytics> => {
       try {
-        const response = await axios.get<AnnotationAnalytics>('/api/annotations/analytics');
+        const response = await axios.get<AnnotationAnalytics>('/api/ai/annotations/analytics');
         return response.data;
       } catch (err) {
         logError('Error fetching annotation analytics:', err instanceof Error ? err : new Error(String(err)));

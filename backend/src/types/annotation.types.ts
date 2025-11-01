@@ -1,13 +1,8 @@
-export interface Coordinate {
-  x: number;
-  y: number;
-}
-
 export interface BoundingBox {
-  topLeft: Coordinate;
-  bottomRight: Coordinate;
-  width: number;
-  height: number;
+  x: number;      // Top-left X (0-1 normalized)
+  y: number;      // Top-left Y (0-1 normalized)
+  width: number;  // Width (0-1 normalized)
+  height: number; // Height (0-1 normalized)
 }
 
 export type AnnotationType = 'anatomical' | 'behavioral' | 'color' | 'pattern' | 'habitat';

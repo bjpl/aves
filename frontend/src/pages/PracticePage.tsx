@@ -14,7 +14,7 @@ const sampleAnnotations: Annotation[] = [
   {
     id: '1',
     imageId: 'flamingo',
-    boundingBox: { topLeft: { x: 0, y: 0 }, bottomRight: { x: 100, y: 100 }, width: 100, height: 100 },
+    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
     type: 'anatomical',
     spanishTerm: 'el pico',
     englishTerm: 'beak',
@@ -27,7 +27,7 @@ const sampleAnnotations: Annotation[] = [
   {
     id: '2',
     imageId: 'flamingo',
-    boundingBox: { topLeft: { x: 0, y: 0 }, bottomRight: { x: 100, y: 100 }, width: 100, height: 100 },
+    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
     type: 'anatomical',
     spanishTerm: 'las patas',
     englishTerm: 'legs',
@@ -40,7 +40,7 @@ const sampleAnnotations: Annotation[] = [
   {
     id: '3',
     imageId: 'sparrow',
-    boundingBox: { topLeft: { x: 0, y: 0 }, bottomRight: { x: 100, y: 100 }, width: 100, height: 100 },
+    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
     type: 'anatomical',
     spanishTerm: 'las alas',
     englishTerm: 'wings',
@@ -53,7 +53,7 @@ const sampleAnnotations: Annotation[] = [
   {
     id: '4',
     imageId: 'eagle',
-    boundingBox: { topLeft: { x: 0, y: 0 }, bottomRight: { x: 100, y: 100 }, width: 100, height: 100 },
+    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
     type: 'anatomical',
     spanishTerm: 'los ojos',
     englishTerm: 'eyes',
@@ -66,7 +66,7 @@ const sampleAnnotations: Annotation[] = [
   {
     id: '5',
     imageId: 'stork',
-    boundingBox: { topLeft: { x: 0, y: 0 }, bottomRight: { x: 100, y: 100 }, width: 100, height: 100 },
+    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
     type: 'habitat',
     spanishTerm: 'el nido',
     englishTerm: 'nest',
@@ -81,7 +81,7 @@ const sampleAnnotations: Annotation[] = [
   {
     id: '6',
     imageId: 'flamingo',
-    boundingBox: { topLeft: { x: 0, y: 0 }, bottomRight: { x: 100, y: 100 }, width: 100, height: 100 },
+    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
     type: 'color',
     spanishTerm: 'las plumas rosadas',
     englishTerm: 'pink feathers',
@@ -94,7 +94,7 @@ const sampleAnnotations: Annotation[] = [
   {
     id: '7',
     imageId: 'eagle',
-    boundingBox: { topLeft: { x: 0, y: 0 }, bottomRight: { x: 100, y: 100 }, width: 100, height: 100 },
+    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
     type: 'anatomical',
     spanishTerm: 'las garras',
     englishTerm: 'talons',
@@ -107,7 +107,7 @@ const sampleAnnotations: Annotation[] = [
   {
     id: '8',
     imageId: 'stork',
-    boundingBox: { topLeft: { x: 0, y: 0 }, bottomRight: { x: 100, y: 100 }, width: 100, height: 100 },
+    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
     type: 'anatomical',
     spanishTerm: 'el cuello largo',
     englishTerm: 'long neck',
@@ -120,7 +120,7 @@ const sampleAnnotations: Annotation[] = [
   {
     id: '9',
     imageId: 'cardinal',
-    boundingBox: { topLeft: { x: 0, y: 0 }, bottomRight: { x: 100, y: 100 }, width: 100, height: 100 },
+    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
     type: 'anatomical',
     spanishTerm: 'la cresta roja',
     englishTerm: 'red crest',
@@ -133,7 +133,7 @@ const sampleAnnotations: Annotation[] = [
   {
     id: '10',
     imageId: 'owl',
-    boundingBox: { topLeft: { x: 0, y: 0 }, bottomRight: { x: 100, y: 100 }, width: 100, height: 100 },
+    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
     type: 'behavioral',
     spanishTerm: 'caza de noche',
     englishTerm: 'hunts at night',
@@ -148,7 +148,7 @@ const sampleAnnotations: Annotation[] = [
   {
     id: '11',
     imageId: 'peacock',
-    boundingBox: { topLeft: { x: 0, y: 0 }, bottomRight: { x: 100, y: 100 }, width: 100, height: 100 },
+    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
     type: 'behavioral',
     spanishTerm: 'hacer la rueda',
     englishTerm: 'display tail feathers',
@@ -161,7 +161,7 @@ const sampleAnnotations: Annotation[] = [
   {
     id: '12',
     imageId: 'migratory',
-    boundingBox: { topLeft: { x: 0, y: 0 }, bottomRight: { x: 100, y: 100 }, width: 100, height: 100 },
+    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
     type: 'behavioral',
     spanishTerm: 'migrar al sur',
     englishTerm: 'migrate south',

@@ -49,8 +49,8 @@ export const HoverLayer: React.FC<HoverLayerProps> = ({
         ctx.shadowColor = color;
         ctx.shadowBlur = 10;
 
-        const x = boundingBox.topLeft.x;
-        const y = boundingBox.topLeft.y;
+        const x = boundingBox.x;
+        const y = boundingBox.y;
         const width = boundingBox.width;
         const height = boundingBox.height;
 

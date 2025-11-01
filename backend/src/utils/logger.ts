@@ -86,10 +86,15 @@ export const warn = (message: string, context?: Record<string, unknown>) => {
  *
  * @param message - Message to log
  * @param error - Error object or context
+ * @param context - Additional context (only used when error is an Error)
  */
-export const error = (message: string, error?: Error | Record<string, unknown>) => {
+export const error = (
+  message: string,
+  error?: Error | Record<string, unknown>,
+  context?: Record<string, unknown>
+) => {
   if (error instanceof Error) {
-    logger.error({ err: error, stack: error.stack }, message);
+    logger.error({ err: error, stack: error.stack, ...(context || {}) }, message);
   } else {
     logger.error(error || {}, message);
   }

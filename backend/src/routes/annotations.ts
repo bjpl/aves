@@ -6,10 +6,10 @@ import { error as logError } from '../utils/logger';
 const router = Router();
 
 const BoundingBoxSchema = z.object({
-  topLeft: z.object({ x: z.number(), y: z.number() }),
-  bottomRight: z.object({ x: z.number(), y: z.number() }),
-  width: z.number(),
-  height: z.number()
+  x: z.number().min(0).max(1),
+  y: z.number().min(0).max(1),
+  width: z.number().min(0).max(1),
+  height: z.number().min(0).max(1)
 });
 
 const CreateAnnotationSchema = z.object({

@@ -14,7 +14,6 @@ import { Annotation } from '../../types';
 import { EnhancedRejectModal } from './EnhancedRejectModal';
 import { BoundingBoxEditor } from './BoundingBoxEditor';
 import { RejectionCategoryValue } from '../../constants/annotationQuality';
-import { toEditorFormat, toBackendFormat } from '../../utils/boundingBoxConverter';
 
 export interface AnnotationReviewCardProps {
   annotation: AIAnnotation;
@@ -529,22 +528,17 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
       {showBboxEditor && (
         <BoundingBoxEditor
           imageUrl={imageUrl}
-          initialBox={toEditorFormat(annotation.boundingBox)}
+          initialBox={annotation.boundingBox}
           label={annotation.spanishTerm}
           onSave={async (newBox) => {
             try {
               console.log('🔧 BBOX Editor - New box from editor:', newBox);
-
-              // Convert from editor format to backend format
-              const backendFormat = toBackendFormat(newBox);
-              console.log('🔧 BBOX Editor - Converted to backend format:', backendFormat);
-
               console.log('🔧 BBOX Editor - Sending PATCH to annotation:', annotation.id);
 
               // Update bounding box WITHOUT approving (keeps in review queue)
               const result = await updateMutation.mutateAsync({
                 annotationId: annotation.id,
-                updates: { boundingBox: backendFormat }
+                updates: { boundingBox: newBox }
               });
 
               console.log('✅ BBOX Editor - Update successful!', result);

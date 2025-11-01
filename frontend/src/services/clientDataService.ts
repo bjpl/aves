@@ -73,10 +73,10 @@ class ClientDataService {
         id: '1',
         imageId: 'cardinal-1',
         boundingBox: {
-          topLeft: { x: 150, y: 100 },
-          bottomRight: { x: 250, y: 150 },
-          width: 100,
-          height: 50
+          x: 0.15,
+          y: 0.1,
+          width: 0.1,
+          height: 0.05
         },
         type: 'anatomical',
         spanishTerm: 'pico',
@@ -91,10 +91,10 @@ class ClientDataService {
         id: '2',
         imageId: 'cardinal-1',
         boundingBox: {
-          topLeft: { x: 200, y: 150 },
-          bottomRight: { x: 280, y: 200 },
-          width: 80,
-          height: 50
+          x: 0.2,
+          y: 0.15,
+          width: 0.08,
+          height: 0.05
         },
         type: 'color',
         spanishTerm: 'plumas rojas',
