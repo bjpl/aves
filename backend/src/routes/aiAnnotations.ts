@@ -455,6 +455,108 @@ router.get(
 );
 
 /**
+ * GET /api/ai/annotations/stats
+ * Get review statistics
+ *
+ * @auth Admin only
+ *
+ * Response:
+ * {
+ *   "total": 150,
+ *   "pending": 42,
+ *   "approved": 95,
+ *   "rejected": 13,
+ *   "avgConfidence": 0.87,
+ *   "recentActivity": [...]
+ * }
+ *
+ * NOTE: This route MUST come BEFORE /:jobId to avoid being caught by the param route
+ */
+router.get(
+  '/ai/annotations/stats',
+  authenticateSupabaseToken,
+  requireSupabaseAdmin,
+  async (req: Request, res: Response): Promise<void> => {
+    info('📊 Stats endpoint handler EXECUTING', {
+      path: req.path,
+      url: req.url,
+      originalUrl: req.originalUrl,
+      user: (req as any).user?.id
+    });
+
+    try {
+      info('📊 Inside try block - about to query database');
+      // Get counts by status from ai_annotation_items (not ai_annotations jobs table)
+      const countsQuery = `
+        SELECT
+          status,
+          COUNT(*) as count
+        FROM ai_annotation_items
+        GROUP BY status
+      `;
+
+      info('📊 Executing counts query');
+      const countsResult = await pool.query(countsQuery);
+      info('📊 Counts query result', { rows: countsResult.rows.length });
+
+      const stats: any = {
+        total: 0,
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+        edited: 0
+      };
+
+      for (const row of countsResult.rows) {
+        stats[row.status] = parseInt(row.count);
+        stats.total += parseInt(row.count);
+      }
+
+      // Get average confidence from ai_annotation_items
+      const confidenceQuery = `
+        SELECT AVG(confidence) as avg_confidence
+        FROM ai_annotation_items
+        WHERE confidence IS NOT NULL
+      `;
+
+      info('📊 Executing confidence query');
+      const confidenceResult = await pool.query(confidenceQuery);
+
+      // Handle null result when no data exists
+      const avgConfidence = confidenceResult.rows[0]?.avg_confidence;
+      stats.avgConfidence = avgConfidence ? parseFloat(avgConfidence).toFixed(2) : '0.00';
+      info('📊 Confidence query result', { avgConfidence: stats.avgConfidence });
+
+      // Get recent activity
+      const activityQuery = `
+        SELECT
+          r.action,
+          r.affected_items as "affectedItems",
+          r.created_at as "createdAt",
+          u.email as "reviewerEmail"
+        FROM ai_annotation_reviews r
+        LEFT JOIN users u ON r.reviewer_id = u.id
+        ORDER BY r.created_at DESC
+        LIMIT 10
+      `;
+
+      info('📊 Executing activity query');
+      const activityResult = await pool.query(activityQuery);
+      stats.recentActivity = activityResult.rows;
+      info('📊 Activity query result', { rows: activityResult.rows.length });
+
+      // Wrap in data property to match frontend expectation
+      info('📊 Sending stats response', { stats });
+      res.json({ data: stats });
+
+    } catch (err) {
+      logError('Error fetching annotation stats', err as Error);
+      res.status(500).json({ error: 'Failed to fetch statistics' });
+    }
+  }
+);
+
+/**
  * GET /api/ai/annotations/:jobId
  * Get specific annotation job status and details
  *
@@ -1114,106 +1216,6 @@ router.post(
       res.status(500).json({ error: 'Batch approval failed' });
     } finally {
       client.release();
-    }
-  }
-);
-
-/**
- * GET /api/ai/annotations/stats
- * Get review statistics
- *
- * @auth Admin only
- *
- * Response:
- * {
- *   "total": 150,
- *   "pending": 42,
- *   "approved": 95,
- *   "rejected": 13,
- *   "avgConfidence": 0.87,
- *   "recentActivity": [...]
- * }
- */
-router.get(
-  '/ai/annotations/stats',
-  authenticateSupabaseToken,
-  requireSupabaseAdmin,
-  async (req: Request, res: Response): Promise<void> => {
-    info('📊 Stats endpoint handler EXECUTING', {
-      path: req.path,
-      url: req.url,
-      originalUrl: req.originalUrl,
-      user: (req as any).user?.id
-    });
-
-    try {
-      info('📊 Inside try block - about to query database');
-      // Get counts by status from ai_annotation_items (not ai_annotations jobs table)
-      const countsQuery = `
-        SELECT
-          status,
-          COUNT(*) as count
-        FROM ai_annotation_items
-        GROUP BY status
-      `;
-
-      info('📊 Executing counts query');
-      const countsResult = await pool.query(countsQuery);
-      info('📊 Counts query result', { rows: countsResult.rows.length });
-
-      const stats: any = {
-        total: 0,
-        pending: 0,
-        approved: 0,
-        rejected: 0,
-        edited: 0
-      };
-
-      for (const row of countsResult.rows) {
-        stats[row.status] = parseInt(row.count);
-        stats.total += parseInt(row.count);
-      }
-
-      // Get average confidence from ai_annotation_items
-      const confidenceQuery = `
-        SELECT AVG(confidence) as avg_confidence
-        FROM ai_annotation_items
-        WHERE confidence IS NOT NULL
-      `;
-
-      info('📊 Executing confidence query');
-      const confidenceResult = await pool.query(confidenceQuery);
-
-      // Handle null result when no data exists
-      const avgConfidence = confidenceResult.rows[0]?.avg_confidence;
-      stats.avgConfidence = avgConfidence ? parseFloat(avgConfidence).toFixed(2) : '0.00';
-      info('📊 Confidence query result', { avgConfidence: stats.avgConfidence });
-
-      // Get recent activity
-      const activityQuery = `
-        SELECT
-          r.action,
-          r.affected_items as "affectedItems",
-          r.created_at as "createdAt",
-          u.email as "reviewerEmail"
-        FROM ai_annotation_reviews r
-        LEFT JOIN users u ON r.reviewer_id = u.id
-        ORDER BY r.created_at DESC
-        LIMIT 10
-      `;
-
-      info('📊 Executing activity query');
-      const activityResult = await pool.query(activityQuery);
-      stats.recentActivity = activityResult.rows;
-      info('📊 Activity query result', { rows: activityResult.rows.length });
-
-      // Wrap in data property to match frontend expectation
-      info('📊 Sending stats response', { stats });
-      res.json({ data: stats });
-
-    } catch (err) {
-      logError('Error fetching annotation stats', err as Error);
-      res.status(500).json({ error: 'Failed to fetch statistics' });
     }
   }
 );
