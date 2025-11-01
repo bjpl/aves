@@ -1139,13 +1139,15 @@ router.get(
   authenticateSupabaseToken,
   requireSupabaseAdmin,
   async (req: Request, res: Response): Promise<void> => {
-    info('📊 Stats endpoint called', {
+    info('📊 Stats endpoint handler EXECUTING', {
       path: req.path,
-      headers: req.headers,
+      url: req.url,
+      originalUrl: req.originalUrl,
       user: (req as any).user?.id
     });
 
     try {
+      info('📊 Inside try block - about to query database');
       // Get counts by status from ai_annotation_items (not ai_annotations jobs table)
       const countsQuery = `
         SELECT
