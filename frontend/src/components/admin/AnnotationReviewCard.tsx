@@ -249,12 +249,12 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
                   className="absolute inset-0 w-full h-full object-contain"
                 />
                 {/* Yellow Bounding Box Overlay */}
-                {annotation.boundingBox && annotation.boundingBox.topLeft && (
+                {annotation.boundingBox && (
                   <div
                     className="absolute border-4 border-yellow-400 bg-yellow-400 bg-opacity-10 pointer-events-none"
                     style={{
-                      left: `${annotation.boundingBox.topLeft.x * 100}%`,
-                      top: `${annotation.boundingBox.topLeft.y * 100}%`,
+                      left: `${annotation.boundingBox.x * 100}%`,
+                      top: `${annotation.boundingBox.y * 100}%`,
                       width: `${annotation.boundingBox.width * 100}%`,
                       height: `${annotation.boundingBox.height * 100}%`,
                       boxShadow: 'inset 0 0 0 2px rgba(250, 204, 21, 0.6), 0 0 20px rgba(250, 204, 21, 0.4)',
@@ -339,15 +339,15 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
             )}
 
             {/* Bounding Box Info */}
-            {annotation.boundingBox && annotation.boundingBox.topLeft ? (
+            {annotation.boundingBox ? (
               <div className={`rounded-lg p-3 ${hasQualityIssues ? 'bg-yellow-50 border-2 border-yellow-300' : 'bg-blue-50'}`}>
                 <h5 className={`text-xs font-semibold mb-2 ${hasQualityIssues ? 'text-yellow-900' : 'text-blue-900'}`}>
                   Bounding Box (Normalized 0-1)
                 </h5>
                 <div className={`grid grid-cols-2 gap-2 text-xs font-mono ${hasQualityIssues ? 'text-yellow-800' : 'text-blue-800'}`}>
                   <div>
-                    X: {annotation.boundingBox.topLeft.x.toFixed(2)}, Y:{' '}
-                    {annotation.boundingBox.topLeft.y.toFixed(2)}
+                    X: {annotation.boundingBox.x.toFixed(2)}, Y:{' '}
+                    {annotation.boundingBox.y.toFixed(2)}
                   </div>
                   <div>
                     W: {annotation.boundingBox.width.toFixed(2)}, H:{' '}
