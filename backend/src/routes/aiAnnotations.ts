@@ -407,22 +407,37 @@ router.get(
 
       const result = await pool.query(query, [status, limit, offset]);
 
-      const annotations = result.rows.map(row => ({
-        id: row.id,
-        imageId: row.imageId,
-        spanishTerm: row.spanishTerm,
-        englishTerm: row.englishTerm,
-        boundingBox: row.boundingBox, // Already in {x, y, width, height} format
-        type: row.type,
-        difficultyLevel: row.difficultyLevel,
-        pronunciation: row.pronunciation,
-        confidenceScore: row.confidenceScore,
-        status: row.status,
-        aiGenerated: true,
-        imageUrl: row.imageUrl,
-        createdAt: row.createdAt,
-        updatedAt: row.updatedAt
-      }));
+      const annotations = result.rows.map(row => {
+        // Convert database format to standardized format
+        let boundingBox = row.boundingBox;
+
+        // If database has old {topLeft, bottomRight} format, convert to {x, y, width, height}
+        if (boundingBox && boundingBox.topLeft) {
+          boundingBox = {
+            x: boundingBox.topLeft.x,
+            y: boundingBox.topLeft.y,
+            width: boundingBox.bottomRight.x - boundingBox.topLeft.x,
+            height: boundingBox.bottomRight.y - boundingBox.topLeft.y
+          };
+        }
+
+        return {
+          id: row.id,
+          imageId: row.imageId,
+          spanishTerm: row.spanishTerm,
+          englishTerm: row.englishTerm,
+          boundingBox,
+          type: row.type,
+          difficultyLevel: row.difficultyLevel,
+          pronunciation: row.pronunciation,
+          confidenceScore: row.confidenceScore,
+          status: row.status,
+          aiGenerated: true,
+          imageUrl: row.imageUrl,
+          createdAt: row.createdAt,
+          updatedAt: row.updatedAt
+        };
+      });
 
       res.json({
         annotations,
