@@ -3,6 +3,13 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+
+// Load environment variables FIRST, before any other imports that might use them
+// Only load dotenv in development (Railway provides env vars directly in production)
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
+
 import authRouter from './routes/auth';
 import annotationsRouter from './routes/annotations';
 import aiAnnotationsRouter from './routes/aiAnnotations';
@@ -15,8 +22,6 @@ import batchRouter from './routes/batch';
 import { testConnection } from './database/connection';
 import { error as logError, info } from './utils/logger';
 import { devAuthBypass } from './middleware/devAuth';
-
-dotenv.config();
 
 /**
  * Validate production environment configuration

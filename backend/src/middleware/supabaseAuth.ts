@@ -10,20 +10,33 @@ import { Request, Response, NextFunction } from 'express';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { info, error as logError } from '../utils/logger';
 
-// Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+// Lazy initialization of Supabase client
+let supabase: SupabaseClient | null = null;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Missing Supabase configuration. Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env');
-}
+function getSupabaseClient(): SupabaseClient {
+  if (!supabase) {
+    const supabaseUrl = process.env.SUPABASE_URL || '';
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-const supabase: SupabaseClient = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Environment variables:', {
+        SUPABASE_URL: supabaseUrl ? 'Set' : 'Missing',
+        SUPABASE_SERVICE_ROLE_KEY: supabaseServiceKey ? 'Set' : 'Missing',
+        NODE_ENV: process.env.NODE_ENV,
+        All_ENV_KEYS: Object.keys(process.env).filter(key => key.startsWith('SUPABASE') || key === 'NODE_ENV')
+      });
+      throw new Error('Missing Supabase configuration. Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables');
+    }
+
+    supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
   }
-});
+  return supabase;
+}
 
 // Extend Express Request to include user info
 declare global {
@@ -70,7 +83,7 @@ export const authenticateSupabaseToken = async (
     }
 
     // Verify JWT with Supabase
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    const { data: { user }, error } = await getSupabaseClient().auth.getUser(token);
 
     if (error || !user) {
       logError('Invalid Supabase token', error || new Error('No user returned'));
@@ -127,7 +140,7 @@ export const requireSupabaseAdmin = async (
     }
 
     // Check admin status in user_metadata or app_metadata
-    const { data: { user }, error } = await supabase.auth.admin.getUserById(req.user.userId);
+    const { data: { user }, error } = await getSupabaseClient().auth.admin.getUserById(req.user.userId);
 
     if (error || !user) {
       logError('Failed to get user admin status', error || new Error('No user found'));
