@@ -171,6 +171,37 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Environment diagnostic endpoint (remove in production)
+app.get('/api/env-check', (_req, res) => {
+  res.json({
+    status: 'checking environment variables',
+    environment: {
+      NODE_ENV: process.env.NODE_ENV || 'not set',
+      PORT: process.env.PORT || 'not set',
+      hasDatabase: {
+        DATABASE_URL: !!process.env.DATABASE_URL,
+        DB_HOST: !!process.env.DB_HOST,
+        DB_NAME: process.env.DB_NAME || 'not set',
+      },
+      hasSupabase: {
+        SUPABASE_URL: !!process.env.SUPABASE_URL,
+        SUPABASE_ANON_KEY: !!process.env.SUPABASE_ANON_KEY,
+        SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      },
+      hasAuth: {
+        JWT_SECRET: !!process.env.JWT_SECRET,
+        SESSION_SECRET: !!process.env.SESSION_SECRET,
+      },
+      railwayInfo: {
+        RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT || 'not set',
+        RAILWAY_PROJECT_ID: !!process.env.RAILWAY_PROJECT_ID,
+        RAILWAY_SERVICE_ID: !!process.env.RAILWAY_SERVICE_ID,
+      },
+      timestamp: new Date().toISOString()
+    }
+  });
+});
+
 // API routes
 app.use('/api', authRouter);
 app.use('/api', annotationsRouter);
