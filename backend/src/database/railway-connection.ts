@@ -16,7 +16,7 @@ function getConnectionConfigs(): PoolConfig[] {
 
   const configs: PoolConfig[] = [];
 
-  // 1. Try environment variable first
+  // 1. Try environment variable first (if user found correct one)
   if (primaryUrl) {
     configs.push({
       connectionString: primaryUrl,
@@ -24,43 +24,48 @@ function getConnectionConfigs(): PoolConfig[] {
     });
   }
 
-  // 2. Supavisor Session Mode (AWS pooler) - Format 1
+  // 2. Transaction Mode Pooler - CORRECT FORMAT with project ref in username
+  configs.push({
+    connectionString: `postgresql://postgres.${projectRef}:${password}@aws-0-us-west-1.pooler.supabase.com:6543/postgres`,
+    ssl: { rejectUnauthorized: false }
+  });
+
+  // 3. Try different AWS regions (some projects use aws-1)
+  configs.push({
+    connectionString: `postgresql://postgres.${projectRef}:${password}@aws-1-us-west-1.pooler.supabase.com:6543/postgres`,
+    ssl: { rejectUnauthorized: false }
+  });
+
+  // 4. Session mode with correct username format
   configs.push({
     connectionString: `postgresql://postgres.${projectRef}:${password}@aws-0-us-west-1.pooler.supabase.com:5432/postgres`,
     ssl: { rejectUnauthorized: false }
   });
 
-  // 3. Supavisor Session Mode - Format 2 (alternative password placement)
+  // 5. Try generic pooler hostname
   configs.push({
-    connectionString: `postgresql://postgres:${password}.${projectRef}@aws-0-us-west-1.pooler.supabase.com:5432/postgres`,
+    connectionString: `postgresql://postgres.${projectRef}:${password}@pooler.supabase.com:6543/postgres`,
     ssl: { rejectUnauthorized: false }
   });
 
-  // 4. Try with explicit user/host/database parameters (bypasses DNS)
+  // 6. Try with explicit parameters to bypass DNS
   configs.push({
     host: 'aws-0-us-west-1.pooler.supabase.com',
-    port: 5432,
+    port: 6543,
     database: 'postgres',
     user: `postgres.${projectRef}`,
     password: password,
     ssl: { rejectUnauthorized: false }
   });
 
-  // 5. Transaction mode pooler (if other formats fail)
-  configs.push({
-    connectionString: `postgresql://postgres.${projectRef}:${password}@aws-0-us-west-1.pooler.supabase.com:6543/postgres`,
-    ssl: { rejectUnauthorized: false }
-  });
-
-  // 6. Direct connection with explicit IPv4 (last resort)
-  configs.push({
-    host: '54.185.141.40', // Hardcoded IPv4 for db.ubqnfiwxghkxltluyczd.supabase.co
-    port: 5432,
-    database: 'postgres',
-    user: 'postgres',
-    password: password,
-    ssl: { rejectUnauthorized: false }
-  });
+  // 7. Alternative regions
+  const regions = ['us-west-2', 'us-east-1', 'us-east-2'];
+  for (const region of regions) {
+    configs.push({
+      connectionString: `postgresql://postgres.${projectRef}:${password}@aws-0-${region}.pooler.supabase.com:6543/postgres`,
+      ssl: { rejectUnauthorized: false }
+    });
+  }
 
   return configs;
 }
