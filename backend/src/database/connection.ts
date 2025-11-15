@@ -1,8 +1,5 @@
 import { Pool } from 'pg';
-import dotenv from 'dotenv';
 import { info, error as logError, warn } from '../utils/logger';
-
-dotenv.config();
 
 /**
  * Optimized Database Connection Pool
@@ -13,20 +10,31 @@ dotenv.config();
  * - Connection validation and monitoring
  * - Environment-based configuration for different deployment scenarios
  */
-export const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'aves',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres',
 
-  // SSL Configuration - Enable in production for encrypted connections
-  ssl: process.env.NODE_ENV === 'production' && process.env.DB_SSL_ENABLED === 'true'
-    ? {
-        rejectUnauthorized: true, // Require valid SSL certificate
-        ca: process.env.DB_SSL_CA, // Optional: Certificate authority
-      }
-    : false, // Disable SSL in development
+// Use DATABASE_URL if available (Railway/Heroku style), otherwise use individual vars
+const connectionConfig = process.env.DATABASE_URL
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      // SSL is required for Supabase connections
+      ssl: process.env.DB_SSL_ENABLED !== 'false' ? { rejectUnauthorized: false } : false
+    }
+  : {
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432'),
+      database: process.env.DB_NAME || 'aves',
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || 'postgres',
+      // SSL Configuration
+      ssl: process.env.DB_SSL_ENABLED === 'true'
+        ? {
+            rejectUnauthorized: false, // Supabase uses self-signed certs
+            ca: process.env.DB_SSL_CA,
+          }
+        : false,
+    };
+
+export const pool = new Pool({
+  ...connectionConfig,
 
   // Connection Pool Size
   max: parseInt(process.env.DB_POOL_MAX || '20'),
@@ -93,6 +101,16 @@ pool.on('remove', (client) => {
 
 export const testConnection = async (): Promise<boolean> => {
   try {
+    // Log connection attempt details for debugging
+    info('Attempting database connection', {
+      host: process.env.DATABASE_URL ? '[Using DATABASE_URL]' : (process.env.DB_HOST || 'localhost'),
+      database: process.env.DB_NAME || 'aves',
+      ssl: process.env.DATABASE_URL ? 'enabled' : (process.env.DB_SSL_ENABLED || 'false'),
+      NODE_ENV: process.env.NODE_ENV || 'not set',
+      hasDBUrl: !!process.env.DATABASE_URL,
+      hasSupabaseUrl: !!process.env.SUPABASE_URL
+    });
+
     const client = await pool.connect();
     const result = await client.query('SELECT NOW()');
     client.release();

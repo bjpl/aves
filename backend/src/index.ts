@@ -5,10 +5,17 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 
 // Load environment variables FIRST, before any other imports that might use them
-// Only load dotenv in development (Railway provides env vars directly in production)
-if (process.env.NODE_ENV !== 'production') {
-  dotenv.config();
-}
+// Load dotenv for local development
+dotenv.config();
+
+// Log environment detection for debugging
+console.log('Starting server with environment:', {
+  NODE_ENV: process.env.NODE_ENV || 'development',
+  PORT: process.env.PORT || 3001,
+  hasDBUrl: !!process.env.DATABASE_URL,
+  hasSupabaseUrl: !!process.env.SUPABASE_URL,
+  hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+});
 
 import authRouter from './routes/auth';
 import annotationsRouter from './routes/annotations';
