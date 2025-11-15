@@ -7,15 +7,20 @@ import path from 'path';
 // PATTERN: Environment-based configuration switching
 
 export default defineConfig(({ mode }) => {
-  // Always use /aves/ for production builds (GitHub Pages)
+  // Check deployment target
   const isProduction = mode === 'production';
-  const isGitHubPages = mode === 'gh-pages' || isProduction;
+  const isGitHubPages = mode === 'gh-pages';
+  const isVercel = mode === 'vercel';
+
+  // GitHub Pages needs special handling
+  const useGitHubPagesConfig = isGitHubPages || (isProduction && !isVercel);
 
   return {
     plugins: [react()],
 
     // GitHub Pages serves from /repository-name/ subdirectory
-    base: isGitHubPages ? '/aves/' : '/',
+    // Vercel serves from root
+    base: useGitHubPagesConfig ? '/aves/' : '/',
 
     resolve: {
       alias: {
@@ -25,8 +30,8 @@ export default defineConfig(({ mode }) => {
     },
 
     build: {
-      // GitHub Pages can serve from /docs folder
-      outDir: isGitHubPages ? '../docs' : 'dist',
+      // GitHub Pages can serve from /docs folder, Vercel needs dist
+      outDir: useGitHubPagesConfig ? '../docs' : 'dist',
       emptyOutDir: true,
 
       // Performance optimizations
