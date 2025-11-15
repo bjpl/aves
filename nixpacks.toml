@@ -2,10 +2,10 @@
 nixPkgs = ["nodejs-18_x"]
 
 [phases.install]
-cmds = ["cd backend && npm ci --production=false"]
+cmds = ["npm ci"]
 
 [phases.build]
-cmds = ["cd backend && npm run build"]
+cmds = ["npm run build --workspace=backend"]
 
 [start]
-cmd = "cd backend && npm start"
+cmd = "npm run start --workspace=backend"
