@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { info, error as logError, warn } from '../utils/logger';
+import { createRailwayConnection } from './railway-connection';
 
 /**
  * Optimized Database Connection Pool
@@ -37,7 +38,8 @@ const connectionConfig = process.env.DATABASE_URL
         : false,
     };
 
-export const pool = new Pool({
+// Initialize pool with default config (may be replaced by Railway connection)
+export let pool = new Pool({
   ...connectionConfig,
 
   // Connection Pool Size
@@ -103,9 +105,27 @@ pool.on('remove', (client) => {
   });
 });
 
+// Check if we're on Railway
+const isRailway = !!process.env.RAILWAY_ENVIRONMENT;
+
 export const testConnection = async (): Promise<boolean> => {
   try {
-    // Log connection attempt details for debugging
+    // Use Railway-specific connection in production on Railway
+    if (isRailway && process.env.NODE_ENV === 'production') {
+      console.log('Detected Railway environment - using multi-strategy connection...');
+      const railwayPool = await createRailwayConnection();
+
+      if (railwayPool) {
+        // Replace the default pool with the working Railway pool
+        pool = railwayPool;
+        return true;
+      }
+
+      logError('Railway connection strategies all failed');
+      return false;
+    }
+
+    // Original connection logic for non-Railway environments
     const dbUrl = process.env.DATABASE_URL || '';
     const isPooled = dbUrl.includes('pooler.supabase.com');
     const connectionInfo = {
