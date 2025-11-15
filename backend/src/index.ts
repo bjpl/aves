@@ -241,4 +241,10 @@ const startServer = async () => {
   });
 };
 
-startServer().catch((err) => logError('Failed to start server', err));
+startServer().catch((err) => {
+  console.error('Failed to start server:', err);
+  console.error('Full error details:', JSON.stringify(err, null, 2));
+  logError('Failed to start server', err);
+  // Exit with error code to trigger Railway to show logs
+  process.exit(1);
+});

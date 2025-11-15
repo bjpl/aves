@@ -15,8 +15,12 @@ import { info, error as logError, warn } from '../utils/logger';
 const connectionConfig = process.env.DATABASE_URL
   ? {
       connectionString: process.env.DATABASE_URL,
-      // SSL is required for Supabase connections
-      ssl: process.env.DB_SSL_ENABLED !== 'false' ? { rejectUnauthorized: false } : false
+      // SSL configuration for Supabase (handles both direct and pooled connections)
+      ssl: process.env.DATABASE_URL.includes('pooler.supabase.com')
+        ? { rejectUnauthorized: false } // Pooled connections handle SSL differently
+        : process.env.DB_SSL_ENABLED !== 'false'
+          ? { rejectUnauthorized: false }
+          : false
     }
   : {
       host: process.env.DB_HOST || 'localhost',
@@ -102,14 +106,21 @@ pool.on('remove', (client) => {
 export const testConnection = async (): Promise<boolean> => {
   try {
     // Log connection attempt details for debugging
-    info('Attempting database connection', {
+    const dbUrl = process.env.DATABASE_URL || '';
+    const isPooled = dbUrl.includes('pooler.supabase.com');
+    const connectionInfo = {
       host: process.env.DATABASE_URL ? '[Using DATABASE_URL]' : (process.env.DB_HOST || 'localhost'),
       database: process.env.DB_NAME || 'aves',
       ssl: process.env.DATABASE_URL ? 'enabled' : (process.env.DB_SSL_ENABLED || 'false'),
       NODE_ENV: process.env.NODE_ENV || 'not set',
       hasDBUrl: !!process.env.DATABASE_URL,
-      hasSupabaseUrl: !!process.env.SUPABASE_URL
-    });
+      hasSupabaseUrl: !!process.env.SUPABASE_URL,
+      isPooledConnection: isPooled,
+      urlPreview: dbUrl ? `${dbUrl.substring(0, 40)}...` : 'not set'
+    };
+
+    console.log('Database connection attempt:', connectionInfo);
+    info('Attempting database connection', connectionInfo);
 
     const client = await pool.connect();
     const result = await client.query('SELECT NOW()');
@@ -117,7 +128,17 @@ export const testConnection = async (): Promise<boolean> => {
     info('Database connected successfully', { timestamp: result.rows[0].now });
     return true;
   } catch (err) {
-    logError('Database connection failed', err as Error);
+    const error = err as any;
+    console.error('Database connection failed with error:', {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      hint: error.hint,
+      hostname: error.hostname,
+      port: error.port,
+      database: error.database
+    });
+    logError('Database connection failed', error);
     return false;
   }
 };
