@@ -204,7 +204,7 @@ export function requireApiKey(options: {
 
       next();
     } catch (error) {
-      logError('API key authentication error', error);
+      logError('API key authentication error', error as Error);
       res.status(500).json({
         error: 'Internal server error',
         message: 'Failed to authenticate API key.',

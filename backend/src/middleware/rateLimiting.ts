@@ -88,17 +88,17 @@ export function createApiRateLimiter(): RateLimitRequestHandler {
 
   return rateLimit({
     ...config,
-    handler: rateLimitHandler,
-    skip: skipRateLimiting,
-    keyGenerator: generateRateLimitKey,
-    onLimitReached: (req: Request) => {
+    handler: (req: Request, res: Response) => {
       info('Rate limit reached', {
         ip: req.ip,
         path: req.path,
         limit: config.max,
         window: `${config.windowMs / 1000}s`,
       });
+      rateLimitHandler(req, res);
     },
+    skip: skipRateLimiting,
+    keyGenerator: generateRateLimitKey,
   });
 }
 

@@ -16,7 +16,7 @@ interface SecurityConfig {
     enabled: boolean;
     reportOnly: boolean;
     reportUri?: string;
-    directives: helmet.HelmetOptions['contentSecurityPolicy'];
+    directives: any; // Simplified type for CSP directives
   };
   hsts: {
     enabled: boolean;
@@ -75,7 +75,7 @@ function getSecurityConfig(): SecurityConfig {
 export function getHelmetMiddleware() {
   const config = getSecurityConfig();
 
-  const helmetConfig: helmet.HelmetOptions = {
+  const helmetConfig: Parameters<typeof helmet>[0] = {
     contentSecurityPolicy: config.csp.enabled
       ? {
           useDefaults: false,
