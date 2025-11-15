@@ -123,7 +123,8 @@ app.use(
 const allowedOrigins = [
   'http://localhost:5173',           // Local development
   'http://localhost:3000',           // Alternative local port
-  'https://aves-frontend.vercel.app', // Production (if using Vercel)
+  'https://aves-frontend.vercel.app', // Vercel production
+  'https://aves-frontend-production.up.railway.app', // Railway production (if needed)
   'https://bjpl.github.io',          // GitHub Pages (if applicable)
   process.env.FRONTEND_URL          // Environment-specific URL
 ].filter(Boolean); // Remove undefined values
@@ -143,7 +144,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Session-Id']
 }));
 
 // Rate limiting - Environment configurable
