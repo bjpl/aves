@@ -13,12 +13,26 @@ build/
 dist/
 out/
 
-# Environment
+# Environment - ALL .env files must be excluded
 .env
+.env.*
 .env.local
+.env.development
 .env.development.local
+.env.test
 .env.test.local
+.env.production
 .env.production.local
+**/.env
+**/.env.*
+**/backend/.env
+**/frontend/.env
+**/cms/.env
+# Only allow example files
+!.env.example
+!.env.*.example
+!**/.env.example
+!**/.env.*.example
 
 # Logs
 npm-debug.log*
@@ -66,6 +80,15 @@ temp/
 # Removed Windows wrapper files per user request
 hive-mind-prompt-*.txt
 
+
+# Removed Windows wrapper files per user request
+hive-mind-prompt-*.txt
+
+# Test environment files with real credentials
+backend/.env.test
+frontend/.env.test
+*.log
+
 # Claude Flow generated files
 .claude/settings.local.json
 .mcp.json
@@ -92,8 +115,3 @@ coordination/orchestration/*
 claude-flow
 # Removed Windows wrapper files per user request
 hive-mind-prompt-*.txt
-
-# Test environment files with real credentials
-backend/.env.test
-frontend/.env.test
-*.log

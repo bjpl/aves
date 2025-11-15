@@ -1,0 +1,114 @@
+﻿AVES
+Variables update
+
+
+Required Environment Variables for Railway Backend
+
+
+ Go to aves-backend → Variables tab and add these:
+
+
+  Critical (Must Have):
+
+
+  # Supabase (Authentication)
+  SUPABASE_URL=your-supabase-project-url
+  SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+
+
+  # Database (Use Railway PostgreSQL or external)
+  DB_HOST=your-database-host
+  DB_PORT=5432
+  DB_NAME=aves
+  DB_USER=postgres
+  DB_PASSWORD=your-database-password
+
+
+  # Security
+  JWT_SECRET=generate-a-long-random-string-32-chars-minimum
+  SESSION_SECRET=another-long-random-string
+
+
+  # Server
+  NODE_ENV=production
+  PORT=${{PORT}}
+  FRONTEND_URL=https://aves-production.up.railway.app
+
+
+  # CORS
+  CORS_ALLOWED_ORIGINS=https://aves-production.up.railway.app
+
+
+  # AI (Anthropic Claude)
+  ANTHROPIC_API_KEY=your-anthropic-api-key
+
+
+  Optional (Nice to Have):
+
+
+  # Unsplash (for bird images)
+  UNSPLASH_ACCESS_KEY=your-unsplash-key
+
+
+  # API Key
+  API_KEY_SECRET=another-random-string
+
+________________
+Security fixes
+
+
+  You MUST rotate these exposed credentials:
+
+
+  1. Supabase Service Role Key - Create new project and migrate data
+  2. OpenAI API Key - Rotate at platform.openai.com
+  3. Anthropic API Key - Rotate at console.anthropic.com
+  4. Database Passwords - Reset in Supabase dashboard
+  5. JWT & Session Secrets - Generate new: openssl rand -hex 32
+  6. Unsplash API Keys - Rotate at unsplash.com/oauth/applications
+  7. CMS Secrets - Replace all "tobemodified" values
+
+
+  📋 Quick Action Plan
+
+
+  # 1. Review the security status report
+  cat SECURITY_STATUS_REPORT.md
+
+
+  # 2. Follow the credential rotation guide (2-4 hours)
+  cat docs/CREDENTIAL_ROTATION_GUIDE.md
+
+
+  # 3. Follow the deployment checklist
+  cat docs/SECURITY_CHECKLIST.md
+
+
+  # 4. Verify no .env files are tracked
+  git ls-files | grep "\.env"  # Should only show .env.example files
+
+
+  # 5. After rotation, make repo public!
+
+
+  📊 Current Status
+
+
+  - Code Security: ✅ READY
+  - Git History: ✅ CLEAN
+  - Documentation: ✅ COMPLETE
+  - Credentials: ⚠️ MUST ROTATE BEFORE PUBLIC
+
+
+  Estimated Time to Public: 5-8 hours (mostly credential rotation)
+
+
+  🎯 Next Steps
+
+
+  1. Read SECURITY_STATUS_REPORT.md for full overview
+  2. Follow docs/CREDENTIAL_ROTATION_GUIDE.md step-by-step
+  3. Complete checklist in docs/SECURITY_CHECKLIST.md
+  4. Test everything thoroughly
+  5. Make repository public safely!
+________________

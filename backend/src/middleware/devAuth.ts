@@ -17,7 +17,13 @@ export const devAuthBypass = (
   res: Response,
   next: NextFunction
 ): void => {
-  // Only allow in development
+  // STRICT: Only allow in development AND never in production
+  if (process.env.NODE_ENV === 'production') {
+    // In production, this middleware should never bypass auth
+    next();
+    return;
+  }
+
   if (process.env.NODE_ENV !== 'development') {
     next();
     return;
@@ -25,6 +31,15 @@ export const devAuthBypass = (
 
   // Check if bypass is explicitly enabled
   const bypassEnabled = process.env.DEV_AUTH_BYPASS === 'true';
+
+  // Extra safety: Refuse to bypass if production-like indicators are present
+  if (process.env.DATABASE_URL?.includes('prod') ||
+      process.env.SUPABASE_URL?.includes('prod') ||
+      process.env.FORCE_HTTPS === 'true') {
+    info('⚠️ Production indicators detected - auth bypass refused');
+    next();
+    return;
+  }
 
   if (bypassEnabled) {
     info('🔓 DEV AUTH BYPASS ACTIVE', {

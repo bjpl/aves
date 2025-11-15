@@ -16,7 +16,12 @@ declare global {
   }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'development-secret-change-in-production';
+// JWT_SECRET is required - no fallback for security
+if (!process.env.JWT_SECRET) {
+  throw new Error('CRITICAL: JWT_SECRET environment variable is required');
+}
+
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export const authenticateToken = async (
   req: Request,
