@@ -203,11 +203,15 @@ router.post(
          * Generate annotations with exponential backoff retry
          */
         const generateWithRetry = async (): Promise<AIAnnotation[]> => {
-          // Step 1: Run quality check and bird detection
-          info('Running image quality assessment and bird detection', { jobId, imageId });
-          let validationResult;
-          try {
-            validationResult = await birdDetectionService.validateImage(imageUrl);
+          // Step 1: Run quality check and bird detection (TEMPORARILY DISABLED for performance)
+          // TODO: Re-enable after optimizing bird detection service
+          info('Skipping bird detection for now (performance optimization)', { jobId, imageId });
+          let validationResult = null;
+          const ENABLE_BIRD_DETECTION = false; // Set to true once optimized
+
+          if (ENABLE_BIRD_DETECTION) {
+            try {
+              validationResult = await birdDetectionService.validateImage(imageUrl);
 
             info('Image validation completed', {
               jobId,
@@ -237,11 +241,12 @@ router.post(
               throw new Error(`Image skipped: ${validationResult.skipReason}`);
             }
 
-          } catch (validationError) {
-            // If validation itself fails, log but continue with annotation generation
-            logError('Image validation failed - proceeding with annotation generation anyway',
-              validationError as Error, { jobId, imageId });
-            validationResult = null;
+            } catch (validationError) {
+              // If validation itself fails, log but continue with annotation generation
+              logError('Image validation failed - proceeding with annotation generation anyway',
+                validationError as Error, { jobId, imageId });
+              validationResult = null;
+            }
           }
 
           // Step 2: Fetch species information for ML-enhanced generation
