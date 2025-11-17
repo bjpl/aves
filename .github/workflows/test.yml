@@ -1,10 +1,13 @@
 name: Run Tests
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+  # Temporarily disabled automatic triggers to prevent email spam
+  # Fix needed: Missing secrets (TEST_JWT_SECRET, TEST_SESSION_SECRET, ANTHROPIC_API_KEY)
+  # push:
+  #   branches: [ main, develop ]
+  # pull_request:
+  #   branches: [ main, develop ]
+  workflow_dispatch:
 
 jobs:
   test:

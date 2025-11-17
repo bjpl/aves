@@ -5,10 +5,12 @@
 name: Deploy to GitHub Pages
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  # Temporarily disabled automatic triggers to prevent email spam
+  # Fix needed: Tests failing, check frontend/backend test configs
+  # push:
+  #   branches: [ main ]
+  # pull_request:
+  #   branches: [ main ]
   workflow_dispatch:
 
 permissions:

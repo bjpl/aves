@@ -1,10 +1,13 @@
 name: Code Quality
 
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
+  # Temporarily disabled automatic triggers to prevent email spam
+  # Fix needed: npm ci fails in root, missing SNYK_TOKEN secret
+  # push:
+  #   branches: [main, develop]
+  # pull_request:
+  #   branches: [main, develop]
+  workflow_dispatch:
 
 jobs:
   lint:
