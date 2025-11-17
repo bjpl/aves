@@ -128,3 +128,11 @@ scripts/test-*.sh
 **/docs/*debug*.md
 **/docs/AUTH_*.md
 AUTHENTICATION_FIX_IMPLEMENTATION.md
+
+# Development-only debug and test files
+backend/src/routes/debug.routes.ts
+backend/src/scripts/test-auth-debug.ts
+backend/src/scripts/test-auth.ts
+
+# Railway environment update instructions (contains credentials)
+backend/docs/railway-env-update-instructions.md
