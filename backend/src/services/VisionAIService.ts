@@ -72,9 +72,17 @@ export class VisionAIService {
       // Fetch image and convert to base64
       const imageData = await this.fetchImageAsBase64(imageUrl);
 
+      // Token limit validation
+      const maxTokens = 30000;
+      const estimatedPromptTokens = Math.ceil(prompt.length / 4);
+
+      if (estimatedPromptTokens > maxTokens * 0.5) {
+        logError(`Prompt too long: estimated ${estimatedPromptTokens} tokens, max input should be <${maxTokens * 0.5}`, new Error('Token limit warning'));
+      }
+
       const response = await this.client.messages.create({
-        model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5-20250629',
-        max_tokens: 4096,
+        model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5-20241022',
+        max_tokens: maxTokens,
         temperature: 0.3,
         messages: [
           {

@@ -68,7 +68,7 @@ Return JSON:
 }`;
   },
 
-  maxTokens: 300,
+  maxTokens: 500,
   temperature: 0.7,
 
   examples: [
@@ -122,7 +122,7 @@ Return JSON:
 }`;
   },
 
-  maxTokens: 350,
+  maxTokens: 600,
   temperature: 0.6,
 
   examples: [
@@ -187,7 +187,7 @@ Return JSON:
 }`;
   },
 
-  maxTokens: 400,
+  maxTokens: 800,
   temperature: 0.5,
 
   examples: [
@@ -250,7 +250,7 @@ Return JSON:
 }`;
   },
 
-  maxTokens: 450,
+  maxTokens: 1000,
   temperature: 0.8,
 
   examples: [
