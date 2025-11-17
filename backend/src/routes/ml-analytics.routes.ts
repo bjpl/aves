@@ -21,6 +21,14 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
+ * GET /api/ml/analytics/test
+ * Simple test endpoint to verify routes are loaded
+ */
+router.get('/ml/analytics/test', (_req: Request, res: Response) => {
+  res.json({ status: 'ML Analytics routes loaded successfully', timestamp: new Date().toISOString() });
+});
+
+/**
  * GET /api/ml/analytics/overview
  * Get comprehensive ML optimization overview
  */
