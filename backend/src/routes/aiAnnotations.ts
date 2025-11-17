@@ -9,6 +9,8 @@ import rateLimit from 'express-rate-limit';
 import { pool } from '../database/connection';
 import { visionAIService, AIAnnotation } from '../services/VisionAIService';
 import { birdDetectionService } from '../services/BirdDetectionService';
+import { reinforcementLearningEngine, extractRejectionCategory } from '../services/ReinforcementLearningEngine';
+import { patternLearner } from '../services/PatternLearner';
 // import { authenticateSupabaseToken, requireSupabaseAdmin } from '../middleware/supabaseAuth';
 import { optionalSupabaseAuth, optionalSupabaseAdmin } from '../middleware/optionalSupabaseAuth';
 import { validateBody, validateParams } from '../middleware/validate';
@@ -996,6 +998,55 @@ router.post(
         [item.job_id, userId, notes]
       );
 
+      // Get species name for reinforcement learning
+      let speciesName: string | undefined;
+      try {
+        const speciesResult = await client.query(
+          `SELECT s.english_name
+           FROM images i
+           JOIN species s ON i.species_id = s.id
+           WHERE i.id = $1`,
+          [item.image_id]
+        );
+        if (speciesResult.rows.length > 0) {
+          speciesName = speciesResult.rows[0].english_name;
+        }
+      } catch (speciesError) {
+        logError('Failed to fetch species for feedback', speciesError as Error);
+      }
+
+      // Capture positive feedback for reinforcement learning
+      try {
+        await reinforcementLearningEngine.captureFeedback({
+          type: 'approve',
+          annotationId,
+          originalData: item,
+          userId: userId,
+          metadata: {
+            species: speciesName,
+            imageId: item.image_id,
+            feature: item.spanish_term
+          }
+        });
+
+        // Learn from approval using pattern learner
+        await patternLearner.learnFromAnnotations([{
+          spanishTerm: item.spanish_term,
+          englishTerm: item.english_term,
+          boundingBox: typeof item.bounding_box === 'string' ? JSON.parse(item.bounding_box) : item.bounding_box,
+          type: item.annotation_type,
+          difficultyLevel: item.difficulty_level,
+          pronunciation: item.pronunciation,
+          confidence: 0.9 // High confidence since it was approved
+        }], {
+          species: speciesName,
+          imageCharacteristics: []
+        });
+      } catch (feedbackError) {
+        logError('Failed to capture approval feedback', feedbackError as Error);
+        // Don't fail the approval if feedback capture fails
+      }
+
       await client.query('COMMIT');
 
       info('AI annotation approved', { annotationId, approvedAnnotationId, userId });
@@ -1054,8 +1105,17 @@ router.post(
         ? `[${category}] ${notes || ''}`.trim()
         : (reason || notes || 'No reason provided');
 
-      // Get job_id for review record
-      const itemQuery = 'SELECT job_id FROM ai_annotation_items WHERE id = $1';
+      // Get annotation item and species info
+      const itemQuery = `
+        SELECT ai.job_id, ai.spanish_term, ai.english_term, ai.bounding_box,
+               ai.annotation_type, ai.difficulty_level, ai.pronunciation,
+               ai.confidence, ai.image_id,
+               s.english_name as species_name
+        FROM ai_annotation_items ai
+        LEFT JOIN images i ON ai.image_id = i.id
+        LEFT JOIN species s ON i.species_id = s.id
+        WHERE ai.id = $1
+      `;
       const itemResult = await client.query(itemQuery, [annotationId]);
 
       if (itemResult.rows.length === 0) {
@@ -1064,7 +1124,9 @@ router.post(
         return;
       }
 
-      const jobId = itemResult.rows[0].job_id;
+      const item = itemResult.rows[0];
+      const jobId = item.job_id;
+      const speciesName = item.species_name;
 
       // Update annotation status
       await client.query(
@@ -1082,9 +1144,45 @@ router.post(
         [jobId, userId, rejectionMessage]
       );
 
+      // Extract rejection category for reinforcement learning
+      const rejectionCategory = extractRejectionCategory(rejectionMessage);
+
+      // Capture negative feedback for reinforcement learning
+      try {
+        await reinforcementLearningEngine.captureFeedback({
+          type: 'reject',
+          annotationId,
+          originalData: item,
+          rejectionReason: rejectionCategory,
+          userId: userId,
+          metadata: {
+            species: speciesName,
+            imageId: item.image_id,
+            feature: item.spanish_term
+          }
+        });
+
+        // Learn from rejection using pattern learner
+        await patternLearner.learnFromRejection({
+          spanishTerm: item.spanish_term,
+          englishTerm: item.english_term,
+          boundingBox: typeof item.bounding_box === 'string' ? JSON.parse(item.bounding_box) : item.bounding_box,
+          type: item.annotation_type,
+          difficultyLevel: item.difficulty_level,
+          pronunciation: item.pronunciation,
+          confidence: item.confidence || 0.8
+        }, rejectionCategory, {
+          species: speciesName,
+          imageId: item.image_id
+        });
+      } catch (feedbackError) {
+        logError('Failed to capture rejection feedback', feedbackError as Error);
+        // Don't fail the rejection if feedback capture fails
+      }
+
       await client.query('COMMIT');
 
-      info('AI annotation rejected', { annotationId, userId, reason });
+      info('AI annotation rejected', { annotationId, userId, reason: rejectionCategory });
 
       res.json({
         message: 'Annotation rejected successfully',
@@ -1257,13 +1355,16 @@ router.post(
       const updates = req.body;
       const userId = req.user!.userId;
 
-      // Get the original annotation
+      // Get the original annotation with species info
       const itemQuery = `
         SELECT
-          job_id, image_id, spanish_term, english_term, bounding_box,
-          annotation_type, difficulty_level, pronunciation
-        FROM ai_annotation_items
-        WHERE id = $1 AND status = 'pending'
+          ai.job_id, ai.image_id, ai.spanish_term, ai.english_term, ai.bounding_box,
+          ai.annotation_type, ai.difficulty_level, ai.pronunciation, ai.confidence,
+          s.english_name as species_name
+        FROM ai_annotation_items ai
+        LEFT JOIN images i ON ai.image_id = i.id
+        LEFT JOIN species s ON i.species_id = s.id
+        WHERE ai.id = $1 AND ai.status = 'pending'
       `;
 
       const itemResult = await client.query(itemQuery, [annotationId]);
@@ -1275,6 +1376,12 @@ router.post(
       }
 
       const original = itemResult.rows[0];
+      const speciesName = original.species_name;
+
+      // Parse original bounding box
+      const originalBoundingBox = typeof original.bounding_box === 'string'
+        ? JSON.parse(original.bounding_box)
+        : original.bounding_box;
 
       // Merge updates with original values
       const finalData = {
@@ -1321,6 +1428,62 @@ router.post(
          VALUES ($1, $2, 'edit', 1, $3)`,
         [original.job_id, userId, updates.notes || 'Annotation edited']
       );
+
+      // Capture position correction for reinforcement learning (if bounding box was changed)
+      if (updates.boundingBox && originalBoundingBox) {
+        try {
+          const correctedBoundingBox = updates.boundingBox;
+
+          await reinforcementLearningEngine.captureFeedback({
+            type: 'position_fix',
+            annotationId,
+            originalData: {
+              ...original,
+              bounding_box: originalBoundingBox
+            },
+            correctedData: {
+              ...finalData,
+              bounding_box: correctedBoundingBox
+            },
+            userId: userId,
+            metadata: {
+              species: speciesName,
+              imageId: original.image_id,
+              feature: original.spanish_term
+            }
+          });
+
+          // Learn from correction using pattern learner
+          await patternLearner.learnFromCorrection(
+            {
+              spanishTerm: original.spanish_term,
+              englishTerm: original.english_term,
+              boundingBox: originalBoundingBox,
+              type: original.annotation_type,
+              difficultyLevel: original.difficulty_level,
+              pronunciation: original.pronunciation,
+              confidence: original.confidence || 0.8
+            },
+            {
+              spanishTerm: finalData.spanishTerm,
+              englishTerm: finalData.englishTerm,
+              boundingBox: correctedBoundingBox,
+              type: finalData.type,
+              difficultyLevel: finalData.difficultyLevel,
+              pronunciation: finalData.pronunciation,
+              confidence: 0.95 // High confidence for expert corrections
+            },
+            {
+              species: speciesName,
+              imageId: original.image_id,
+              reviewerId: userId
+            }
+          );
+        } catch (feedbackError) {
+          logError('Failed to capture correction feedback', feedbackError as Error);
+          // Don't fail the edit if feedback capture fails
+        }
+      }
 
       await client.query('COMMIT');
 
