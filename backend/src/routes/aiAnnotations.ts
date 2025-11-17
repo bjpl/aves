@@ -283,15 +283,8 @@ router.post(
               // Pass bird location context to annotation generation
               const annotations = await visionAIService.generateAnnotations(imageUrl, imageId, {
                 species: speciesName,
-                enablePatternLearning: true,
-                imageCharacteristics: validationResult ? [
-                  `Bird size: ${(validationResult.detection.percentageOfImage * 100).toFixed(1)}%`,
-                  `Clarity: ${validationResult.quality.clarity.toFixed(2)}`,
-                  `Lighting: ${validationResult.quality.lighting.toFixed(2)}`,
-                  validationResult.detection.boundingBox ?
-                    `Bird location: center at (${(validationResult.detection.boundingBox.x + validationResult.detection.boundingBox.width/2).toFixed(2)}, ${(validationResult.detection.boundingBox.y + validationResult.detection.boundingBox.height/2).toFixed(2)})` :
-                    'Bird location: detected'
-                ] : undefined
+                enablePatternLearning: true
+                // imageCharacteristics temporarily disabled with bird detection
               });
 
               if (!annotations || annotations.length === 0) {
@@ -338,21 +331,8 @@ router.post(
           // Insert individual annotation items with quality metrics
           for (const annotation of annotations) {
             try {
-              // Prepare quality metrics if validation was successful
-              const qualityMetrics = validationResult ? {
-                quality_score: Math.round(
-                  (validationResult.quality.clarity * 30 +
-                   validationResult.quality.lighting * 20 +
-                   validationResult.quality.focus * 30 +
-                   validationResult.quality.birdSize * 20)
-                ),
-                bird_detected: validationResult.detection.detected,
-                bird_confidence: validationResult.detection.confidence,
-                bird_size_percentage: validationResult.detection.percentageOfImage,
-                image_clarity: validationResult.quality.clarity,
-                image_lighting: validationResult.quality.lighting,
-                image_focus: validationResult.quality.focus
-              } : null;
+              // Quality metrics disabled while bird detection is disabled
+              const qualityMetrics = null;
 
               await pool.query(
                 `INSERT INTO ai_annotation_items (
