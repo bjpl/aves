@@ -252,9 +252,36 @@ export class VisionAIService {
    */
   private buildAnnotationPrompt(): string {
     return `
-Analyze this bird image and identify visible anatomical features that would be useful for Spanish language learning.
-Return a JSON array with this EXACT structure (valid JSON only, no markdown):
+Analyze this bird image and identify visible anatomical features for Spanish language learning.
 
+STEP-BY-STEP PROCESS:
+1. LOCATE THE BIRD: First identify where the bird is positioned in the image
+2. IDENTIFY FEATURES: Find visible anatomical parts within the bird's body
+3. MEASURE COORDINATES: Calculate precise bounding box positions for each feature
+4. VALIDATE: Ensure all coordinates fall within the bird's location
+
+COORDINATE SYSTEM (CRITICAL):
+- Origin (0,0) is at the TOP-LEFT corner of the image
+- X-axis: 0 (left edge) to 1.0 (right edge) - increases LEFT to RIGHT
+- Y-axis: 0 (top edge) to 1.0 (bottom edge) - increases TOP to BOTTOM
+- All coordinates are NORMALIZED (0.0 to 1.0 range)
+
+BOUNDING BOX FORMAT:
+- "x": horizontal position of TOP-LEFT corner (0.0 = far left, 1.0 = far right)
+- "y": vertical position of TOP-LEFT corner (0.0 = top of image, 1.0 = bottom)
+- "width": horizontal span (e.g., 0.10 = 10% of image width)
+- "height": vertical span (e.g., 0.08 = 8% of image height)
+
+COORDINATE EXAMPLES WITH VISUAL DESCRIPTIONS:
+{
+  "beak at top-center": {"x": 0.45, "y": 0.15, "width": 0.08, "height": 0.06},
+  "eye near top-right": {"x": 0.60, "y": 0.20, "width": 0.05, "height": 0.05},
+  "wing at middle-left": {"x": 0.25, "y": 0.50, "width": 0.20, "height": 0.25},
+  "tail at bottom-center": {"x": 0.40, "y": 0.75, "width": 0.15, "height": 0.15},
+  "legs near bottom": {"x": 0.45, "y": 0.85, "width": 0.08, "height": 0.10}
+}
+
+RETURN FORMAT (valid JSON only, no markdown):
 [{
   "spanishTerm": "el pico",
   "englishTerm": "beak",
@@ -265,20 +292,27 @@ Return a JSON array with this EXACT structure (valid JSON only, no markdown):
   "confidence": 0.95
 }]
 
-GUIDELINES:
-- Focus on these anatomical features: pico (beak), alas (wings), cola (tail), patas (legs),
-  plumas (feathers), ojos (eyes), cuello (neck), pecho (breast), cabeza (head)
-- Use normalized coordinates (0-1 range) for bounding boxes
-- Bounding box coordinates: x and y are top-left corner, width and height are dimensions
-- Only include features that are clearly visible in the image
-- Difficulty levels: 1 (basic body parts), 2-3 (common features), 4-5 (advanced features)
-- Pronunciation: Use simple phonetic guide (capital letters for stressed syllables)
-- Confidence: 0.0-1.0 score for how confident you are in the annotation
-- Type must be one of: anatomical, behavioral, color, pattern
-- Provide 3-8 annotations per image
-- Return ONLY valid JSON, no explanatory text
+ANNOTATION GUIDELINES:
+- PRIORITY FEATURES: pico (beak), alas (wings), cola (tail), patas (legs), plumas (feathers),
+  ojos (eyes), cuello (neck), pecho (breast), cabeza (head), cresta (crest)
+- Only annotate features CLEARLY VISIBLE in the image
+- Bounding boxes MUST be positioned AT the actual feature location
+- Each box should TIGHTLY contain the feature (not too large, not too small)
+- All coordinates MUST be within bird's body region
+- Difficulty: 1 (basic parts), 2-3 (common features), 4-5 (advanced/subtle features)
+- Pronunciation: Simple phonetic guide (CAPS = stressed syllable)
+- Confidence: 0.0-1.0 (higher = more certain the feature is correctly identified)
+- Type: "anatomical" (body parts), "behavioral" (actions), "color" (plumage colors), "pattern" (markings)
+- Provide 3-8 high-quality annotations per image
 
-IMPORTANT: Return only the JSON array, nothing else.
+VALIDATION CHECKS:
+✓ Is the bird located first before annotating?
+✓ Do all bounding boxes fall within the bird's body?
+✓ Are coordinates in 0.0-1.0 normalized range?
+✓ Does each box tightly fit the actual feature location?
+✓ Are y-coordinates larger for features lower in the image?
+
+IMPORTANT: Return ONLY the JSON array, nothing else. No explanatory text.
 `.trim();
   }
 

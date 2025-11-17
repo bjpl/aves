@@ -8,6 +8,7 @@ import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
 import { pool } from '../database/connection';
 import { visionAIService, AIAnnotation } from '../services/VisionAIService';
+import { birdDetectionService } from '../services/BirdDetectionService';
 // import { authenticateSupabaseToken, requireSupabaseAdmin } from '../middleware/supabaseAuth';
 import { optionalSupabaseAuth, optionalSupabaseAdmin } from '../middleware/optionalSupabaseAuth';
 import { validateBody, validateParams } from '../middleware/validate';
@@ -202,7 +203,48 @@ router.post(
          * Generate annotations with exponential backoff retry
          */
         const generateWithRetry = async (): Promise<AIAnnotation[]> => {
-          // Fetch species information for ML-enhanced generation
+          // Step 1: Run quality check and bird detection
+          info('Running image quality assessment and bird detection', { jobId, imageId });
+          let validationResult;
+          try {
+            validationResult = await birdDetectionService.validateImage(imageUrl);
+
+            info('Image validation completed', {
+              jobId,
+              imageId,
+              valid: validationResult.valid,
+              detected: validationResult.detection.detected,
+              suitable: validationResult.quality.suitable,
+              skipReason: validationResult.skipReason
+            });
+
+            // If image is not valid, skip annotation generation
+            if (!validationResult.valid) {
+              info('Image failed quality check - skipping annotation generation', {
+                jobId,
+                imageId,
+                skipReason: validationResult.skipReason
+              });
+
+              // Update job status with skip reason
+              await updateJobStatus('failed', {
+                skipped: true,
+                skipReason: validationResult.skipReason,
+                detection: validationResult.detection,
+                quality: validationResult.quality
+              }, undefined, validationResult.skipReason);
+
+              throw new Error(`Image skipped: ${validationResult.skipReason}`);
+            }
+
+          } catch (validationError) {
+            // If validation itself fails, log but continue with annotation generation
+            logError('Image validation failed - proceeding with annotation generation anyway',
+              validationError as Error, { jobId, imageId });
+            validationResult = null;
+          }
+
+          // Step 2: Fetch species information for ML-enhanced generation
           let speciesName: string | undefined;
           try {
             const speciesResult = await pool.query(
@@ -221,12 +263,30 @@ router.post(
               speciesError as Error, { imageId });
           }
 
+          // Step 3: Generate annotations with retry
           while (retryCount < MAX_RETRIES) {
             try {
-              info('Attempting AI annotation generation', { jobId, attempt: retryCount + 1, maxRetries: MAX_RETRIES, species: speciesName });
+              info('Attempting AI annotation generation', {
+                jobId,
+                attempt: retryCount + 1,
+                maxRetries: MAX_RETRIES,
+                species: speciesName,
+                birdDetected: validationResult?.detection.detected,
+                qualitySuitable: validationResult?.quality.suitable
+              });
+
+              // Pass bird location context to annotation generation
               const annotations = await visionAIService.generateAnnotations(imageUrl, imageId, {
                 species: speciesName,
-                enablePatternLearning: true
+                enablePatternLearning: true,
+                imageCharacteristics: validationResult ? [
+                  `Bird size: ${(validationResult.detection.percentageOfImage * 100).toFixed(1)}%`,
+                  `Clarity: ${validationResult.quality.clarity.toFixed(2)}`,
+                  `Lighting: ${validationResult.quality.lighting.toFixed(2)}`,
+                  validationResult.detection.boundingBox ?
+                    `Bird location: center at (${(validationResult.detection.boundingBox.x + validationResult.detection.boundingBox.width/2).toFixed(2)}, ${(validationResult.detection.boundingBox.y + validationResult.detection.boundingBox.height/2).toFixed(2)})` :
+                    'Bird location: detected'
+                ] : undefined
               });
 
               if (!annotations || annotations.length === 0) {
@@ -270,14 +330,32 @@ router.post(
           // Update job with results
           await updateJobStatus('pending', annotations, parseFloat(avgConfidence.toFixed(2)));
 
-          // Insert individual annotation items
+          // Insert individual annotation items with quality metrics
           for (const annotation of annotations) {
             try {
+              // Prepare quality metrics if validation was successful
+              const qualityMetrics = validationResult ? {
+                quality_score: Math.round(
+                  (validationResult.quality.clarity * 30 +
+                   validationResult.quality.lighting * 20 +
+                   validationResult.quality.focus * 30 +
+                   validationResult.quality.birdSize * 20)
+                ),
+                bird_detected: validationResult.detection.detected,
+                bird_confidence: validationResult.detection.confidence,
+                bird_size_percentage: validationResult.detection.percentageOfImage,
+                image_clarity: validationResult.quality.clarity,
+                image_lighting: validationResult.quality.lighting,
+                image_focus: validationResult.quality.focus
+              } : null;
+
               await pool.query(
                 `INSERT INTO ai_annotation_items (
                   job_id, image_id, spanish_term, english_term, bounding_box,
-                  annotation_type, difficulty_level, pronunciation, confidence
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+                  annotation_type, difficulty_level, pronunciation, confidence,
+                  quality_score, bird_detected, bird_confidence, bird_size_percentage,
+                  image_clarity, image_lighting, image_focus
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
                 [
                   jobId,
                   imageId,
@@ -287,7 +365,14 @@ router.post(
                   annotation.type,
                   annotation.difficultyLevel,
                   annotation.pronunciation || null,
-                  annotation.confidence || 0.8
+                  annotation.confidence || 0.8,
+                  qualityMetrics?.quality_score || null,
+                  qualityMetrics?.bird_detected || null,
+                  qualityMetrics?.bird_confidence || null,
+                  qualityMetrics?.bird_size_percentage || null,
+                  qualityMetrics?.image_clarity || null,
+                  qualityMetrics?.image_lighting || null,
+                  qualityMetrics?.image_focus || null
                 ]
               );
             } catch (insertError) {
