@@ -202,10 +202,32 @@ router.post(
          * Generate annotations with exponential backoff retry
          */
         const generateWithRetry = async (): Promise<AIAnnotation[]> => {
+          // Fetch species information for ML-enhanced generation
+          let speciesName: string | undefined;
+          try {
+            const speciesResult = await pool.query(
+              `SELECT s.english_name
+               FROM images i
+               JOIN species s ON i.species_id = s.id
+               WHERE i.id::text = $1`,
+              [imageId]
+            );
+            if (speciesResult.rows.length > 0) {
+              speciesName = speciesResult.rows[0].english_name;
+              info('Species information retrieved for ML enhancement', { imageId, species: speciesName });
+            }
+          } catch (speciesError) {
+            logError('Failed to fetch species information - proceeding without ML enhancement',
+              speciesError as Error, { imageId });
+          }
+
           while (retryCount < MAX_RETRIES) {
             try {
-              info('Attempting AI annotation generation', { jobId, attempt: retryCount + 1, maxRetries: MAX_RETRIES });
-              const annotations = await visionAIService.generateAnnotations(imageUrl, imageId);
+              info('Attempting AI annotation generation', { jobId, attempt: retryCount + 1, maxRetries: MAX_RETRIES, species: speciesName });
+              const annotations = await visionAIService.generateAnnotations(imageUrl, imageId, {
+                species: speciesName,
+                enablePatternLearning: true
+              });
 
               if (!annotations || annotations.length === 0) {
                 throw new Error('AI service returned no annotations');
