@@ -174,9 +174,9 @@ router.post(
               await pool.query(
                 `UPDATE ai_annotations
                  SET status = $1, annotation_data = $2, confidence_score = $3,
-                     error_message = $4, updated_at = CURRENT_TIMESTAMP
-                 WHERE job_id = $5`,
-                [status, JSON.stringify(data), confidenceScore || null, errorMessage || null, jobId]
+                     updated_at = CURRENT_TIMESTAMP
+                 WHERE job_id = $4`,
+                [status, JSON.stringify(data), confidenceScore || null, jobId]
               );
               info('Job status updated successfully', { jobId, status, attempt: statusUpdateAttempt + 1 });
               return; // Success - exit function
