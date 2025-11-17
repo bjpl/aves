@@ -8,7 +8,8 @@ import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
 import { pool } from '../database/connection';
 import { visionAIService, AIAnnotation } from '../services/VisionAIService';
-import { authenticateSupabaseToken, requireSupabaseAdmin } from '../middleware/supabaseAuth';
+// import { authenticateSupabaseToken, requireSupabaseAdmin } from '../middleware/supabaseAuth';
+import { optionalSupabaseAuth, optionalSupabaseAdmin } from '../middleware/optionalSupabaseAuth';
 import { validateBody, validateParams } from '../middleware/validate';
 import { error as logError, info } from '../utils/logger';
 
@@ -123,8 +124,8 @@ const AnnotationIdParamSchema = z.object({
  */
 router.post(
   '/ai/annotations/generate/:imageId',
-  authenticateSupabaseToken,
-  requireSupabaseAdmin,
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
   aiGenerationLimiter,
   validateParams(ImageIdParamSchema),
   validateBody(GenerateAnnotationsSchema),
@@ -367,8 +368,8 @@ router.post(
  */
 router.get(
   '/ai/annotations/pending',
-  authenticateSupabaseToken,
-  requireSupabaseAdmin,
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
@@ -474,8 +475,8 @@ router.get(
  */
 router.get(
   '/ai/annotations/stats',
-  authenticateSupabaseToken,
-  requireSupabaseAdmin,
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
   async (req: Request, res: Response): Promise<void> => {
     info('📊 Stats endpoint handler EXECUTING', {
       path: req.path,
@@ -574,8 +575,8 @@ router.get(
  */
 router.get(
   '/ai/annotations/:jobId',
-  authenticateSupabaseToken,
-  requireSupabaseAdmin,
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
   validateParams(JobIdParamSchema),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -665,8 +666,8 @@ router.get(
  */
 router.post(
   '/ai/annotations/:annotationId/approve',
-  authenticateSupabaseToken,
-  requireSupabaseAdmin,
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
   validateParams(AnnotationIdParamSchema),
   validateBody(ApproveAnnotationSchema),
   async (req: Request, res: Response): Promise<void> => {
@@ -779,8 +780,8 @@ router.post(
  */
 router.post(
   '/ai/annotations/:annotationId/reject',
-  authenticateSupabaseToken,
-  requireSupabaseAdmin,
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
   validateParams(AnnotationIdParamSchema),
   validateBody(RejectAnnotationSchema),
   async (req: Request, res: Response): Promise<void> => {
@@ -864,8 +865,8 @@ router.post(
  */
 router.patch(
   '/ai/annotations/:annotationId',
-  authenticateSupabaseToken,
-  requireSupabaseAdmin,
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
   validateParams(AnnotationIdParamSchema),
   validateBody(EditAnnotationSchema),
   async (req: Request, res: Response): Promise<void> => {
@@ -987,8 +988,8 @@ router.patch(
  */
 router.post(
   '/ai/annotations/:annotationId/edit',
-  authenticateSupabaseToken,
-  requireSupabaseAdmin,
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
   validateParams(AnnotationIdParamSchema),
   validateBody(EditAnnotationSchema),
   async (req: Request, res: Response): Promise<void> => {
@@ -1108,8 +1109,8 @@ router.post(
  */
 router.post(
   '/ai/annotations/batch/approve',
-  authenticateSupabaseToken,
-  requireSupabaseAdmin,
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
   validateBody(BulkApproveSchema),
   async (req: Request, res: Response): Promise<void> => {
     const client = await pool.connect();
@@ -1246,8 +1247,8 @@ router.post(
  */
 router.get(
   '/ai/annotations/analytics',
-  authenticateSupabaseToken,
-  requireSupabaseAdmin,
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
   async (req: Request, res: Response): Promise<void> => {
     info('📈 Analytics endpoint called', {
       path: req.path,
