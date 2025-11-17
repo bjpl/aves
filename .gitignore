@@ -113,5 +113,18 @@ coordination/orchestration/*
 *.sqlite-journal
 *.sqlite-wal
 claude-flow
-# Removed Windows wrapper files per user request
-hive-mind-prompt-*.txt
+
+# Test and debug scripts (generated for development/debugging)
+backend/check-*.js
+backend/test-*.js
+backend/create-*.js
+backend/delete-*.js
+backend/cleanup-*.js
+backend/verify-*.js
+backend/metrics/
+scripts/test-*.sh
+
+# Auth debugging documentation (temporary debug docs)
+**/docs/*debug*.md
+**/docs/AUTH_*.md
+AUTHENTICATION_FIX_IMPLEMENTATION.md
