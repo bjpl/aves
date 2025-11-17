@@ -96,6 +96,10 @@ function validateProductionConfig(): void {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust proxy for Railway/cloud deployments (required for rate limiting)
+// Railway and other cloud platforms use reverse proxies
+app.set('trust proxy', true);
+
 // Security middleware with enhanced CSP
 app.use(
   helmet({
