@@ -8,8 +8,14 @@ import { info, error as logError } from '../utils/logger';
 import { AIAnnotation } from './VisionAIService';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { createClient } from '@supabase/supabase-js';
 
 const execAsync = promisify(exec);
+
+// Initialize Supabase client for storage
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
  * Learned pattern for a specific feature or species
@@ -78,6 +84,8 @@ export class PatternLearner {
   private speciesStats: Map<string, SpeciesFeatureStats> = new Map();
   private memoryNamespace = 'pattern-learning';
   private sessionId = `swarm-pattern-learning-${Date.now()}`;
+  private initPromise: Promise<void> | null = null;
+  private isInitialized = false;
 
   // ML hyperparameters
   private readonly CONFIDENCE_THRESHOLD = 0.75; // Only learn from high-confidence annotations
@@ -86,7 +94,17 @@ export class PatternLearner {
   private readonly MAX_PROMPT_HISTORY = 10; // Keep top N successful prompts
 
   constructor() {
-    this.initialize();
+    this.initPromise = this.initialize();
+  }
+
+  /**
+   * Ensure initialization is complete before using
+   */
+  async ensureInitialized(): Promise<void> {
+    if (this.isInitialized) return;
+    if (this.initPromise) {
+      await this.initPromise;
+    }
   }
 
   /**
@@ -96,8 +114,10 @@ export class PatternLearner {
     try {
       info('Initializing Pattern Learning Service');
 
-      // Restore previous session data from Claude-Flow memory
+      // Restore previous session data from file storage
       await this.restoreSession();
+
+      this.isInitialized = true;
 
       info('Pattern Learning Service initialized', {
         patternsLoaded: this.patterns.size,
@@ -105,6 +125,7 @@ export class PatternLearner {
       });
     } catch (error) {
       logError('Failed to initialize Pattern Learning Service', error as Error);
+      this.isInitialized = true; // Mark as initialized even if restore failed
     }
   }
 
@@ -200,11 +221,13 @@ export class PatternLearner {
       };
     }
 
-    // Update bounding box patterns using incremental statistics
-    pattern.commonBoundingBoxes = this.updateBoundingBoxPattern(
-      pattern.commonBoundingBoxes,
-      annotation.boundingBox
-    );
+    // Update bounding box patterns using incremental statistics (if bounding box exists)
+    if (annotation.boundingBox) {
+      pattern.commonBoundingBoxes = this.updateBoundingBoxPattern(
+        pattern.commonBoundingBoxes,
+        annotation.boundingBox
+      );
+    }
 
     // Update running averages
     const n = pattern.observationCount;
@@ -345,10 +368,12 @@ export class PatternLearner {
         n
       );
 
-      featureStats.boundingBoxPatterns = this.updateBoundingBoxPattern(
-        featureStats.boundingBoxPatterns,
-        annotation.boundingBox
-      );
+      if (annotation.boundingBox) {
+        featureStats.boundingBoxPatterns = this.updateBoundingBoxPattern(
+          featureStats.boundingBoxPatterns,
+          annotation.boundingBox
+        );
+      }
 
       stats.features.set(featureName, featureStats);
     }
@@ -514,7 +539,7 @@ Note: Use these as reference points, not strict requirements`;
     if (pattern && pattern.observationCount >= this.MIN_SAMPLES_FOR_PATTERN) {
       // Calculate bounding box quality based on deviation from learned pattern
       const bbox = pattern.commonBoundingBoxes[0];
-      if (bbox) {
+      if (bbox && annotation.boundingBox) {
         const centerX = annotation.boundingBox.x + annotation.boundingBox.width / 2;
         const centerY = annotation.boundingBox.y + annotation.boundingBox.height / 2;
 
@@ -596,7 +621,7 @@ Note: Use these as reference points, not strict requirements`;
   }
 
   /**
-   * Persist patterns to Claude-Flow memory
+   * Persist patterns to Supabase Storage (Railway-compatible)
    */
   private async persistPatterns(): Promise<void> {
     try {
@@ -618,47 +643,86 @@ Note: Use these as reference points, not strict requirements`;
         }
       }));
 
-      await this.storeInMemory('learned-patterns', patternsData);
-      await this.storeInMemory('species-stats', speciesData);
+      // Upload to Supabase Storage
+      const bucket = 'ml-patterns';
 
-      info('Patterns persisted to memory', {
+      // Upload patterns
+      const patternsBlob = new Blob([JSON.stringify(patternsData, null, 2)], { type: 'application/json' });
+      await supabase.storage
+        .from(bucket)
+        .upload('learned-patterns.json', patternsBlob, {
+          upsert: true,
+          contentType: 'application/json'
+        });
+
+      // Upload species stats
+      const speciesBlob = new Blob([JSON.stringify(speciesData, null, 2)], { type: 'application/json' });
+      await supabase.storage
+        .from(bucket)
+        .upload('species-stats.json', speciesBlob, {
+          upsert: true,
+          contentType: 'application/json'
+        });
+
+      info('Patterns persisted to Supabase Storage', {
         patterns: patternsData.length,
         species: speciesData.length
       });
 
     } catch (error) {
-      logError('Failed to persist patterns', error as Error);
+      logError('Failed to persist patterns to Supabase', error as Error);
     }
   }
 
   /**
-   * Restore session from Claude-Flow memory
+   * Restore session from Supabase Storage
    */
   private async restoreSession(): Promise<void> {
     try {
-      const patternsData = await this.retrieveFromMemory('learned-patterns');
-      const speciesData = await this.retrieveFromMemory('species-stats');
+      const bucket = 'ml-patterns';
 
-      if (patternsData && Array.isArray(patternsData)) {
-        for (const { key, pattern } of patternsData) {
-          this.patterns.set(key, {
-            ...pattern,
-            lastUpdated: new Date(pattern.lastUpdated)
-          });
+      // Download patterns file
+      const { data: patternsFile, error: patternsError } = await supabase.storage
+        .from(bucket)
+        .download('learned-patterns.json');
+
+      // Download species stats file
+      const { data: speciesFile, error: speciesError } = await supabase.storage
+        .from(bucket)
+        .download('species-stats.json');
+
+      // Parse patterns
+      if (patternsFile && !patternsError) {
+        const patternsText = await patternsFile.text();
+        const patternsData = JSON.parse(patternsText);
+
+        if (Array.isArray(patternsData)) {
+          for (const { key, pattern } of patternsData) {
+            this.patterns.set(key, {
+              ...pattern,
+              lastUpdated: new Date(pattern.lastUpdated)
+            });
+          }
         }
       }
 
-      if (speciesData && Array.isArray(speciesData)) {
-        for (const { species, stats } of speciesData) {
-          this.speciesStats.set(species, {
-            ...stats,
-            lastUpdated: new Date(stats.lastUpdated),
-            features: new Map(stats.features)
-          });
+      // Parse species stats
+      if (speciesFile && !speciesError) {
+        const speciesText = await speciesFile.text();
+        const speciesData = JSON.parse(speciesText);
+
+        if (Array.isArray(speciesData)) {
+          for (const { species, stats } of speciesData) {
+            this.speciesStats.set(species, {
+              ...stats,
+              lastUpdated: new Date(stats.lastUpdated),
+              features: new Map(stats.features)
+            });
+          }
         }
       }
 
-      info('Session restored from memory', {
+      info('Session restored from Supabase Storage', {
         patterns: this.patterns.size,
         species: this.speciesStats.size
       });
@@ -673,7 +737,9 @@ Note: Use these as reference points, not strict requirements`;
    */
   private async storeInMemory(key: string, value: any): Promise<void> {
     try {
-      const command = `npx claude-flow@alpha hooks memory-store --key "${this.memoryNamespace}/${key}" --value '${JSON.stringify(value)}'`;
+      const fullKey = `${this.memoryNamespace}/${key}`;
+      const valueJson = JSON.stringify(value).replace(/'/g, "'\\''");
+      const command = `npx claude-flow@alpha memory store "${fullKey}" '${valueJson}' --namespace pattern-learning`;
       await execAsync(command);
     } catch (error) {
       logError(`Failed to store in memory: ${key}`, error as Error);
@@ -685,9 +751,22 @@ Note: Use these as reference points, not strict requirements`;
    */
   private async retrieveFromMemory(key: string): Promise<any> {
     try {
-      const command = `npx claude-flow@alpha hooks memory-retrieve --key "${this.memoryNamespace}/${key}"`;
+      const fullKey = `${this.memoryNamespace}/${key}`;
+      const command = `npx claude-flow@alpha memory query "${fullKey}" --namespace pattern-learning`;
       const { stdout } = await execAsync(command);
-      return JSON.parse(stdout);
+
+      // Parse the query results and extract the value
+      const lines = stdout.trim().split('\n');
+      for (const line of lines) {
+        if (line.includes(fullKey)) {
+          // Extract JSON from the output
+          const match = line.match(/value:\s*(.+)$/);
+          if (match) {
+            return JSON.parse(match[1]);
+          }
+        }
+      }
+      return null;
     } catch (error) {
       return null;
     }
