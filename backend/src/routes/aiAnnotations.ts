@@ -1384,4 +1384,118 @@ router.get(
   }
 );
 
+/**
+ * GET /api/ai/annotations/patterns/analytics
+ * Get pattern learning analytics and insights
+ *
+ * @auth Admin only
+ *
+ * Response:
+ * {
+ *   "totalPatterns": 150,
+ *   "speciesTracked": 12,
+ *   "topFeatures": [
+ *     { "feature": "el pico", "observations": 45, "confidence": 0.92 }
+ *   ],
+ *   "speciesBreakdown": [
+ *     { "species": "Mallard Duck", "annotations": 120, "features": 8 }
+ *   ]
+ * }
+ */
+router.get(
+  '/ai/annotations/patterns/analytics',
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      info('Pattern learning analytics requested', { userId: req.user?.userId });
+
+      const analytics = await visionAIService.getPatternAnalytics();
+
+      res.json(analytics);
+
+    } catch (err) {
+      logError('Error fetching pattern analytics', err as Error);
+      res.status(500).json({ error: 'Failed to fetch pattern analytics' });
+    }
+  }
+);
+
+/**
+ * GET /api/ai/annotations/patterns/species/:species/recommendations
+ * Get recommended features for a specific species based on learned patterns
+ *
+ * @auth Admin only
+ *
+ * Query params:
+ * - limit: number (default: 8)
+ *
+ * Response:
+ * {
+ *   "species": "Mallard Duck",
+ *   "recommendedFeatures": ["el pico", "las alas", "la cola", ...],
+ *   "basedOnAnnotations": 120
+ * }
+ */
+router.get(
+  '/ai/annotations/patterns/species/:species/recommendations',
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { species } = req.params;
+      const limit = Math.min(parseInt(req.query.limit as string) || 8, 20);
+
+      info('Recommended features requested', { species, limit });
+
+      const recommendedFeatures = visionAIService.getRecommendedFeatures(species, limit);
+
+      res.json({
+        species,
+        recommendedFeatures,
+        count: recommendedFeatures.length
+      });
+
+    } catch (err) {
+      logError('Error fetching recommended features', err as Error);
+      res.status(500).json({ error: 'Failed to fetch recommendations' });
+    }
+  }
+);
+
+/**
+ * GET /api/ai/annotations/patterns/export
+ * Export all learned patterns for analysis
+ *
+ * @auth Admin only
+ *
+ * Response:
+ * {
+ *   "patterns": [...],
+ *   "speciesStats": [...],
+ *   "exportedAt": "2025-11-16T12:00:00Z"
+ * }
+ */
+router.get(
+  '/ai/annotations/patterns/export',
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      info('Pattern export requested', { userId: req.user?.userId });
+
+      const exported = visionAIService.exportLearnedPatterns();
+
+      res.json({
+        ...exported,
+        exportedAt: new Date().toISOString()
+      });
+
+    } catch (err) {
+      logError('Error exporting patterns', err as Error);
+      res.status(500).json({ error: 'Failed to export patterns' });
+    }
+  }
+);
+
 export default router;

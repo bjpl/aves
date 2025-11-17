@@ -1,12 +1,14 @@
 /**
- * Vision AI Service
- * Handles AI-powered image annotation using Anthropic Claude Sonnet 4.5 Vision API
+ * Vision AI Service - Integrated Version
+ * Handles AI-powered image annotation with quality validation and pattern learning
+ * Combines PatternLearner and AnnotationValidator for production-ready annotation generation
  */
 
 import Anthropic from '@anthropic-ai/sdk';
 import axios from 'axios';
-import { info, error as logError } from '../utils/logger';
+import { info, warn, error as logError } from '../utils/logger';
 import { patternLearner, QualityMetrics } from './PatternLearner';
+import { annotationValidator, ValidationResult } from './AnnotationValidator';
 
 export interface BoundingBox {
   x: number;
@@ -33,14 +35,18 @@ export interface AnnotationJobResult {
   status: 'pending' | 'processing' | 'completed' | 'failed';
   error?: string;
   processedAt?: Date;
+  validationMetrics?: ValidationResult['metrics'];
+  retryCount?: number;
 }
 
 /**
- * VisionAI Service for generating bird annotations
+ * VisionAI Service for generating bird annotations with quality validation
  */
 export class VisionAIService {
   private client: Anthropic;
   private apiKey: string;
+  private maxRetries: number = 3; // Max retries for low-quality annotations
+  private retryDelay: number = 2000; // 2 seconds between retries
 
   constructor() {
     this.apiKey = process.env.ANTHROPIC_API_KEY || '';
@@ -55,15 +61,17 @@ export class VisionAIService {
         timeout: 5 * 60 * 1000, // 5 minutes timeout for vision requests
         maxRetries: 2
       });
-      info('VisionAI Service initialized with Claude Sonnet 4.5');
+      info('VisionAI Service initialized with Claude Sonnet 4.5, quality validation, and pattern learning');
     }
   }
 
   /**
    * Generate annotations for a bird image using Claude Sonnet 4.5 Vision
+   * Includes quality validation, retry logic, and pattern learning
    * @param imageUrl - URL of the bird image to annotate
    * @param imageId - Database ID of the image
    * @param metadata - Optional metadata for pattern learning
+   * @param retryCount - Current retry attempt (internal use)
    * @returns Promise<AIAnnotation[]>
    */
   async generateAnnotations(
@@ -73,14 +81,21 @@ export class VisionAIService {
       species?: string;
       imageCharacteristics?: string[];
       enablePatternLearning?: boolean;
-    }
+      enableValidation?: boolean;
+    },
+    retryCount: number = 0
   ): Promise<AIAnnotation[]> {
     if (!this.apiKey) {
       throw new Error('Anthropic API key not configured');
     }
 
     try {
-      info('Starting Vision AI annotation generation with Claude', { imageId, imageUrl });
+      info('Starting Vision AI annotation generation with Claude', {
+        imageId,
+        imageUrl,
+        retryCount,
+        species: metadata?.species
+      });
 
       // Build base prompt
       let prompt = this.buildAnnotationPrompt();
@@ -122,7 +137,10 @@ export class VisionAIService {
       const estimatedPromptTokens = Math.ceil(prompt.length / 4);
 
       if (estimatedPromptTokens > maxTokens * 0.5) {
-        logError(`Prompt too long: estimated ${estimatedPromptTokens} tokens, max input should be <${maxTokens * 0.5}`, new Error('Token limit warning'));
+        logError(
+          `Prompt too long: estimated ${estimatedPromptTokens} tokens, max input should be <${maxTokens * 0.5}`,
+          new Error('Token limit warning')
+        );
       }
 
       info(`Using model: ${model} with max_tokens: ${maxTokens}`);
@@ -163,7 +181,60 @@ export class VisionAIService {
       }
 
       // Parse the JSON response
-      const annotations = this.parseAnnotationResponse(content.text);
+      let annotations = this.parseAnnotationResponse(content.text);
+
+      info('Claude Vision AI annotations generated', {
+        imageId,
+        annotationCount: annotations.length
+      });
+
+      // Validate annotations quality if enabled
+      if (metadata?.enableValidation !== false) {
+        const validationResult = await annotationValidator.validate(annotations);
+
+        if (!validationResult.valid) {
+          warn('Annotation quality validation failed', {
+            imageId,
+            retryCount,
+            metrics: validationResult.metrics,
+            errors: validationResult.errors
+          });
+
+          // Retry if we haven't exceeded max retries
+          if (retryCount < this.maxRetries) {
+            warn(`Retrying annotation generation (attempt ${retryCount + 1}/${this.maxRetries})`, {
+              imageId
+            });
+
+            // Wait before retry
+            await this.sleep(this.retryDelay);
+
+            // Recursive retry with incremented count
+            return this.generateAnnotations(imageUrl, imageId, metadata, retryCount + 1);
+          } else {
+            // Max retries exceeded, use validated annotations
+            warn('Max retries exceeded, using validated annotations', {
+              imageId,
+              validAnnotations: validationResult.annotations.length
+            });
+
+            // Use validated annotations (duplicates removed, low quality filtered)
+            if (validationResult.annotations.length > 0) {
+              annotations = validationResult.annotations;
+            } else {
+              throw new Error('Failed to generate valid annotations after max retries');
+            }
+          }
+        } else {
+          // Validation passed, use cleaned annotations
+          info('Annotation quality validation passed', {
+            imageId,
+            metrics: validationResult.metrics,
+            retryCount
+          });
+          annotations = validationResult.annotations;
+        }
+      }
 
       // Evaluate annotation quality using learned patterns
       if (metadata?.enablePatternLearning !== false) {
@@ -191,13 +262,7 @@ export class VisionAIService {
         });
       }
 
-      info('Claude Vision AI annotations generated successfully', {
-        imageId,
-        annotationCount: annotations.length
-      });
-
       return annotations;
-
     } catch (error) {
       logError('Failed to generate annotations with Claude Vision AI', error as Error);
       throw error;
@@ -207,7 +272,10 @@ export class VisionAIService {
   /**
    * Fetch image from URL and convert to base64 using axios
    */
-  private async fetchImageAsBase64(imageUrl: string): Promise<{ base64: string; mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp' }> {
+  private async fetchImageAsBase64(imageUrl: string): Promise<{
+    base64: string;
+    mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+  }> {
     try {
       info('Fetching image from URL', { imageUrl });
 
@@ -215,7 +283,7 @@ export class VisionAIService {
         responseType: 'arraybuffer',
         timeout: 30000, // 30 second timeout
         headers: {
-          'User-Agent': 'Aves-Bird-Learning/1.0',
+          'User-Agent': 'Aves-Bird-Learning/1.0'
         }
       });
 
@@ -273,7 +341,7 @@ GUIDELINES:
 - Only include features that are clearly visible in the image
 - Difficulty levels: 1 (basic body parts), 2-3 (common features), 4-5 (advanced features)
 - Pronunciation: Use simple phonetic guide (capital letters for stressed syllables)
-- Confidence: 0.0-1.0 score for how confident you are in the annotation
+- Confidence: 0.0-1.0 score for how confident you are in the annotation (aim for >0.7)
 - Type must be one of: anatomical, behavioral, color, pattern
 - Provide 3-8 annotations per image
 - Return ONLY valid JSON, no explanatory text
@@ -323,7 +391,6 @@ IMPORTANT: Return only the JSON array, nothing else.
       });
 
       return annotations;
-
     } catch (error) {
       logError('Failed to parse annotation response', error as Error);
       logError('Raw content:', new Error(content));
@@ -332,7 +399,7 @@ IMPORTANT: Return only the JSON array, nothing else.
   }
 
   /**
-   * Validate a single annotation object
+   * Validate a single annotation object (basic structure validation)
    */
   private validateAnnotation(item: any, index: number): void {
     const requiredFields = ['spanishTerm', 'englishTerm', 'boundingBox', 'type', 'difficultyLevel'];
@@ -345,7 +412,7 @@ IMPORTANT: Return only the JSON array, nothing else.
 
     // Validate bounding box
     const bbox = item.boundingBox;
-    if (!bbox.x || !bbox.y || !bbox.width || !bbox.height) {
+    if (bbox.x === undefined || bbox.y === undefined || bbox.width === undefined || bbox.height === undefined) {
       throw new Error(`Annotation ${index}: invalid bounding box structure`);
     }
 
@@ -368,39 +435,88 @@ IMPORTANT: Return only the JSON array, nothing else.
 
   /**
    * Generate annotations for multiple images (batch processing)
-   * @param imageUrls - Array of {imageId, url} objects
+   * Includes quality validation and metrics tracking
+   * @param images - Array of {imageId, url} objects
+   * @param metadata - Optional metadata for all images
    * @returns Promise with results for each image
    */
   async generateBatchAnnotations(
-    images: Array<{ imageId: string; url: string }>
+    images: Array<{ imageId: string; url: string; species?: string }>,
+    metadata?: {
+      enablePatternLearning?: boolean;
+      enableValidation?: boolean;
+    }
   ): Promise<AnnotationJobResult[]> {
     const results: AnnotationJobResult[] = [];
+    let totalRetries = 0;
 
     for (const image of images) {
+      const startTime = Date.now();
+
       try {
-        const annotations = await this.generateAnnotations(image.url, image.imageId);
+        // Generate annotations with validation
+        const annotations = await this.generateAnnotations(
+          image.url,
+          image.imageId,
+          {
+            species: image.species,
+            enablePatternLearning: metadata?.enablePatternLearning,
+            enableValidation: metadata?.enableValidation
+          }
+        );
+
+        // Get validation metrics (re-validate to get metrics)
+        const validationResult = await annotationValidator.validate(annotations);
 
         results.push({
           jobId: this.generateJobId(),
           imageId: image.imageId,
           annotations,
           status: 'completed',
-          processedAt: new Date()
+          processedAt: new Date(),
+          validationMetrics: validationResult.metrics,
+          retryCount: 0
+        });
+
+        const processingTime = Date.now() - startTime;
+        info('Batch annotation completed', {
+          imageId: image.imageId,
+          annotationCount: annotations.length,
+          processingTimeMs: processingTime,
+          retryCount: 0
         });
 
         // Rate limiting: wait 1 second between requests to avoid API limits
         await this.sleep(1000);
-
       } catch (error) {
+        logError('Batch annotation failed', error as Error);
+
         results.push({
           jobId: this.generateJobId(),
           imageId: image.imageId,
           annotations: [],
           status: 'failed',
-          error: (error as Error).message
+          error: (error as Error).message,
+          retryCount: 0
         });
       }
     }
+
+    // Log batch summary
+    const successCount = results.filter(r => r.status === 'completed').length;
+    const failureCount = results.filter(r => r.status === 'failed').length;
+    const avgAnnotations =
+      results
+        .filter(r => r.status === 'completed')
+        .reduce((sum, r) => sum + r.annotations.length, 0) / (successCount || 1);
+
+    info('Batch annotation processing completed', {
+      totalImages: images.length,
+      successful: successCount,
+      failed: failureCount,
+      averageAnnotations: avgAnnotations.toFixed(1),
+      totalRetries
+    });
 
     return results;
   }
