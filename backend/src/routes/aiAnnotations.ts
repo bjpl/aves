@@ -558,6 +558,169 @@ router.get(
 );
 
 /**
+ * GET /api/annotations/analytics
+ * Get comprehensive analytics for annotation review workflow
+ *
+ * @auth Admin only
+ *
+ * Response:
+ * {
+ *   "overview": {
+ *     "total": 68,
+ *     "pending": 68,
+ *     "approved": 0,
+ *     "rejected": 0,
+ *     "avgConfidence": 0.87
+ *   },
+ *   "bySpecies": { "Mallard Duck": 12, ... },
+ *   "byType": { "anatomical": 45, "behavioral": 12, ... },
+ *   "rejectionsByCategory": { "TOO_SMALL": 5, "NOT_REPRESENTATIVE": 3, ... },
+ *   "qualityFlags": {
+ *     "tooSmall": 8,
+ *     "lowConfidence": 3
+ *   }
+ * }
+ */
+router.get(
+  '/ai/annotations/analytics',
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
+  async (req: Request, res: Response): Promise<void> => {
+    info('📈 Analytics endpoint called', {
+      path: req.path,
+      user: (req as any).user?.id
+    });
+
+    try {
+      // OVERVIEW: Total counts and status breakdown
+      const overviewQuery = `
+        SELECT
+          COUNT(*) as total,
+          COUNT(*) FILTER (WHERE status = 'pending') as pending,
+          COUNT(*) FILTER (WHERE status = 'approved') as approved,
+          COUNT(*) FILTER (WHERE status = 'rejected') as rejected,
+          AVG(confidence) FILTER (WHERE confidence IS NOT NULL) as avg_confidence
+        FROM ai_annotation_items
+      `;
+      const overviewResult = await pool.query(overviewQuery);
+      const overview = {
+        total: parseInt(overviewResult.rows[0].total || '0'),
+        pending: parseInt(overviewResult.rows[0].pending || '0'),
+        approved: parseInt(overviewResult.rows[0].approved || '0'),
+        rejected: parseInt(overviewResult.rows[0].rejected || '0'),
+        avgConfidence: parseFloat(overviewResult.rows[0].avg_confidence || '0').toFixed(2)
+      };
+
+      // BY SPECIES: Count annotations per species
+      const speciesQuery = `
+        SELECT
+          s.english_name as species,
+          COUNT(ai.id) as count
+        FROM ai_annotation_items ai
+        JOIN images img ON ai.image_id::uuid = img.id
+        JOIN species s ON img.species_id = s.id
+        WHERE ai.status = 'pending'
+        GROUP BY s.english_name
+        ORDER BY count DESC
+      `;
+      const speciesResult = await pool.query(speciesQuery);
+      const bySpecies: Record<string, number> = {};
+      for (const row of speciesResult.rows) {
+        bySpecies[row.species] = parseInt(row.count);
+      }
+
+      // BY TYPE: Count annotations by type (anatomical, behavioral, etc.)
+      const typeQuery = `
+        SELECT
+          annotation_type as type,
+          COUNT(*) as count
+        FROM ai_annotation_items
+        WHERE status = 'pending'
+        GROUP BY annotation_type
+        ORDER BY count DESC
+      `;
+      const typeResult = await pool.query(typeQuery);
+      const byType: Record<string, number> = {};
+      for (const row of typeResult.rows) {
+        byType[row.type] = parseInt(row.count);
+      }
+
+      // REJECTIONS BY CATEGORY: Parse category from notes field
+      const rejectionsQuery = `
+        SELECT notes
+        FROM ai_annotation_reviews
+        WHERE action = 'reject' AND notes IS NOT NULL
+      `;
+      const rejectionsResult = await pool.query(rejectionsQuery);
+      const rejectionsByCategory: Record<string, number> = {};
+
+      for (const row of rejectionsResult.rows) {
+        // Extract category from "[CATEGORY] notes" format
+        const match = row.notes?.match(/^\[([A-Z_]+)\]/);
+        if (match) {
+          const category = match[1];
+          rejectionsByCategory[category] = (rejectionsByCategory[category] || 0) + 1;
+        }
+      }
+
+      // QUALITY FLAGS: Calculate programmatically from pending annotations
+      const qualityQuery = `
+        SELECT
+          id,
+          bounding_box,
+          confidence
+        FROM ai_annotation_items
+        WHERE status = 'pending'
+      `;
+      const qualityResult = await pool.query(qualityQuery);
+
+      let tooSmallCount = 0;
+      let lowConfidenceCount = 0;
+
+      for (const row of qualityResult.rows) {
+        const bbox = typeof row.bounding_box === 'string'
+          ? JSON.parse(row.bounding_box)
+          : row.bounding_box;
+
+        // Check if bounding box is too small (<2% of image)
+        const area = (bbox.width || 0) * (bbox.height || 0);
+        if (area < 0.02) {
+          tooSmallCount++;
+        }
+
+        // Check if confidence is too low (<70%)
+        if (row.confidence && row.confidence < 0.70) {
+          lowConfidenceCount++;
+        }
+      }
+
+      const analytics = {
+        overview,
+        bySpecies,
+        byType,
+        rejectionsByCategory,
+        qualityFlags: {
+          tooSmall: tooSmallCount,
+          lowConfidence: lowConfidenceCount
+        }
+      };
+
+      info('Analytics generated successfully', {
+        total: overview.total,
+        pending: overview.pending,
+        qualityIssues: tooSmallCount + lowConfidenceCount
+      });
+
+      res.json(analytics);
+
+    } catch (err) {
+      logError('Error generating analytics', err as Error);
+      res.status(500).json({ error: 'Failed to generate analytics' });
+    }
+  }
+);
+
+/**
  * GET /api/ai/annotations/:jobId
  * Get specific annotation job status and details
  *
@@ -1222,167 +1385,6 @@ router.post(
 );
 
 /**
- * GET /api/annotations/analytics
- * Get comprehensive analytics for annotation review workflow
- *
- * @auth Admin only
- *
- * Response:
- * {
- *   "overview": {
- *     "total": 68,
- *     "pending": 68,
- *     "approved": 0,
- *     "rejected": 0,
- *     "avgConfidence": 0.87
- *   },
- *   "bySpecies": { "Mallard Duck": 12, ... },
- *   "byType": { "anatomical": 45, "behavioral": 12, ... },
- *   "rejectionsByCategory": { "TOO_SMALL": 5, "NOT_REPRESENTATIVE": 3, ... },
- *   "qualityFlags": {
- *     "tooSmall": 8,
- *     "lowConfidence": 3
- *   }
- * }
- */
-router.get(
-  '/ai/annotations/analytics',
-  optionalSupabaseAuth,
-  optionalSupabaseAdmin,
-  async (req: Request, res: Response): Promise<void> => {
-    info('📈 Analytics endpoint called', {
-      path: req.path,
-      user: (req as any).user?.id
-    });
-
-    try {
-      // OVERVIEW: Total counts and status breakdown
-      const overviewQuery = `
-        SELECT
-          COUNT(*) as total,
-          COUNT(*) FILTER (WHERE status = 'pending') as pending,
-          COUNT(*) FILTER (WHERE status = 'approved') as approved,
-          COUNT(*) FILTER (WHERE status = 'rejected') as rejected,
-          AVG(confidence) FILTER (WHERE confidence IS NOT NULL) as avg_confidence
-        FROM ai_annotation_items
-      `;
-      const overviewResult = await pool.query(overviewQuery);
-      const overview = {
-        total: parseInt(overviewResult.rows[0].total || '0'),
-        pending: parseInt(overviewResult.rows[0].pending || '0'),
-        approved: parseInt(overviewResult.rows[0].approved || '0'),
-        rejected: parseInt(overviewResult.rows[0].rejected || '0'),
-        avgConfidence: parseFloat(overviewResult.rows[0].avg_confidence || '0').toFixed(2)
-      };
-
-      // BY SPECIES: Count annotations per species
-      const speciesQuery = `
-        SELECT
-          i.common_name as species,
-          COUNT(ai.id) as count
-        FROM ai_annotation_items ai
-        JOIN images img ON ai.image_id = img.id
-        JOIN species i ON img.species_id = i.id
-        WHERE ai.status = 'pending'
-        GROUP BY i.common_name
-        ORDER BY count DESC
-      `;
-      const speciesResult = await pool.query(speciesQuery);
-      const bySpecies: Record<string, number> = {};
-      for (const row of speciesResult.rows) {
-        bySpecies[row.species] = parseInt(row.count);
-      }
-
-      // BY TYPE: Count annotations by type (anatomical, behavioral, etc.)
-      const typeQuery = `
-        SELECT
-          annotation_type as type,
-          COUNT(*) as count
-        FROM ai_annotation_items
-        WHERE status = 'pending'
-        GROUP BY annotation_type
-        ORDER BY count DESC
-      `;
-      const typeResult = await pool.query(typeQuery);
-      const byType: Record<string, number> = {};
-      for (const row of typeResult.rows) {
-        byType[row.type] = parseInt(row.count);
-      }
-
-      // REJECTIONS BY CATEGORY: Parse category from notes field
-      const rejectionsQuery = `
-        SELECT notes
-        FROM ai_annotation_reviews
-        WHERE action = 'reject' AND notes IS NOT NULL
-      `;
-      const rejectionsResult = await pool.query(rejectionsQuery);
-      const rejectionsByCategory: Record<string, number> = {};
-
-      for (const row of rejectionsResult.rows) {
-        // Extract category from "[CATEGORY] notes" format
-        const match = row.notes?.match(/^\[([A-Z_]+)\]/);
-        if (match) {
-          const category = match[1];
-          rejectionsByCategory[category] = (rejectionsByCategory[category] || 0) + 1;
-        }
-      }
-
-      // QUALITY FLAGS: Calculate programmatically from pending annotations
-      const qualityQuery = `
-        SELECT
-          id,
-          bounding_box,
-          confidence
-        FROM ai_annotation_items
-        WHERE status = 'pending'
-      `;
-      const qualityResult = await pool.query(qualityQuery);
-
-      let tooSmallCount = 0;
-      let lowConfidenceCount = 0;
-
-      for (const row of qualityResult.rows) {
-        const bbox = typeof row.bounding_box === 'string'
-          ? JSON.parse(row.bounding_box)
-          : row.bounding_box;
-
-        // Check if bounding box is too small (<2% of image)
-        const area = (bbox.width || 0) * (bbox.height || 0);
-        if (area < 0.02) {
-          tooSmallCount++;
-        }
-
-        // Check if confidence is too low (<70%)
-        if (row.confidence && row.confidence < 0.70) {
-          lowConfidenceCount++;
-        }
-      }
-
-      const analytics = {
-        overview,
-        bySpecies,
-        byType,
-        rejectionsByCategory,
-        qualityFlags: {
-          tooSmall: tooSmallCount,
-          lowConfidence: lowConfidenceCount
-        }
-      };
-
-      info('Analytics generated successfully', {
-        total: overview.total,
-        pending: overview.pending,
-        qualityIssues: tooSmallCount + lowConfidenceCount
-      });
-
-      res.json(analytics);
-
-    } catch (err) {
-      logError('Error generating analytics', err as Error);
-      res.status(500).json({ error: 'Failed to generate analytics' });
-    }
-  }
-);
 
 /**
  * GET /api/ai/annotations/patterns/analytics
