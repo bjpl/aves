@@ -1,8 +1,10 @@
 name: Build and Deploy
 
 on:
-  push:
-    branches: [main]
+  # Temporarily disabled automatic triggers to prevent email spam
+  # Fix needed: npm ci fails in root - use backend/frontend subdirectories
+  # push:
+  #   branches: [main]
   workflow_dispatch:
 
 env:
