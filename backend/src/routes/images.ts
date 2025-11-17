@@ -8,6 +8,55 @@ import { error as logError } from '../utils/logger';
 
 const router = Router();
 
+// GET /api/images/:id - Serve individual image by ID
+router.get('/images/:id', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    // Query the images table to get the image URL
+    const query = `
+      SELECT url, name
+      FROM images
+      WHERE id = $1
+    `;
+
+    const result = await pool.query(query, [id]);
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Image not found' });
+      return;
+    }
+
+    const image = result.rows[0];
+
+    // If the image URL is a full URL (starts with http), redirect to it
+    if (image.url && (image.url.startsWith('http://') || image.url.startsWith('https://'))) {
+      res.redirect(image.url);
+      return;
+    }
+
+    // If it's a local path, serve the file
+    if (image.url) {
+      const filePath = path.join(process.cwd(), image.url);
+
+      try {
+        await fs.access(filePath);
+        res.sendFile(filePath);
+        return;
+      } catch (err) {
+        logError('Image file not found', err as Error, { path: filePath });
+        res.status(404).json({ error: 'Image file not found on disk' });
+        return;
+      }
+    }
+
+    res.status(404).json({ error: 'Image URL not available' });
+  } catch (err) {
+    logError('Error serving image', err as Error);
+    res.status(500).json({ error: 'Failed to serve image' });
+  }
+});
+
 // GET /api/images/search
 router.post('/images/search', async (req: Request, res: Response): Promise<void> => {
   try {

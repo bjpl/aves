@@ -21,7 +21,13 @@ const connectionConfig = process.env.DATABASE_URL
         ? { rejectUnauthorized: false } // Pooled connections handle SSL differently
         : process.env.DB_SSL_ENABLED !== 'false'
           ? { rejectUnauthorized: false }
-          : false
+          : false,
+      // Force IPv4 resolution to avoid IPv6 connectivity issues
+      host: 'aws-0-us-west-1.pooler.supabase.com',
+      port: 6543,
+      database: 'postgres',
+      user: 'postgres',
+      password: `${process.env.DB_PASSWORD}.ubqnfiwxghkxltluyczd`
     }
   : {
       host: process.env.DB_HOST || 'localhost',

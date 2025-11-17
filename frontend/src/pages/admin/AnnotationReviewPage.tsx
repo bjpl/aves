@@ -272,7 +272,7 @@ export const AnnotationReviewPage: React.FC = () => {
             <div key={annotation.id} data-annotation-id={annotation.id}>
               <AnnotationReviewCard
                 annotation={annotation}
-                imageUrl={`/api/images/${annotation.imageId}`}
+                imageUrl={annotation.imageUrl}
                 isSelected={selectedIds.includes(annotation.id)}
                 onSelect={(selected) => handleToggleSelection(annotation.id, selected)}
                 onActionComplete={() => showToast('Action completed successfully!')}
