@@ -48,7 +48,11 @@ export class VisionAIService {
       // Create a dummy client to avoid errors
       this.client = new Anthropic({ apiKey: 'dummy-key' });
     } else {
-      this.client = new Anthropic({ apiKey: this.apiKey });
+      this.client = new Anthropic({
+        apiKey: this.apiKey,
+        timeout: 5 * 60 * 1000, // 5 minutes timeout for vision requests
+        maxRetries: 2
+      });
       info('VisionAI Service initialized with Claude Sonnet 4.5');
     }
   }
@@ -72,16 +76,29 @@ export class VisionAIService {
       // Fetch image and convert to base64
       const imageData = await this.fetchImageAsBase64(imageUrl);
 
-      // Token limit validation
-      const maxTokens = 30000;
+      // Determine model and appropriate token limits
+      const model = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5-20250929';
+
+      // Model-specific token limits
+      const modelLimits: Record<string, number> = {
+        'claude-sonnet-4-5-20250929': 8192,
+        'claude-3-5-sonnet-20241022': 8192,
+        'claude-3-opus-20240229': 4096,
+        'claude-3-sonnet-20240229': 4096,
+        'claude-3-haiku-20240307': 4096
+      };
+
+      const maxTokens = modelLimits[model] || 4096;
       const estimatedPromptTokens = Math.ceil(prompt.length / 4);
 
       if (estimatedPromptTokens > maxTokens * 0.5) {
         logError(`Prompt too long: estimated ${estimatedPromptTokens} tokens, max input should be <${maxTokens * 0.5}`, new Error('Token limit warning'));
       }
 
+      info(`Using model: ${model} with max_tokens: ${maxTokens}`);
+
       const response = await this.client.messages.create({
-        model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5-20241022',
+        model,
         max_tokens: maxTokens,
         temperature: 0.3,
         messages: [
