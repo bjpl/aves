@@ -27,6 +27,7 @@ import speciesRouter from './routes/species';
 import imagesRouter from './routes/images';
 import batchRouter from './routes/batch';
 import mlAnalyticsRouter from './routes/mlAnalytics';
+import healthRouter from './routes/health';
 import { testConnection } from './database/connection';
 import { error as logError, info } from './utils/logger';
 import { devAuthBypass } from './middleware/devAuth';
@@ -209,6 +210,7 @@ app.get('/api/env-check', (_req, res) => {
 });
 
 // API routes
+app.use('/api/health', healthRouter);
 app.use('/api', authRouter);
 app.use('/api', annotationsRouter);
 app.use('/api', aiAnnotationsRouter);
