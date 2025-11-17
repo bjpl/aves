@@ -5,8 +5,8 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
+    "build": "echo 'Using tsx - no build needed'",
+    "start": "tsx src/index.ts",
     "test": "jest",
     "lint": "eslint . --ext .ts",
     "migrate": "tsx src/database/migrate.ts",

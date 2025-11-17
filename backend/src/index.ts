@@ -26,6 +26,7 @@ import exercisesRouter from './routes/exercises';
 import speciesRouter from './routes/species';
 import imagesRouter from './routes/images';
 import batchRouter from './routes/batch';
+import mlAnalyticsRouter from './routes/mlAnalytics';
 import { testConnection } from './database/connection';
 import { error as logError, info } from './utils/logger';
 import { devAuthBypass } from './middleware/devAuth';
@@ -213,6 +214,7 @@ app.use('/api', exercisesRouter);
 app.use('/api', speciesRouter);
 app.use('/api', imagesRouter);
 app.use('/api', batchRouter);
+app.use('/api', mlAnalyticsRouter);
 
 // Error handling middleware
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
