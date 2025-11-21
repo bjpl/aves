@@ -29,6 +29,7 @@ import batchRouter from './routes/batch';
 import mlAnalyticsRouter from './routes/mlAnalytics';
 import feedbackAnalyticsRouter from './routes/feedbackAnalytics';
 import annotationMasteryRouter from './routes/annotationMastery';
+import adminImageManagementRouter from './routes/adminImageManagement';
 import healthRouter from './routes/health';
 import { testConnection } from './database/connection';
 import { error as logError, info } from './utils/logger';
@@ -225,6 +226,7 @@ app.use('/api', batchRouter);
 app.use('/api', mlAnalyticsRouter);
 app.use('/api', feedbackAnalyticsRouter);
 app.use('/api', annotationMasteryRouter);
+app.use('/api', adminImageManagementRouter);
 
 // Error handling middleware
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
