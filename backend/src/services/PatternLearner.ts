@@ -48,6 +48,31 @@ export interface BoundingBoxPattern {
 }
 
 /**
+ * Position correction data for learning
+ */
+export interface PositionCorrection {
+  feature: string;
+  species: string;
+  originalBox: { x: number; y: number; width: number; height: number };
+  correctedBox: { x: number; y: number; width: number; height: number };
+  delta: { dx: number; dy: number; dwidth: number; dheight: number };
+  timestamp: Date;
+  reviewerId: string;
+}
+
+/**
+ * Rejection pattern tracking
+ */
+export interface RejectionPattern {
+  feature: string;
+  species: string;
+  reason: string;
+  boundingBox?: { x: number; y: number; width: number; height: number };
+  timestamp: Date;
+  count: number;
+}
+
+/**
  * Feature statistics for a species
  */
 export interface SpeciesFeatureStats {
@@ -82,6 +107,8 @@ export interface QualityMetrics {
 export class PatternLearner {
   private patterns: Map<string, LearnedPattern> = new Map();
   private speciesStats: Map<string, SpeciesFeatureStats> = new Map();
+  private positionCorrections: Map<string, PositionCorrection[]> = new Map();
+  private rejectionPatterns: Map<string, RejectionPattern[]> = new Map();
   private memoryNamespace = 'pattern-learning';
   private sessionId = `swarm-pattern-learning-${Date.now()}`;
   private initPromise: Promise<void> | null = null;
@@ -92,6 +119,9 @@ export class PatternLearner {
   private readonly MIN_SAMPLES_FOR_PATTERN = 3; // Minimum samples before considering a pattern
   private readonly PATTERN_DECAY_FACTOR = 0.95; // Exponential decay for old patterns
   private readonly MAX_PROMPT_HISTORY = 10; // Keep top N successful prompts
+  private readonly APPROVAL_CONFIDENCE_BOOST = 0.05; // Boost confidence on approval
+  private readonly REJECTION_CONFIDENCE_PENALTY = 0.1; // Reduce confidence on rejection
+  private readonly CORRECTION_WEIGHT = 1.5; // Weight corrections higher than initial observations
 
   constructor() {
     this.initPromise = this.initialize();
@@ -418,6 +448,7 @@ export class PatternLearner {
 
   /**
    * Enhance prompt based on learned patterns
+   * Now includes correction-based adjustments
    */
   async enhancePrompt(
     basePrompt: string,
@@ -443,6 +474,24 @@ export class PatternLearner {
         enhancedPrompt = this.addFeatureGuidance(enhancedPrompt, context.targetFeatures, context.species);
       }
 
+      // Add correction-based adjustments
+      if (context.species && context.targetFeatures && context.targetFeatures.length > 0) {
+        enhancedPrompt = await this.addCorrectionGuidance(
+          enhancedPrompt,
+          context.species,
+          context.targetFeatures
+        );
+      }
+
+      // Add rejection warnings
+      if (context.species && context.targetFeatures && context.targetFeatures.length > 0) {
+        enhancedPrompt = this.addRejectionWarnings(
+          enhancedPrompt,
+          context.species,
+          context.targetFeatures
+        );
+      }
+
       // Add learned bounding box hints
       enhancedPrompt = this.addBoundingBoxHints(enhancedPrompt, context);
 
@@ -457,6 +506,73 @@ export class PatternLearner {
       logError('Failed to enhance prompt', error as Error);
       return basePrompt;
     }
+  }
+
+  /**
+   * Add correction-based guidance to prompt
+   */
+  private async addCorrectionGuidance(
+    prompt: string,
+    species: string,
+    targetFeatures: string[]
+  ): Promise<string> {
+    const adjustedFeatures = await this.getPositionAdjustedFeatures(species, targetFeatures);
+    const featuresWithCorrections = adjustedFeatures.filter(
+      f => f.adjustedBoundingBox && f.basedOnCorrections >= this.MIN_SAMPLES_FOR_PATTERN
+    );
+
+    if (featuresWithCorrections.length === 0) {
+      return prompt;
+    }
+
+    const correctionHints = featuresWithCorrections.map(f => {
+      const delta = f.adjustedBoundingBox!;
+      return `- ${f.feature}: Adjust position by (${delta.dx.toFixed(1)}, ${delta.dy.toFixed(1)}) ` +
+        `and size by (${delta.dwidth.toFixed(1)}, ${delta.dheight.toFixed(1)}) ` +
+        `[Based on ${f.basedOnCorrections} user corrections]`;
+    });
+
+    const guidance = `\n\nCORRECTION-BASED ADJUSTMENTS:
+${correctionHints.join('\n')}
+Note: These adjustments are learned from expert corrections`;
+
+    return prompt + guidance;
+  }
+
+  /**
+   * Add rejection warnings to prompt
+   */
+  private addRejectionWarnings(
+    prompt: string,
+    species: string,
+    targetFeatures: string[]
+  ): string {
+    const warnings: string[] = [];
+
+    for (const feature of targetFeatures) {
+      const rejectionKey = `${species}:${feature}`;
+      const rejections = this.rejectionPatterns.get(rejectionKey) || [];
+
+      const commonRejections = rejections
+        .filter(r => r.count >= 2)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 3);
+
+      if (commonRejections.length > 0) {
+        const reasons = commonRejections.map(r => `"${r.reason}" (${r.count}x)`).join(', ');
+        warnings.push(`- ${feature}: Avoid patterns that caused: ${reasons}`);
+      }
+    }
+
+    if (warnings.length === 0) {
+      return prompt;
+    }
+
+    const guidance = `\n\nCOMMON REJECTION PATTERNS TO AVOID:
+${warnings.join('\n')}
+Note: Learn from past mistakes to improve accuracy`;
+
+    return prompt + guidance;
   }
 
   /**
@@ -777,6 +893,366 @@ Note: Use these as reference points, not strict requirements`;
    */
   private getFeatureKey(feature: string, species?: string): string {
     return species ? `${species}:${feature}` : `global:${feature}`;
+  }
+
+  /**
+   * Learn from annotation approval
+   * Reinforces successful patterns and increases confidence
+   */
+  async learnFromApproval(
+    annotation: AIAnnotation,
+    context: {
+      species: string;
+      imageId: string;
+      reviewerId: string;
+    }
+  ): Promise<void> {
+    try {
+      info('Learning from approval', {
+        feature: annotation.spanishTerm,
+        species: context.species,
+        confidence: annotation.confidence
+      });
+
+      const featureKey = this.getFeatureKey(annotation.spanishTerm, context.species);
+      let pattern = this.patterns.get(featureKey);
+
+      if (!pattern) {
+        // Create new pattern from approved annotation
+        pattern = {
+          id: featureKey,
+          featureType: annotation.spanishTerm,
+          speciesContext: context.species,
+          successfulPrompts: [],
+          commonBoundingBoxes: [],
+          averageConfidence: (annotation.confidence || 0.8) + this.APPROVAL_CONFIDENCE_BOOST,
+          observationCount: 0,
+          lastUpdated: new Date(),
+          metadata: {
+            avgDifficultyLevel: annotation.difficultyLevel,
+            commonPronunciations: annotation.pronunciation ? [annotation.pronunciation] : [],
+            relatedFeatures: [],
+            imageCharacteristics: []
+          }
+        };
+      } else {
+        // Boost confidence for existing pattern
+        pattern.averageConfidence = Math.min(
+          1.0,
+          pattern.averageConfidence + this.APPROVAL_CONFIDENCE_BOOST
+        );
+      }
+
+      // Update bounding box patterns with higher weight
+      if (annotation.boundingBox) {
+        // Add the approved annotation multiple times to increase weight
+        for (let i = 0; i < Math.ceil(this.CORRECTION_WEIGHT); i++) {
+          pattern.commonBoundingBoxes = this.updateBoundingBoxPattern(
+            pattern.commonBoundingBoxes,
+            annotation.boundingBox
+          );
+        }
+      }
+
+      pattern.observationCount++;
+      pattern.lastUpdated = new Date();
+      this.patterns.set(featureKey, pattern);
+
+      // Store as positive training example
+      await this.storeInMemory(
+        `approval-${context.species}-${annotation.spanishTerm}-${Date.now()}`,
+        {
+          annotation,
+          context,
+          timestamp: new Date(),
+          reinforced: true
+        }
+      );
+
+      await this.persistPatterns();
+
+      info('Successfully learned from approval', {
+        feature: annotation.spanishTerm,
+        newConfidence: pattern.averageConfidence
+      });
+
+    } catch (error) {
+      logError('Failed to learn from approval', error as Error);
+    }
+  }
+
+  /**
+   * Learn from annotation rejection
+   * Tracks failure patterns and adjusts recommendations
+   */
+  async learnFromRejection(
+    annotation: AIAnnotation,
+    reason: string,
+    context: {
+      species: string;
+      imageId: string;
+    }
+  ): Promise<void> {
+    try {
+      info('Learning from rejection', {
+        feature: annotation.spanishTerm,
+        species: context.species,
+        reason
+      });
+
+      const featureKey = this.getFeatureKey(annotation.spanishTerm, context.species);
+      const pattern = this.patterns.get(featureKey);
+
+      // Reduce confidence for this pattern
+      if (pattern) {
+        pattern.averageConfidence = Math.max(
+          0.3,
+          pattern.averageConfidence - this.REJECTION_CONFIDENCE_PENALTY
+        );
+        pattern.lastUpdated = new Date();
+        this.patterns.set(featureKey, pattern);
+      }
+
+      // Track rejection pattern
+      const rejectionKey = `${context.species}:${annotation.spanishTerm}`;
+      let rejections = this.rejectionPatterns.get(rejectionKey) || [];
+
+      const existingRejection = rejections.find(r => r.reason === reason);
+      if (existingRejection) {
+        existingRejection.count++;
+        existingRejection.timestamp = new Date();
+      } else {
+        rejections.push({
+          feature: annotation.spanishTerm,
+          species: context.species,
+          reason,
+          boundingBox: annotation.boundingBox,
+          timestamp: new Date(),
+          count: 1
+        });
+      }
+
+      this.rejectionPatterns.set(rejectionKey, rejections);
+
+      // Store as negative training example
+      await this.storeInMemory(
+        `rejection-${context.species}-${annotation.spanishTerm}-${Date.now()}`,
+        {
+          annotation,
+          reason,
+          context,
+          timestamp: new Date()
+        }
+      );
+
+      await this.persistPatterns();
+
+      info('Successfully learned from rejection', {
+        feature: annotation.spanishTerm,
+        reason,
+        totalRejections: rejections.reduce((sum, r) => sum + r.count, 0)
+      });
+
+    } catch (error) {
+      logError('Failed to learn from rejection', error as Error);
+    }
+  }
+
+  /**
+   * Learn from position correction
+   * Calculates position delta and updates positioning model
+   */
+  async learnFromCorrection(
+    original: AIAnnotation,
+    corrected: AIAnnotation,
+    context: {
+      species: string;
+      imageId: string;
+      reviewerId: string;
+    }
+  ): Promise<void> {
+    try {
+      if (!original.boundingBox || !corrected.boundingBox) {
+        info('Skipping correction learning - no bounding boxes');
+        return;
+      }
+
+      // Calculate position delta
+      const delta = {
+        dx: corrected.boundingBox.x - original.boundingBox.x,
+        dy: corrected.boundingBox.y - original.boundingBox.y,
+        dwidth: corrected.boundingBox.width - original.boundingBox.width,
+        dheight: corrected.boundingBox.height - original.boundingBox.height
+      };
+
+      info('Learning from position correction', {
+        feature: original.spanishTerm,
+        species: context.species,
+        delta
+      });
+
+      const correction: PositionCorrection = {
+        feature: original.spanishTerm,
+        species: context.species,
+        originalBox: original.boundingBox,
+        correctedBox: corrected.boundingBox,
+        delta,
+        timestamp: new Date(),
+        reviewerId: context.reviewerId
+      };
+
+      // Store correction
+      const correctionKey = `${context.species}:${original.spanishTerm}`;
+      let corrections = this.positionCorrections.get(correctionKey) || [];
+      corrections.push(correction);
+
+      // Keep only recent corrections (last 50)
+      if (corrections.length > 50) {
+        corrections = corrections.slice(-50);
+      }
+
+      this.positionCorrections.set(correctionKey, corrections);
+
+      // Update pattern with corrected position (with higher weight)
+      const featureKey = this.getFeatureKey(original.spanishTerm, context.species);
+      let pattern = this.patterns.get(featureKey);
+
+      if (!pattern) {
+        pattern = {
+          id: featureKey,
+          featureType: original.spanishTerm,
+          speciesContext: context.species,
+          successfulPrompts: [],
+          commonBoundingBoxes: [],
+          averageConfidence: corrected.confidence || 0.85,
+          observationCount: 0,
+          lastUpdated: new Date(),
+          metadata: {
+            avgDifficultyLevel: original.difficultyLevel,
+            commonPronunciations: [],
+            relatedFeatures: [],
+            imageCharacteristics: []
+          }
+        };
+      }
+
+      // Add corrected position with higher weight
+      for (let i = 0; i < Math.ceil(this.CORRECTION_WEIGHT * 2); i++) {
+        pattern.commonBoundingBoxes = this.updateBoundingBoxPattern(
+          pattern.commonBoundingBoxes,
+          corrected.boundingBox
+        );
+      }
+
+      pattern.observationCount++;
+      pattern.lastUpdated = new Date();
+      this.patterns.set(featureKey, pattern);
+
+      // Store correction in memory
+      await this.storeInMemory(
+        `correction-${context.species}-${original.spanishTerm}-${Date.now()}`,
+        {
+          original: original.boundingBox,
+          corrected: corrected.boundingBox,
+          delta,
+          context,
+          timestamp: new Date()
+        }
+      );
+
+      await this.persistPatterns();
+
+      info('Successfully learned from correction', {
+        feature: original.spanishTerm,
+        correctionsTracked: corrections.length,
+        avgDelta: this.calculateAverageDelta(corrections)
+      });
+
+    } catch (error) {
+      logError('Failed to learn from correction', error as Error);
+    }
+  }
+
+  /**
+   * Get position-adjusted feature recommendations based on corrections
+   */
+  async getPositionAdjustedFeatures(
+    species: string,
+    baseFeatures: string[]
+  ): Promise<Array<{
+    feature: string;
+    adjustedBoundingBox?: {
+      dx: number;
+      dy: number;
+      dwidth: number;
+      dheight: number;
+    };
+    basedOnCorrections: number;
+  }>> {
+    try {
+      const adjustedFeatures = await Promise.all(
+        baseFeatures.map(async (feature) => {
+          const correctionKey = `${species}:${feature}`;
+          const corrections = this.positionCorrections.get(correctionKey) || [];
+
+          if (corrections.length < this.MIN_SAMPLES_FOR_PATTERN) {
+            return {
+              feature,
+              basedOnCorrections: 0
+            };
+          }
+
+          // Calculate average correction delta
+          const avgDelta = this.calculateAverageDelta(corrections);
+
+          return {
+            feature,
+            adjustedBoundingBox: avgDelta,
+            basedOnCorrections: corrections.length
+          };
+        })
+      );
+
+      info('Generated position-adjusted features', {
+        species,
+        features: adjustedFeatures.length,
+        withAdjustments: adjustedFeatures.filter(f => f.adjustedBoundingBox).length
+      });
+
+      return adjustedFeatures;
+
+    } catch (error) {
+      logError('Failed to get position-adjusted features', error as Error);
+      return baseFeatures.map(feature => ({ feature, basedOnCorrections: 0 }));
+    }
+  }
+
+  /**
+   * Calculate average delta from corrections
+   */
+  private calculateAverageDelta(
+    corrections: PositionCorrection[]
+  ): { dx: number; dy: number; dwidth: number; dheight: number } {
+    if (corrections.length === 0) {
+      return { dx: 0, dy: 0, dwidth: 0, dheight: 0 };
+    }
+
+    const sum = corrections.reduce(
+      (acc, corr) => ({
+        dx: acc.dx + corr.delta.dx,
+        dy: acc.dy + corr.delta.dy,
+        dwidth: acc.dwidth + corr.delta.dwidth,
+        dheight: acc.dheight + corr.delta.dheight
+      }),
+      { dx: 0, dy: 0, dwidth: 0, dheight: 0 }
+    );
+
+    return {
+      dx: sum.dx / corrections.length,
+      dy: sum.dy / corrections.length,
+      dwidth: sum.dwidth / corrections.length,
+      dheight: sum.dheight / corrections.length
+    };
   }
 
   /**

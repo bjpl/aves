@@ -122,6 +122,7 @@ backend/delete-*.js
 backend/cleanup-*.js
 backend/verify-*.js
 backend/metrics/
+backend/.claude-flow/metrics/
 scripts/test-*.sh
 
 # Auth debugging documentation (temporary debug docs)
