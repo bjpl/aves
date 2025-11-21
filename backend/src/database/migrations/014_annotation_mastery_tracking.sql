@@ -57,12 +57,12 @@ CREATE TABLE IF NOT EXISTS exercise_annotation_links (
     exercise_type VARCHAR(50) NOT NULL,
     was_correct BOOLEAN, -- NULL if exercise not yet completed
 
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-
-    -- Index for efficient queries
-    INDEX idx_exercise_id (exercise_id),
-    INDEX idx_session_id (session_id)
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Create indexes for exercise_annotation_links (PostgreSQL requires separate CREATE INDEX statements)
+CREATE INDEX IF NOT EXISTS idx_exercise_id ON exercise_annotation_links(exercise_id);
+CREATE INDEX IF NOT EXISTS idx_session_id ON exercise_annotation_links(session_id);
 
 -- ============================================================================
 -- INDEXES FOR PERFORMANCE

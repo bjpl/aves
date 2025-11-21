@@ -41,7 +41,8 @@ async function runMigrations() {
       '008_add_user_roles.sql',
       '009_optimize_cache_indexes.sql',
       '010_create_species_and_images.sql',
-      '011_create_annotations_table.sql'
+      '011_create_annotations_table.sql',
+      '014_annotation_mastery_tracking.sql'
     ];
 
     for (const migration of migrations) {
