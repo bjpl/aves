@@ -96,8 +96,17 @@ const useImageStats = () => {
     queryKey: imageManagementKeys.stats(),
     queryFn: async (): Promise<ImageStats> => {
       try {
-        const response = await axios.get<{ data: ImageStats }>('/api/admin/images/stats');
-        return response.data.data;
+        // Backend returns { images: {...}, annotations: {...}, jobs: {...} }
+        const response = await axios.get('/api/admin/images/stats');
+        const data = response.data;
+        // Transform to match frontend interface
+        return {
+          totalImages: data.images?.total || 0,
+          pendingAnnotation: data.images?.unannotated || 0,
+          annotated: data.images?.annotated || 0,
+          failed: data.jobs?.failed || 0,
+          bySpecies: data.images?.bySpecies || {},
+        };
       } catch (err) {
         logError('Error fetching image stats:', err instanceof Error ? err : new Error(String(err)));
         return {
@@ -119,8 +128,22 @@ const useQuotaStatus = () => {
     queryKey: imageManagementKeys.quota(),
     queryFn: async (): Promise<QuotaStatus> => {
       try {
-        const response = await axios.get<{ data: QuotaStatus }>('/api/admin/quota/status');
-        return response.data.data;
+        // Backend returns quota in /api/admin/images/sources
+        const response = await axios.get('/api/admin/images/sources');
+        const data = response.data;
+        const unsplashQuota = data.sources?.unsplash?.quota;
+        return {
+          unsplash: {
+            remaining: unsplashQuota?.remaining || 50,
+            limit: unsplashQuota?.limit || 50,
+            resetTime: unsplashQuota?.resetAt || null,
+          },
+          anthropic: {
+            remaining: data.services?.visionAI?.configured ? 1000 : 0,
+            limit: 1000,
+            resetTime: null,
+          },
+        };
       } catch (err) {
         logError('Error fetching quota status:', err instanceof Error ? err : new Error(String(err)));
         return {
@@ -139,8 +162,20 @@ const useCollectionJobs = () => {
     queryKey: imageManagementKeys.jobs(),
     queryFn: async (): Promise<CollectionJob[]> => {
       try {
-        const response = await axios.get<{ data: CollectionJob[] }>('/api/admin/jobs');
-        return response.data.data;
+        // Backend returns { jobs: [...], count: N }
+        const response = await axios.get('/api/admin/images/jobs');
+        const jobs = response.data.jobs || [];
+        // Transform to match frontend interface
+        return jobs.map((job: any) => ({
+          id: job.jobId,
+          type: job.type === 'collect' ? 'collection' : 'annotation',
+          status: job.status === 'processing' ? 'running' : job.status,
+          speciesIds: [],
+          progress: job.progress || 0,
+          total: 100,
+          startedAt: job.startedAt,
+          completedAt: job.completedAt,
+        }));
       } catch (err) {
         logError('Error fetching jobs:', err instanceof Error ? err : new Error(String(err)));
         return [];
@@ -157,10 +192,9 @@ const usePendingImages = () => {
     queryKey: imageManagementKeys.pendingImages(),
     queryFn: async (): Promise<{ id: string; speciesId: string; url: string; createdAt: string }[]> => {
       try {
-        const response = await axios.get<{ data: { id: string; speciesId: string; url: string; createdAt: string }[] }>(
-          '/api/admin/images/pending'
-        );
-        return response.data.data;
+        // Use stats endpoint to get unannotated count - actual images would need a new endpoint
+        // For now, return empty array as placeholder
+        return [];
       } catch (err) {
         logError('Error fetching pending images:', err instanceof Error ? err : new Error(String(err)));
         return [];
@@ -176,8 +210,24 @@ const useCollectImages = () => {
 
   return useMutation({
     mutationFn: async (request: CollectionRequest): Promise<CollectionJob> => {
-      const response = await axios.post<{ data: CollectionJob }>('/api/admin/images/collect', request);
-      return response.data.data;
+      // Transform request to match backend: { species: string[], count: number }
+      const backendRequest = {
+        species: request.speciesIds, // Backend accepts species names
+        count: request.imagesPerSpecies || 2,
+      };
+      const response = await axios.post('/api/admin/images/collect', backendRequest);
+      // Transform response to match frontend interface
+      const data = response.data;
+      return {
+        id: data.jobId,
+        type: 'collection',
+        status: data.status === 'processing' ? 'running' : data.status,
+        speciesIds: request.speciesIds,
+        imagesPerSpecies: request.imagesPerSpecies,
+        progress: 0,
+        total: data.estimatedImages || (request.speciesIds.length * (request.imagesPerSpecies || 2)),
+        startedAt: new Date().toISOString(),
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: imageManagementKeys.jobs() });
@@ -195,8 +245,23 @@ const useStartAnnotation = () => {
 
   return useMutation({
     mutationFn: async (request: AnnotationRequest): Promise<CollectionJob> => {
-      const response = await axios.post<{ data: CollectionJob }>('/api/admin/images/annotate', request);
-      return response.data.data;
+      // Transform request: backend expects { all: boolean } not { annotateAll: boolean }
+      const backendRequest = {
+        imageIds: request.imageIds,
+        all: request.annotateAll || false,
+      };
+      const response = await axios.post('/api/admin/images/annotate', backendRequest);
+      // Transform response to match frontend interface
+      const data = response.data;
+      return {
+        id: data.jobId,
+        type: 'annotation',
+        status: data.status === 'processing' ? 'running' : data.status,
+        speciesIds: [],
+        progress: 0,
+        total: data.totalImages || 0,
+        startedAt: new Date().toISOString(),
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: imageManagementKeys.jobs() });
