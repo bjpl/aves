@@ -20,58 +20,14 @@ type TabType = 'review' | 'analytics';
 export const AdminAnnotationReviewPage: React.FC = () => {
   const { user, loading: authLoading } = useSupabaseAuth();
   const { data: annotations, isLoading, error, refetch } = useAIAnnotationsPending();
-  const { data: stats, isLoading: statsLoading } = useAIAnnotationStats();
+  const { data: stats } = useAIAnnotationStats();
 
   const [filter, setFilter] = useState<FilterType>('pending');
   const [sort, setSort] = useState<SortType>('newest');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<TabType>('review');
 
-  if (authLoading || isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading annotations...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h2>
-          <p className="text-gray-600 mb-4">Please sign in to access the admin panel.</p>
-          <Link
-            to="/login"
-            className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md"
-          >
-            Sign In
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Error Loading Annotations</h2>
-          <p className="text-gray-600 mb-4">{error.message}</p>
-          <button
-            onClick={() => refetch()}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
+  // All hooks must be called before any conditional returns
   const filteredAnnotations = annotations || [];
 
   // Apply sorting to filtered annotations
@@ -102,6 +58,54 @@ export const AdminAnnotationReviewPage: React.FC = () => {
   const pendingCount = stats?.pending || 0;
   const approvedCount = stats?.approved || 0;
   const totalCount = stats?.total || 0;
+
+  // Loading state
+  if (authLoading || isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading annotations...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Auth check
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h2>
+          <p className="text-gray-600 mb-4">Please sign in to access the admin panel.</p>
+          <Link
+            to="/login"
+            className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md"
+          >
+            Sign In
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Error Loading Annotations</h2>
+          <p className="text-gray-600 mb-4">{error.message}</p>
+          <button
+            onClick={() => refetch()}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
