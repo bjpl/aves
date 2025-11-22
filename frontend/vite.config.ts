@@ -12,8 +12,9 @@ export default defineConfig(({ mode }) => {
   const isGitHubPages = mode === 'gh-pages';
   const isVercel = mode === 'vercel';
 
-  // GitHub Pages needs special handling
-  const useGitHubPagesConfig = isGitHubPages || (isProduction && !isVercel);
+  // GitHub Pages needs special handling - only when explicitly in gh-pages mode
+  // Docker and other production builds should output to 'dist' by default
+  const useGitHubPagesConfig = isGitHubPages;
 
   return {
     plugins: [react()],
@@ -114,7 +115,7 @@ export default defineConfig(({ mode }) => {
       port: 5180,
       proxy: {
         '/api': {
-          target: 'http://localhost:3005',
+          target: 'http://localhost:3001',
           changeOrigin: true,
         },
       },

@@ -11,7 +11,7 @@ dotenv.config();
 // Log environment detection for debugging
 console.log('Starting server with environment:', {
   NODE_ENV: process.env.NODE_ENV || 'development',
-  PORT: process.env.PORT || 3005,
+  PORT: process.env.PORT || 3001,
   hasDBUrl: !!process.env.DATABASE_URL,
   hasSupabaseUrl: !!process.env.SUPABASE_URL,
   hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -98,7 +98,7 @@ function validateProductionConfig(): void {
 }
 
 const app = express();
-const PORT = process.env.PORT || 3005;
+const PORT = process.env.PORT || 3001;
 
 // Trust proxy for Railway/cloud deployments (required for rate limiting)
 // Railway and other cloud platforms use reverse proxies
@@ -130,11 +130,13 @@ app.use(
 
 // CORS configuration - Allow multiple origins for development and production
 const allowedOrigins = [
-  'http://localhost:5173',           // Local development
+  'http://localhost:5173',           // Local development (default Vite)
+  'http://localhost:5180',           // Local development (custom Vite port)
   'http://localhost:3000',           // Alternative local port
+  'http://localhost:8080',           // Docker nginx container
   'https://aves-frontend.vercel.app', // Vercel production
-  'https://aves-frontend-production.up.railway.app', // Railway production (if needed)
-  'https://bjpl.github.io',          // GitHub Pages (if applicable)
+  'https://aves-frontend-production.up.railway.app', // Railway production
+  'https://bjpl.github.io',          // GitHub Pages
   process.env.FRONTEND_URL          // Environment-specific URL
 ].filter(Boolean); // Remove undefined values
 
