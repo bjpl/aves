@@ -131,6 +131,7 @@ app.use(
 // CORS configuration - Allow multiple origins for development and production
 const allowedOrigins = [
   'http://localhost:5173',           // Local development
+  'http://localhost:5180',           // Alternative local port
   'http://localhost:3000',           // Alternative local port
   'https://aves-frontend.vercel.app', // Vercel production
   'https://aves-frontend-production.up.railway.app', // Railway production (if needed)
@@ -138,18 +139,27 @@ const allowedOrigins = [
   process.env.FRONTEND_URL          // Environment-specific URL
 ].filter(Boolean); // Remove undefined values
 
+// Pattern to match Vercel preview URLs for this project
+const vercelPreviewPattern = /^https:\/\/aves-frontend-[a-z0-9]+-brandon-lamberts-projects-[a-z0-9]+\.vercel\.app$/;
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, Postman, or curl)
     if (!origin) return callback(null, true);
 
+    // Check static allowed origins
     if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      // Log blocked origins for debugging
-      console.warn(`CORS blocked origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      return callback(null, true);
     }
+
+    // Check Vercel preview URLs pattern
+    if (vercelPreviewPattern.test(origin)) {
+      return callback(null, true);
+    }
+
+    // Log blocked origins for debugging
+    console.warn(`CORS blocked origin: ${origin}`);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
