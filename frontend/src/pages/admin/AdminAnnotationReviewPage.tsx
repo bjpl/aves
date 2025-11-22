@@ -14,7 +14,7 @@ import { AnnotationAnalyticsDashboard } from '../../components/admin/AnnotationA
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
 
 type FilterType = 'all' | 'pending' | 'approved' | 'rejected' | 'edited';
-type SortType = 'newest' | 'oldest' | 'confidence' | 'difficulty';
+type SortType = 'newest' | 'oldest' | 'confidence-high' | 'confidence-low' | 'difficulty-high' | 'difficulty-low';
 type TabType = 'review' | 'analytics';
 
 export const AdminAnnotationReviewPage: React.FC = () => {
@@ -73,6 +73,30 @@ export const AdminAnnotationReviewPage: React.FC = () => {
   }
 
   const filteredAnnotations = annotations || [];
+
+  // Apply sorting to filtered annotations
+  const sortedAnnotations = React.useMemo(() => {
+    if (!filteredAnnotations.length) return filteredAnnotations;
+
+    return [...filteredAnnotations].sort((a: any, b: any) => {
+      switch (sort) {
+        case 'newest':
+          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+        case 'oldest':
+          return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+        case 'confidence-high':
+          return (b.confidenceScore ?? 0) - (a.confidenceScore ?? 0);
+        case 'confidence-low':
+          return (a.confidenceScore ?? 0) - (b.confidenceScore ?? 0);
+        case 'difficulty-high':
+          return (b.difficultyLevel ?? 1) - (a.difficultyLevel ?? 1);
+        case 'difficulty-low':
+          return (a.difficultyLevel ?? 1) - (b.difficultyLevel ?? 1);
+        default:
+          return 0;
+      }
+    });
+  }, [filteredAnnotations, sort]);
 
   // Use stats from API instead of calculating from filtered list
   const pendingCount = stats?.pending || 0;
@@ -143,7 +167,7 @@ export const AdminAnnotationReviewPage: React.FC = () => {
         <div className="bg-white rounded-lg shadow p-4 mb-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
             {/* Filters */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               <button
                 onClick={() => setFilter('pending')}
                 className={`px-4 py-2 rounded-md font-medium ${
@@ -164,6 +188,30 @@ export const AdminAnnotationReviewPage: React.FC = () => {
               >
                 All ({totalCount})
               </button>
+
+              {/* Sort Dropdown */}
+              <div className="border-l border-gray-300 pl-4 ml-2">
+                <label htmlFor="sort-select" className="sr-only">Sort by</label>
+                <select
+                  id="sort-select"
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value as SortType)}
+                  className="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <optgroup label="Date">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                  </optgroup>
+                  <optgroup label="Confidence">
+                    <option value="confidence-high">Confidence: High to Low</option>
+                    <option value="confidence-low">Confidence: Low to High</option>
+                  </optgroup>
+                  <optgroup label="Difficulty">
+                    <option value="difficulty-high">Difficulty: Hard to Easy</option>
+                    <option value="difficulty-low">Difficulty: Easy to Hard</option>
+                  </optgroup>
+                </select>
+              </div>
             </div>
 
             {/* Bulk Actions */}
@@ -184,7 +232,7 @@ export const AdminAnnotationReviewPage: React.FC = () => {
         </div>
 
         {/* Annotations Grid */}
-        {filteredAnnotations.length === 0 ? (
+        {sortedAnnotations.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">🎉</div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">All Done!</h3>
@@ -192,7 +240,7 @@ export const AdminAnnotationReviewPage: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredAnnotations.map((annotation: any) => (
+            {sortedAnnotations.map((annotation: any) => (
               <AnnotationReviewCard
                 key={annotation.id}
                 annotation={annotation}

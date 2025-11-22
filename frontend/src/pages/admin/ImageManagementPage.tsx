@@ -19,6 +19,7 @@ import { Alert } from '../../components/ui/Alert';
 import { api as axios } from '../../config/axios';
 import { error as logError } from '../../utils/logger';
 import { Species } from '../../types';
+import { ImageGalleryTab } from '../../components/admin/ImageGalleryTab';
 
 // ============================================================================
 // Types
@@ -73,7 +74,47 @@ interface AnnotationRequest {
   annotateAll?: boolean;
 }
 
-type TabType = 'collection' | 'annotation' | 'statistics' | 'history';
+interface GalleryImage {
+  id: string;
+  url: string;
+  description?: string;
+  width?: number;
+  height?: number;
+  speciesId: string;
+  speciesName: string;
+  scientificName?: string;
+  createdAt: string;
+  hasAnnotations: boolean;
+  annotationCount: number;
+}
+
+interface GalleryResponse {
+  data: {
+    images: GalleryImage[];
+    pagination: {
+      total: number;
+      page: number;
+      pageSize: number;
+      totalPages: number;
+    };
+  };
+}
+
+interface BulkDeleteResponse {
+  message: string;
+  deleted: number;
+  failed: number;
+  errors?: Array<{ imageId: string; error: string }>;
+}
+
+interface BulkAnnotateResponse {
+  jobId: string;
+  status: string;
+  message: string;
+  totalImages: number;
+}
+
+type TabType = 'collection' | 'annotation' | 'gallery' | 'statistics' | 'history';
 
 // ============================================================================
 // Query Keys
@@ -85,6 +126,8 @@ const imageManagementKeys = {
   quota: () => [...imageManagementKeys.all, 'quota'] as const,
   jobs: () => [...imageManagementKeys.all, 'jobs'] as const,
   pendingImages: () => [...imageManagementKeys.all, 'pending-images'] as const,
+  gallery: (page: number, status: string, speciesId?: string) =>
+    [...imageManagementKeys.all, 'gallery', { page, status, speciesId }] as const,
 };
 
 // ============================================================================
@@ -206,6 +249,68 @@ const useStartAnnotation = () => {
     },
     onError: (err) => {
       logError('Error starting annotation:', err instanceof Error ? err : new Error(String(err)));
+    },
+  });
+};
+
+const useGalleryImages = (page: number, status: string, speciesId?: string) => {
+  return useQuery({
+    queryKey: imageManagementKeys.gallery(page, status, speciesId),
+    queryFn: async (): Promise<GalleryResponse['data']> => {
+      try {
+        const params = new URLSearchParams({
+          page: String(page),
+          pageSize: '20',
+          annotationStatus: status,
+          sortBy: 'createdAt',
+          sortOrder: 'desc',
+        });
+        if (speciesId) {
+          params.append('speciesId', speciesId);
+        }
+        const response = await axios.get<GalleryResponse>(`/api/admin/images?${params.toString()}`);
+        return response.data.data;
+      } catch (err) {
+        logError('Error fetching gallery images:', err instanceof Error ? err : new Error(String(err)));
+        return { images: [], pagination: { total: 0, page: 1, pageSize: 20, totalPages: 0 } };
+      }
+    },
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+};
+
+const useBulkDeleteImages = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (imageIds: string[]): Promise<BulkDeleteResponse> => {
+      const response = await axios.post<BulkDeleteResponse>('/api/admin/images/bulk/delete', { imageIds });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: imageManagementKeys.all });
+    },
+    onError: (err) => {
+      logError('Error deleting images:', err instanceof Error ? err : new Error(String(err)));
+    },
+  });
+};
+
+const useBulkAnnotateImages = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (imageIds: string[]): Promise<BulkAnnotateResponse> => {
+      const response = await axios.post<BulkAnnotateResponse>('/api/admin/images/bulk/annotate', { imageIds });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: imageManagementKeys.jobs() });
+      queryClient.invalidateQueries({ queryKey: imageManagementKeys.stats() });
+    },
+    onError: (err) => {
+      logError('Error starting bulk annotation:', err instanceof Error ? err : new Error(String(err)));
     },
   });
 };
@@ -404,6 +509,146 @@ const ToastContainer: React.FC<{
   );
 };
 
+interface BulkActionToolbarProps {
+  selectedCount: number;
+  onSelectAll: () => void;
+  onDeselectAll: () => void;
+  onDelete: () => void;
+  onAnnotate: () => void;
+  isDeleting: boolean;
+  isAnnotating: boolean;
+  totalCount: number;
+  allSelected: boolean;
+}
+
+const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
+  selectedCount,
+  onSelectAll,
+  onDeselectAll,
+  onDelete,
+  onAnnotate,
+  isDeleting,
+  isAnnotating,
+  totalCount,
+  allSelected,
+}) => {
+  if (selectedCount === 0) return null;
+
+  return (
+    <div className="sticky top-[140px] z-20 bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 shadow-sm">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-4">
+          <span className="font-medium text-blue-900">
+            {selectedCount} image{selectedCount !== 1 ? 's' : ''} selected
+          </span>
+          <div className="flex gap-2">
+            {!allSelected && totalCount > 0 && (
+              <button
+                type="button"
+                onClick={onSelectAll}
+                className="text-sm text-blue-600 hover:text-blue-800 underline"
+              >
+                Select all {totalCount}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onDeselectAll}
+              className="text-sm text-gray-600 hover:text-gray-800 underline"
+            >
+              Deselect all
+            </button>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onAnnotate}
+            isLoading={isAnnotating}
+            disabled={isAnnotating || isDeleting}
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+            Annotate Selected
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={onDelete}
+            isLoading={isDeleting}
+            disabled={isAnnotating || isDeleting}
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Delete Selected
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+interface DeleteConfirmationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  count: number;
+  isDeleting: boolean;
+}
+
+const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  count,
+  isDeleting,
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Delete {count} image{count !== 1 ? 's' : ''}?
+            </h3>
+            <p className="mt-2 text-sm text-gray-600">
+              This action cannot be undone. All selected images and their associated annotations will be permanently deleted.
+            </p>
+          </div>
+        </div>
+        <div className="mt-6 flex justify-end gap-3">
+          <Button
+            variant="secondary"
+            onClick={onClose}
+            disabled={isDeleting}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onClick={onConfirm}
+            isLoading={isDeleting}
+            disabled={isDeleting}
+          >
+            Delete
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -418,6 +663,8 @@ export const ImageManagementPage: React.FC = () => {
 
   const collectMutation = useCollectImages();
   const annotateMutation = useStartAnnotation();
+  const bulkDeleteMutation = useBulkDeleteImages();
+  const bulkAnnotateMutation = useBulkAnnotateImages();
 
   const { toasts, addToast, removeToast } = useToast();
 
@@ -426,6 +673,20 @@ export const ImageManagementPage: React.FC = () => {
   const [imagesPerSpecies, setImagesPerSpecies] = useState(2);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [annotateAllPending, setAnnotateAllPending] = useState(true);
+
+  // Gallery state
+  const [galleryPage, setGalleryPage] = useState(1);
+  const [galleryFilter, setGalleryFilter] = useState<'all' | 'annotated' | 'unannotated'>('all');
+  const [gallerySpeciesFilter, setGallerySpeciesFilter] = useState<string | undefined>(undefined);
+  const [gallerySelectedImages, setGallerySelectedImages] = useState<string[]>([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Gallery data
+  const { data: galleryData, isLoading: galleryLoading, refetch: refetchGallery } = useGalleryImages(
+    galleryPage,
+    galleryFilter,
+    gallerySpeciesFilter
+  );
 
   // Check for active jobs and poll more frequently
   const hasActiveJobs = jobs.some((j) => j.status === 'running' || j.status === 'pending');
@@ -477,6 +738,53 @@ export const ImageManagementPage: React.FC = () => {
       addToast('error', 'Failed to start annotation');
     }
   };
+
+  // Gallery selection handlers
+  const handleGalleryImageToggle = (imageId: string) => {
+    setGallerySelectedImages((prev) =>
+      prev.includes(imageId) ? prev.filter((id) => id !== imageId) : [...prev, imageId]
+    );
+  };
+
+  const handleGallerySelectAll = () => {
+    if (galleryData?.images) {
+      setGallerySelectedImages(galleryData.images.map((img) => img.id));
+    }
+  };
+
+  const handleGalleryDeselectAll = () => {
+    setGallerySelectedImages([]);
+  };
+
+  // Bulk delete handler
+  const handleBulkDelete = async () => {
+    try {
+      const result = await bulkDeleteMutation.mutateAsync(gallerySelectedImages);
+      addToast('success', result.message);
+      setGallerySelectedImages([]);
+      setShowDeleteModal(false);
+      refetchGallery();
+      refetchStats();
+    } catch {
+      addToast('error', 'Failed to delete images');
+    }
+  };
+
+  // Bulk annotate handler
+  const handleBulkAnnotate = async () => {
+    try {
+      const result = await bulkAnnotateMutation.mutateAsync(gallerySelectedImages);
+      addToast('success', result.message);
+      setGallerySelectedImages([]);
+    } catch {
+      addToast('error', 'Failed to start bulk annotation');
+    }
+  };
+
+  // Reset gallery selection when filters change
+  useEffect(() => {
+    setGallerySelectedImages([]);
+  }, [galleryPage, galleryFilter, gallerySpeciesFilter]);
 
   // Loading states
   if (authLoading) {
@@ -536,6 +844,7 @@ export const ImageManagementPage: React.FC = () => {
           <div className="flex gap-4 mt-6 border-b border-gray-200">
             {[
               { key: 'collection', label: 'Image Collection' },
+              { key: 'gallery', label: 'Gallery' },
               { key: 'annotation', label: 'Batch Annotation' },
               { key: 'statistics', label: 'Statistics' },
               { key: 'history', label: 'Job History' },
@@ -688,6 +997,11 @@ export const ImageManagementPage: React.FC = () => {
                   </CardBody>
                 </Card>
               </div>
+            )}
+
+            {/* Gallery Tab */}
+            {activeTab === 'gallery' && (
+              <ImageGalleryTab species={species} onToast={addToast} />
             )}
 
             {/* Batch Annotation Tab */}
@@ -1137,6 +1451,15 @@ export const ImageManagementPage: React.FC = () => {
 
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleBulkDelete}
+        count={gallerySelectedImages.length}
+        isDeleting={bulkDeleteMutation.isPending}
+      />
     </div>
   );
 };

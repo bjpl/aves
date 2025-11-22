@@ -6,8 +6,10 @@
  * PATTERN: Async job processing with status tracking, admin authentication required
  *
  * Endpoints:
+ * - GET /api/admin/images - Get paginated list of images with species info
  * - POST /api/admin/images/collect - Trigger image collection from Unsplash
  * - POST /api/admin/images/annotate - Trigger batch annotation
+ * - GET /api/admin/images/jobs - List all jobs (active and recent)
  * - GET /api/admin/images/jobs/:jobId - Get job status
  * - GET /api/admin/images/stats - Get image/annotation statistics
  * - GET /api/admin/images/sources - List available image sources
@@ -17,10 +19,14 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import axios from 'axios';
 import rateLimit from 'express-rate-limit';
+import multer from 'multer';
+import sharp from 'sharp';
+import path from 'path';
+import fs from 'fs';
 import { pool } from '../database/connection';
 import { VisionAIService } from '../services/VisionAIService';
 import { optionalSupabaseAuth, optionalSupabaseAdmin } from '../middleware/optionalSupabaseAuth';
-import { validateBody, validateParams } from '../middleware/validate';
+import { validateBody, validateParams, validateQuery } from '../middleware/validate';
 import { error as logError, info } from '../utils/logger';
 
 const router = Router();
@@ -145,6 +151,104 @@ const adminRateLimiter = rateLimit({
 });
 
 // ============================================================================
+// Upload Configuration
+// ============================================================================
+
+// Upload directories
+const UPLOAD_BASE_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
+const UPLOAD_IMAGES_DIR = path.join(UPLOAD_BASE_DIR, 'images');
+const UPLOAD_THUMBNAILS_DIR = path.join(UPLOAD_BASE_DIR, 'thumbnails');
+
+// Ensure upload directories exist
+const ensureUploadDirs = (): void => {
+  [UPLOAD_BASE_DIR, UPLOAD_IMAGES_DIR, UPLOAD_THUMBNAILS_DIR].forEach(dir => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+      info('Created upload directory', { dir });
+    }
+  });
+};
+
+// Initialize upload directories
+ensureUploadDirs();
+
+// Image processing constants
+const MAX_IMAGE_WIDTH = 1200;
+const MAX_IMAGE_HEIGHT = 900;
+const JPEG_QUALITY = 85;
+const THUMBNAIL_WIDTH = 400;
+const THUMBNAIL_HEIGHT = 300;
+
+// Multer configuration for memory storage (we process with sharp before saving)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB max file size
+    files: 20, // Max 20 files per request
+  },
+  fileFilter: (_req, file, cb) => {
+    // Accept only image files
+    const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Invalid file type: ${file.mimetype}. Only JPEG, PNG, and WebP are allowed.`));
+    }
+  },
+});
+
+/**
+ * Process and save uploaded image with sharp
+ * Returns paths to the processed image and thumbnail
+ */
+async function processAndSaveImage(
+  buffer: Buffer,
+  originalName: string
+): Promise<{ imagePath: string; thumbnailPath: string; width: number; height: number }> {
+  const timestamp = Date.now();
+  const randomStr = Math.random().toString(36).substring(2, 10);
+  const baseName = path.basename(originalName, path.extname(originalName))
+    .replace(/[^a-zA-Z0-9]/g, '_')
+    .substring(0, 50);
+  const filename = `${timestamp}_${randomStr}_${baseName}.jpg`;
+
+  const imagePath = path.join(UPLOAD_IMAGES_DIR, filename);
+  const thumbnailPath = path.join(UPLOAD_THUMBNAILS_DIR, filename);
+
+  // Process main image - resize and optimize
+  const mainImage = await sharp(buffer)
+    .resize(MAX_IMAGE_WIDTH, MAX_IMAGE_HEIGHT, {
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .jpeg({ quality: JPEG_QUALITY })
+    .toFile(imagePath);
+
+  // Create thumbnail
+  await sharp(buffer)
+    .resize(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, {
+      fit: 'cover',
+      position: 'center',
+    })
+    .jpeg({ quality: 80 })
+    .toFile(thumbnailPath);
+
+  info('Image processed and saved', {
+    filename,
+    originalSize: buffer.length,
+    processedSize: mainImage.size,
+    dimensions: { width: mainImage.width, height: mainImage.height },
+  });
+
+  return {
+    imagePath: `/uploads/images/${filename}`,
+    thumbnailPath: `/uploads/thumbnails/${filename}`,
+    width: mainImage.width,
+    height: mainImage.height,
+  };
+}
+
+// ============================================================================
 // Validation Schemas
 // ============================================================================
 
@@ -160,6 +264,24 @@ const AnnotateImagesSchema = z.object({
 
 const JobIdParamSchema = z.object({
   jobId: z.string().min(1)
+});
+
+const BulkDeleteSchema = z.object({
+  imageIds: z.array(z.string().uuid()).min(1, 'At least one image ID required').max(100, 'Maximum 100 images per request')
+});
+
+const BulkAnnotateSchema = z.object({
+  imageIds: z.array(z.string().uuid()).min(1, 'At least one image ID required').max(50, 'Maximum 50 images per request')
+});
+
+const ImageListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).optional().default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).optional().default(20),
+  speciesId: z.string().uuid().optional(),
+  annotationStatus: z.enum(['annotated', 'unannotated', 'all']).optional().default('all'),
+  qualityFilter: z.enum(['high', 'medium', 'low', 'unscored', 'all']).optional().default('all'),
+  sortBy: z.enum(['createdAt', 'speciesName', 'annotationCount', 'qualityScore']).optional().default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).optional().default('desc')
 });
 
 // ============================================================================
@@ -532,6 +654,161 @@ router.post(
     } catch (err) {
       logError('Error starting image collection', err as Error);
       res.status(500).json({ error: 'Failed to start image collection' });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/images/upload
+ * Upload local images with processing and optimization
+ *
+ * @auth Admin only
+ * @rate-limited 30 requests/hour
+ *
+ * Form data:
+ * - files: Multiple image files (JPEG, PNG, WebP) - max 20 files, 10MB each
+ * - speciesId: UUID of the species these images belong to (required)
+ *
+ * Response:
+ * {
+ *   "message": "Successfully uploaded 5 images",
+ *   "uploaded": [
+ *     { "id": "uuid", "url": "/uploads/images/...", "thumbnailUrl": "/uploads/thumbnails/..." }
+ *   ],
+ *   "failed": [],
+ *   "summary": { "total": 5, "successful": 5, "failed": 0 }
+ * }
+ */
+router.post(
+  '/admin/images/upload',
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
+  adminRateLimiter,
+  upload.array('files', 20),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const files = req.files as Express.Multer.File[];
+      const { speciesId } = req.body;
+
+      // Validate speciesId
+      if (!speciesId) {
+        res.status(400).json({
+          error: 'Missing required field',
+          message: 'speciesId is required'
+        });
+        return;
+      }
+
+      // Validate species exists
+      const speciesResult = await pool.query(
+        'SELECT id, english_name, spanish_name FROM species WHERE id = $1',
+        [speciesId]
+      );
+
+      if (speciesResult.rows.length === 0) {
+        res.status(400).json({
+          error: 'Invalid species',
+          message: 'The specified speciesId does not exist'
+        });
+        return;
+      }
+
+      const speciesRow = speciesResult.rows[0];
+      const speciesName = speciesRow.english_name;
+
+      if (!files || files.length === 0) {
+        res.status(400).json({
+          error: 'No files uploaded',
+          message: 'Please select at least one image file to upload'
+        });
+        return;
+      }
+
+      info('Starting image upload', {
+        fileCount: files.length,
+        speciesId,
+        speciesName,
+        userId: req.user?.userId
+      });
+
+      const uploaded: Array<{
+        id: string;
+        url: string;
+        thumbnailUrl: string;
+        width: number;
+        height: number;
+        originalName: string;
+      }> = [];
+      const failed: Array<{ filename: string; error: string }> = [];
+
+      // Process each file
+      for (const file of files) {
+        try {
+          // Process and save the image
+          const processed = await processAndSaveImage(file.buffer, file.originalname);
+
+          // Insert into database
+          const insertResult = await pool.query(
+            `INSERT INTO images (
+              species_id, url, thumbnail_url, width, height,
+              description, source_type, original_filename
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING id`,
+            [
+              speciesId,
+              processed.imagePath,
+              processed.thumbnailPath,
+              processed.width,
+              processed.height,
+              `${speciesName} - uploaded image`,
+              'local_upload',
+              file.originalname
+            ]
+          );
+
+          uploaded.push({
+            id: insertResult.rows[0].id,
+            url: processed.imagePath,
+            thumbnailUrl: processed.thumbnailPath,
+            width: processed.width,
+            height: processed.height,
+            originalName: file.originalname
+          });
+
+        } catch (fileError) {
+          logError('Failed to process uploaded file', fileError as Error, {
+            filename: file.originalname
+          });
+          failed.push({
+            filename: file.originalname,
+            error: (fileError as Error).message
+          });
+        }
+      }
+
+      info('Image upload completed', {
+        uploaded: uploaded.length,
+        failed: failed.length,
+        speciesId,
+        userId: req.user?.userId
+      });
+
+      res.status(uploaded.length > 0 ? 201 : 400).json({
+        message: uploaded.length > 0
+          ? `Successfully uploaded ${uploaded.length} image${uploaded.length !== 1 ? 's' : ''}`
+          : 'Failed to upload any images',
+        uploaded,
+        failed: failed.length > 0 ? failed : undefined,
+        summary: {
+          total: files.length,
+          successful: uploaded.length,
+          failed: failed.length
+        }
+      });
+
+    } catch (err) {
+      logError('Error uploading images', err as Error);
+      res.status(500).json({ error: 'Failed to upload images' });
     }
   }
 );
@@ -1176,6 +1453,191 @@ router.get(
 );
 
 /**
+ * GET /api/admin/images
+ * Get paginated list of images with species info
+ *
+ * @auth Admin only
+ *
+ * Query parameters:
+ * - page: Page number (default: 1)
+ * - pageSize: Items per page (default: 20, max: 100)
+ * - speciesId: Filter by species UUID
+ * - annotationStatus: 'annotated' | 'unannotated' | 'all' (default: 'all')
+ * - sortBy: 'createdAt' | 'speciesName' | 'annotationCount' (default: 'createdAt')
+ * - sortOrder: 'asc' | 'desc' (default: 'desc')
+ *
+ * Response:
+ * {
+ *   "data": {
+ *     "images": [
+ *       {
+ *         "id": "uuid",
+ *         "url": "https://...",
+ *         "speciesId": "uuid",
+ *         "speciesName": "Northern Cardinal",
+ *         "annotationCount": 5,
+ *         "createdAt": "2025-11-21T12:00:00Z",
+ *         "width": 1920,
+ *         "height": 1080
+ *       }
+ *     ],
+ *     "pagination": {
+ *       "total": 150,
+ *       "page": 1,
+ *       "pageSize": 20,
+ *       "totalPages": 8
+ *     }
+ *   }
+ * }
+ */
+router.get(
+  '/admin/images',
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
+  validateQuery(ImageListQuerySchema),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const {
+        page,
+        pageSize,
+        speciesId,
+        annotationStatus,
+        qualityFilter,
+        sortBy,
+        sortOrder
+      } = req.query as {
+        page: number;
+        pageSize: number;
+        speciesId?: string;
+        annotationStatus: 'annotated' | 'unannotated' | 'all';
+        qualityFilter: 'high' | 'medium' | 'low' | 'unscored' | 'all';
+        sortBy: 'createdAt' | 'speciesName' | 'annotationCount' | 'qualityScore';
+        sortOrder: 'asc' | 'desc';
+      };
+
+      // Build WHERE clauses
+      const whereConditions: string[] = [];
+      const queryParams: (string | number)[] = [];
+      let paramIndex = 1;
+
+      // Filter by speciesId
+      if (speciesId) {
+        whereConditions.push(`i.species_id = $${paramIndex}`);
+        queryParams.push(speciesId);
+        paramIndex++;
+      }
+
+      // Filter by annotation status
+      if (annotationStatus === 'annotated') {
+        whereConditions.push('i.annotation_count > 0');
+      } else if (annotationStatus === 'unannotated') {
+        whereConditions.push('i.annotation_count = 0');
+      }
+      // 'all' = no filter
+
+      // Filter by quality score
+      // High: 80-100, Medium: 60-79, Low: 0-59, Unscored: NULL
+      if (qualityFilter === 'high') {
+        whereConditions.push('i.quality_score >= 80');
+      } else if (qualityFilter === 'medium') {
+        whereConditions.push('i.quality_score >= 60 AND i.quality_score < 80');
+      } else if (qualityFilter === 'low') {
+        whereConditions.push('i.quality_score < 60');
+      } else if (qualityFilter === 'unscored') {
+        whereConditions.push('i.quality_score IS NULL');
+      }
+      // 'all' = no filter
+
+      const whereClause = whereConditions.length > 0
+        ? `WHERE ${whereConditions.join(' AND ')}`
+        : '';
+
+      // Build ORDER BY clause
+      let orderByColumn: string;
+      switch (sortBy) {
+        case 'speciesName':
+          orderByColumn = 's.english_name';
+          break;
+        case 'annotationCount':
+          orderByColumn = 'i.annotation_count';
+          break;
+        case 'qualityScore':
+          orderByColumn = 'COALESCE(i.quality_score, -1)';
+          break;
+        case 'createdAt':
+        default:
+          orderByColumn = 'i.created_at';
+          break;
+      }
+      const orderByClause = `ORDER BY ${orderByColumn} ${sortOrder.toUpperCase()}`;
+
+      // Get total count for pagination
+      const countQuery = `
+        SELECT COUNT(*) as total
+        FROM images i
+        JOIN species s ON i.species_id = s.id
+        ${whereClause}
+      `;
+      const countResult = await pool.query(countQuery, queryParams);
+      const total = parseInt(countResult.rows[0].total) || 0;
+
+      // Calculate pagination
+      const totalPages = Math.ceil(total / pageSize);
+      const offset = (page - 1) * pageSize;
+
+      // Get paginated images with quality score
+      const imagesQuery = `
+        SELECT
+          i.id,
+          i.url,
+          i.species_id as "speciesId",
+          s.english_name as "speciesName",
+          i.annotation_count as "annotationCount",
+          i.quality_score as "qualityScore",
+          i.created_at as "createdAt",
+          i.width,
+          i.height
+        FROM images i
+        JOIN species s ON i.species_id = s.id
+        ${whereClause}
+        ${orderByClause}
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      `;
+
+      const imagesResult = await pool.query(imagesQuery, [
+        ...queryParams,
+        pageSize,
+        offset
+      ]);
+
+      info('Admin images list fetched', {
+        page,
+        pageSize,
+        total,
+        filters: { speciesId, annotationStatus, qualityFilter },
+        sorting: { sortBy, sortOrder }
+      });
+
+      res.json({
+        data: {
+          images: imagesResult.rows,
+          pagination: {
+            total,
+            page,
+            pageSize,
+            totalPages
+          }
+        }
+      });
+
+    } catch (err) {
+      logError('Error fetching admin images list', err as Error);
+      res.status(500).json({ error: 'Failed to fetch images list' });
+    }
+  }
+);
+
+/**
  * GET /api/admin/images/jobs
  * List all jobs (active and recent)
  *
@@ -1228,6 +1690,536 @@ router.get(
     } catch (err) {
       logError('Error listing jobs', err as Error);
       res.status(500).json({ error: 'Failed to list jobs' });
+    }
+  }
+);
+
+// ============================================================================
+// Bulk Operations
+// ============================================================================
+
+/**
+ * POST /api/admin/images/bulk/delete
+ * Delete multiple images by their IDs
+ *
+ * @auth Admin only
+ * @rate-limited 30 requests/hour
+ *
+ * Request body:
+ * {
+ *   "imageIds": ["uuid1", "uuid2", ...]
+ * }
+ *
+ * Response:
+ * {
+ *   "message": "Successfully deleted 5 images",
+ *   "deleted": 5,
+ *   "failed": 0,
+ *   "errors": []
+ * }
+ */
+router.post(
+  '/admin/images/bulk/delete',
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
+  adminRateLimiter,
+  validateBody(BulkDeleteSchema),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { imageIds } = req.body as { imageIds: string[] };
+
+      info('Starting bulk image deletion', {
+        imageCount: imageIds.length,
+        userId: req.user?.userId
+      });
+
+      let deleted = 0;
+      let failed = 0;
+      const errors: Array<{ imageId: string; error: string }> = [];
+
+      // Use a transaction for atomic deletion
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+
+        for (const imageId of imageIds) {
+          try {
+            // First delete related annotation items
+            await client.query(
+              'DELETE FROM ai_annotation_items WHERE image_id::text = $1',
+              [imageId]
+            );
+
+            // Delete related annotations
+            await client.query(
+              'DELETE FROM ai_annotations WHERE image_id::text = $1',
+              [imageId]
+            );
+
+            // Delete the image
+            const result = await client.query(
+              'DELETE FROM images WHERE id = $1 RETURNING id',
+              [imageId]
+            );
+
+            if (result.rowCount && result.rowCount > 0) {
+              deleted++;
+            } else {
+              errors.push({ imageId, error: 'Image not found' });
+              failed++;
+            }
+          } catch (deleteError) {
+            errors.push({
+              imageId,
+              error: (deleteError as Error).message
+            });
+            failed++;
+          }
+        }
+
+        await client.query('COMMIT');
+      } catch (txError) {
+        await client.query('ROLLBACK');
+        throw txError;
+      } finally {
+        client.release();
+      }
+
+      info('Bulk image deletion completed', {
+        deleted,
+        failed,
+        userId: req.user?.userId
+      });
+
+      res.json({
+        message: `Successfully deleted ${deleted} image${deleted !== 1 ? 's' : ''}`,
+        deleted,
+        failed,
+        errors: errors.length > 0 ? errors : undefined
+      });
+
+    } catch (err) {
+      logError('Error in bulk image deletion', err as Error);
+      res.status(500).json({ error: 'Failed to delete images' });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/images/bulk/annotate
+ * Trigger annotation for multiple specific images
+ *
+ * @auth Admin only
+ * @rate-limited 30 requests/hour
+ *
+ * Request body:
+ * {
+ *   "imageIds": ["uuid1", "uuid2", ...]
+ * }
+ *
+ * Response:
+ * {
+ *   "jobId": "bulk_annotate_1234567890_abc123",
+ *   "status": "processing",
+ *   "message": "Batch annotation started for 5 images",
+ *   "totalImages": 5
+ * }
+ */
+router.post(
+  '/admin/images/bulk/annotate',
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
+  adminRateLimiter,
+  validateBody(BulkAnnotateSchema),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { imageIds } = req.body as { imageIds: string[] };
+
+      // Initialize Vision AI service
+      const visionService = new VisionAIService();
+
+      if (!visionService.isConfigured()) {
+        res.status(503).json({
+          error: 'Claude API not configured',
+          message: 'ANTHROPIC_API_KEY environment variable is not set'
+        });
+        return;
+      }
+
+      // Get image details for the specified IDs
+      const result = await pool.query(
+        `SELECT
+          i.id, i.url, i.species_id,
+          s.english_name || ' - ' || s.spanish_name as species_name
+        FROM images i
+        JOIN species s ON i.species_id = s.id
+        WHERE i.id = ANY($1)`,
+        [imageIds]
+      );
+
+      if (result.rows.length === 0) {
+        res.status(400).json({
+          error: 'No valid images found',
+          message: 'None of the provided image IDs exist in the database'
+        });
+        return;
+      }
+
+      const imagesToAnnotate = result.rows.map((row: ImageRow) => ({
+        id: row.id,
+        url: row.url,
+        speciesName: row.species_name,
+        speciesId: row.species_id
+      }));
+
+      // Generate job ID and initialize tracking
+      const jobId = generateJobId('bulk_annotate');
+
+      const jobProgress: JobProgress = {
+        jobId,
+        type: 'annotate',
+        status: 'processing',
+        totalItems: imagesToAnnotate.length,
+        processedItems: 0,
+        successfulItems: 0,
+        failedItems: 0,
+        errors: [],
+        startedAt: new Date().toISOString(),
+        metadata: {
+          imageCount: imagesToAnnotate.length,
+          mode: 'bulk_selected',
+          requestedBy: req.user?.userId || 'anonymous',
+          requestedImageIds: imageIds.length,
+          foundImages: imagesToAnnotate.length
+        }
+      };
+
+      jobStore.set(jobId, jobProgress);
+
+      info('Starting bulk annotation job', {
+        jobId,
+        imageCount: imagesToAnnotate.length,
+        userId: req.user?.userId
+      });
+
+      // Start async annotation process
+      (async () => {
+        const job = jobStore.get(jobId)!;
+        const DELAY_BETWEEN_IMAGES = 2000;
+
+        try {
+          for (const image of imagesToAnnotate) {
+            if ((job.status as JobStatus) === 'cancelled') {
+              info('Bulk annotation job cancelled', { jobId });
+              break;
+            }
+
+            try {
+              // Check if already annotated
+              const existingCheck = await pool.query(
+                'SELECT COUNT(*) as count FROM ai_annotation_items WHERE image_id::text = $1',
+                [image.id]
+              );
+
+              if (parseInt(existingCheck.rows[0].count) > 0) {
+                info('Image already annotated, skipping', { imageId: image.id });
+                job.processedItems++;
+                continue;
+              }
+
+              // Generate annotations
+              const annotations = await visionService.generateAnnotations(
+                image.url,
+                image.id,
+                { species: image.speciesName.split(' - ')[0], enablePatternLearning: true }
+              );
+
+              if (!annotations || annotations.length === 0) {
+                throw new Error('No annotations generated');
+              }
+
+              // Create annotation job record
+              const annotationJobId = `bulk_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+              const avgConfidence = annotations.reduce((sum, a) => sum + (a.confidence || 0.8), 0) / annotations.length;
+
+              await pool.query(
+                `INSERT INTO ai_annotations (job_id, image_id, annotation_data, status, confidence_score)
+                 VALUES ($1, $2, $3, $4, $5)`,
+                [annotationJobId, image.id, JSON.stringify(annotations), 'pending', avgConfidence]
+              );
+
+              // Insert individual annotation items
+              for (const annotation of annotations) {
+                await pool.query(
+                  `INSERT INTO ai_annotation_items (
+                    job_id, image_id, spanish_term, english_term, bounding_box,
+                    annotation_type, difficulty_level, pronunciation, confidence, status
+                  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+                  [
+                    annotationJobId,
+                    image.id,
+                    annotation.spanishTerm,
+                    annotation.englishTerm,
+                    JSON.stringify(annotation.boundingBox),
+                    annotation.type,
+                    annotation.difficultyLevel,
+                    annotation.pronunciation || null,
+                    annotation.confidence || 0.8,
+                    'pending'
+                  ]
+                );
+              }
+
+              job.successfulItems++;
+              info('Image annotated successfully', {
+                imageId: image.id,
+                annotationCount: annotations.length
+              });
+
+            } catch (annotateError) {
+              job.errors.push({
+                item: image.id,
+                error: (annotateError as Error).message,
+                timestamp: new Date().toISOString()
+              });
+              job.failedItems++;
+              logError('Failed to annotate image', annotateError as Error, { imageId: image.id });
+            }
+
+            job.processedItems++;
+            await sleep(DELAY_BETWEEN_IMAGES);
+          }
+
+          // Mark job as completed
+          job.status = job.failedItems > 0 && job.successfulItems === 0 ? 'failed' : 'completed';
+          job.completedAt = new Date().toISOString();
+
+          info('Bulk annotation job completed', {
+            jobId,
+            status: job.status,
+            successful: job.successfulItems,
+            failed: job.failedItems
+          });
+
+        } catch (error) {
+          job.status = 'failed';
+          job.completedAt = new Date().toISOString();
+          job.errors.push({
+            item: 'job',
+            error: (error as Error).message,
+            timestamp: new Date().toISOString()
+          });
+          logError('Bulk annotation job failed', error as Error, { jobId });
+        }
+      })();
+
+      // Return immediately with job ID
+      res.status(202).json({
+        jobId,
+        status: 'processing',
+        message: `Batch annotation started for ${imagesToAnnotate.length} image${imagesToAnnotate.length !== 1 ? 's' : ''}`,
+        totalImages: imagesToAnnotate.length
+      });
+
+    } catch (err) {
+      logError('Error starting bulk annotation', err as Error);
+      res.status(500).json({ error: 'Failed to start bulk annotation' });
+    }
+  }
+);
+
+// ============================================================================
+// Single Image Endpoints
+// ============================================================================
+
+const SingleImageParamSchema = z.object({
+  imageId: z.string().uuid()
+});
+
+/**
+ * GET /api/admin/images/:imageId
+ * Get single image with full details and annotations
+ */
+router.get(
+  '/admin/images/:imageId',
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
+  validateParams(SingleImageParamSchema),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { imageId } = req.params;
+
+      const imageQuery = `
+        SELECT
+          i.id, i.species_id as "speciesId", i.unsplash_id as "unsplashId",
+          i.url, i.width, i.height, i.description,
+          i.photographer, i.photographer_username as "photographerUsername",
+          i.quality_score as "qualityScore",
+          i.created_at as "createdAt",
+          s.english_name as "englishName", s.spanish_name as "spanishName",
+          s.scientific_name as "scientificName"
+        FROM images i
+        LEFT JOIN species s ON i.species_id = s.id
+        WHERE i.id = $1
+      `;
+      const imageResult = await pool.query(imageQuery, [imageId]);
+
+      if (imageResult.rows.length === 0) {
+        res.status(404).json({ error: 'Image not found' });
+        return;
+      }
+
+      const imageRow = imageResult.rows[0];
+
+      const annotationsQuery = `
+        SELECT
+          id, job_id as "jobId", spanish_term as "spanishTerm",
+          english_term as "englishTerm", bounding_box as "boundingBox",
+          annotation_type as "annotationType", difficulty_level as "difficultyLevel",
+          pronunciation, confidence, status, created_at as "createdAt"
+        FROM ai_annotation_items
+        WHERE image_id::text = $1
+        ORDER BY created_at DESC
+      `;
+      const annotationsResult = await pool.query(annotationsQuery, [imageId]);
+
+      res.json({
+        data: {
+          ...imageRow,
+          species: {
+            englishName: imageRow.englishName,
+            spanishName: imageRow.spanishName,
+            scientificName: imageRow.scientificName
+          },
+          annotations: annotationsResult.rows
+        }
+      });
+
+    } catch (err) {
+      logError('Error fetching image details', err as Error);
+      res.status(500).json({ error: 'Failed to fetch image details' });
+    }
+  }
+);
+
+/**
+ * DELETE /api/admin/images/:imageId
+ * Delete an image and its associated annotations
+ */
+router.delete(
+  '/admin/images/:imageId',
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
+  validateParams(SingleImageParamSchema),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { imageId } = req.params;
+
+      const checkResult = await pool.query('SELECT id FROM images WHERE id = $1', [imageId]);
+      if (checkResult.rows.length === 0) {
+        res.status(404).json({ error: 'Image not found' });
+        return;
+      }
+
+      // Delete annotations first (foreign key constraint)
+      await pool.query('DELETE FROM ai_annotation_items WHERE image_id::text = $1', [imageId]);
+      await pool.query('DELETE FROM ai_annotations WHERE image_id::text = $1', [imageId]);
+      await pool.query('DELETE FROM images WHERE id = $1', [imageId]);
+
+      info('Image deleted', { imageId, userId: req.user?.userId });
+
+      res.json({ message: 'Image deleted successfully', imageId });
+
+    } catch (err) {
+      logError('Error deleting image', err as Error);
+      res.status(500).json({ error: 'Failed to delete image' });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/images/:imageId/annotate
+ * Trigger annotation for a single image
+ */
+router.post(
+  '/admin/images/:imageId/annotate',
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
+  validateParams(SingleImageParamSchema),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { imageId } = req.params;
+
+      const imageQuery = `
+        SELECT i.id, i.url, s.english_name as species_name
+        FROM images i
+        LEFT JOIN species s ON i.species_id = s.id
+        WHERE i.id = $1
+      `;
+      const imageResult = await pool.query(imageQuery, [imageId]);
+
+      if (imageResult.rows.length === 0) {
+        res.status(404).json({ error: 'Image not found' });
+        return;
+      }
+
+      const image = imageResult.rows[0];
+      const visionService = new VisionAIService();
+
+      if (!visionService.isConfigured()) {
+        res.status(503).json({
+          error: 'Claude API not configured',
+          message: 'ANTHROPIC_API_KEY environment variable is not set'
+        });
+        return;
+      }
+
+      const annotations = await visionService.generateAnnotations(
+        image.url,
+        image.id,
+        { species: image.species_name || 'Unknown species', enablePatternLearning: true }
+      );
+
+      if (!annotations || annotations.length === 0) {
+        res.status(500).json({ error: 'No annotations generated' });
+        return;
+      }
+
+      const annotationJobId = `single_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const avgConfidence = annotations.reduce((sum, a) => sum + (a.confidence || 0.8), 0) / annotations.length;
+
+      await pool.query(
+        `INSERT INTO ai_annotations (job_id, image_id, annotation_data, status, confidence_score)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [annotationJobId, imageId, JSON.stringify(annotations), 'pending', avgConfidence]
+      );
+
+      for (const annotation of annotations) {
+        await pool.query(
+          `INSERT INTO ai_annotation_items (
+            job_id, image_id, spanish_term, english_term, bounding_box,
+            annotation_type, difficulty_level, pronunciation, confidence, status
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          [
+            annotationJobId, imageId, annotation.spanishTerm, annotation.englishTerm,
+            JSON.stringify(annotation.boundingBox), annotation.type, annotation.difficultyLevel,
+            annotation.pronunciation || null, annotation.confidence || 0.8, 'pending'
+          ]
+        );
+      }
+
+      info('Image annotated via gallery', { imageId, annotationCount: annotations.length });
+
+      res.json({
+        message: 'Image annotated successfully',
+        imageId,
+        annotationCount: annotations.length,
+        jobId: annotationJobId
+      });
+
+    } catch (err) {
+      logError('Error annotating image', err as Error);
+      res.status(500).json({ error: 'Failed to annotate image' });
     }
   }
 );
