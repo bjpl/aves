@@ -11,7 +11,7 @@ dotenv.config();
 // Log environment detection for debugging
 console.log('Starting server with environment:', {
   NODE_ENV: process.env.NODE_ENV || 'development',
-  PORT: process.env.PORT || 3001,
+  PORT: process.env.PORT || 3005,
   hasDBUrl: !!process.env.DATABASE_URL,
   hasSupabaseUrl: !!process.env.SUPABASE_URL,
   hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -98,7 +98,7 @@ function validateProductionConfig(): void {
 }
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3005;
 
 // Trust proxy for Railway/cloud deployments (required for rate limiting)
 // Railway and other cloud platforms use reverse proxies
