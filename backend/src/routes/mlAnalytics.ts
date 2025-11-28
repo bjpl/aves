@@ -44,10 +44,10 @@ router.get(
 
       const analytics = patternLearner.getAnalytics();
 
-      // Get database stats
+      // Get database stats - use vision_confidence for AI-generated annotations
       const { data: annotationStats } = await supabase
         .from('annotations')
-        .select('confidence, created_at')
+        .select('vision_confidence, created_at, vision_generated')
         .order('created_at', { ascending: false })
         .limit(1000);
 
@@ -59,16 +59,17 @@ router.get(
         .from('images')
         .select('*', { count: 'exact', head: true });
 
-      // Calculate trends
-      const recentAnnotations = annotationStats?.slice(0, 100) || [];
-      const olderAnnotations = annotationStats?.slice(100, 200) || [];
+      // Calculate trends - only use annotations with confidence scores
+      const annotationsWithConfidence = annotationStats?.filter(a => a.vision_confidence !== null) || [];
+      const recentAnnotations = annotationsWithConfidence.slice(0, 100);
+      const olderAnnotations = annotationsWithConfidence.slice(100, 200);
 
       const avgRecentConfidence = recentAnnotations.length > 0
-        ? recentAnnotations.reduce((sum, a) => sum + (a.confidence || 0), 0) / recentAnnotations.length
+        ? recentAnnotations.reduce((sum, a) => sum + (a.vision_confidence || 0), 0) / recentAnnotations.length
         : 0;
 
       const avgOlderConfidence = olderAnnotations.length > 0
-        ? olderAnnotations.reduce((sum, a) => sum + (a.confidence || 0), 0) / olderAnnotations.length
+        ? olderAnnotations.reduce((sum, a) => sum + (a.vision_confidence || 0), 0) / olderAnnotations.length
         : 0;
 
       const confidenceTrend = avgOlderConfidence > 0
@@ -115,30 +116,32 @@ router.get(
     try {
       info('Vocabulary balance analytics requested');
 
-      // Get feature distribution from annotations
+      // Get vocabulary distribution from annotations - using spanish_term and english_term
       const { data: annotations } = await supabase
         .from('annotations')
-        .select('feature_name, confidence');
+        .select('spanish_term, english_term, annotation_type, vision_confidence');
 
-      if (!annotations) {
-        res.json({ features: [], totalFeatures: 0, coverage: 0 });
+      if (!annotations || annotations.length === 0) {
+        res.json({ features: [], totalFeatures: 0, coverage: 0, topGaps: [] });
         return;
       }
 
-      // Count feature occurrences
-      const featureCounts = new Map<string, { count: number; avgConfidence: number; total: number }>();
+      // Count annotation types and terms (vocabulary coverage)
+      const termCounts = new Map<string, { count: number; avgConfidence: number; total: number }>();
 
       for (const ann of annotations) {
-        const feature = ann.feature_name;
-        const existing = featureCounts.get(feature) || { count: 0, avgConfidence: 0, total: 0 };
+        // Use english_term as the primary vocabulary identifier
+        const term = ann.english_term || ann.spanish_term || 'unknown';
+        const existing = termCounts.get(term) || { count: 0, avgConfidence: 0, total: 0 };
         existing.count++;
-        existing.total += ann.confidence || 0;
+        existing.total += ann.vision_confidence || 0.8; // Default confidence for manual annotations
         existing.avgConfidence = existing.total / existing.count;
-        featureCounts.set(feature, existing);
+        termCounts.set(term, existing);
       }
 
       // Convert to sorted array
-      const features = Array.from(featureCounts.entries())
+      const features = Array.from(termCounts.entries())
+        .filter(([name]) => name && name !== 'unknown')
         .map(([name, stats]) => ({
           name,
           count: stats.count,
@@ -147,7 +150,7 @@ router.get(
         }))
         .sort((a, b) => b.count - a.count);
 
-      // Define target vocabulary
+      // Define target vocabulary for bird anatomy
       const targetVocabulary = [
         'beak', 'bill', 'eye', 'crest', 'crown', 'nape', 'throat', 'chin',
         'breast', 'belly', 'back', 'rump', 'flank', 'wing', 'tail', 'leg', 'foot',
@@ -156,19 +159,26 @@ router.get(
         'plumage', 'feathers', 'pattern', 'marking', 'stripe', 'spot', 'patch'
       ];
 
-      // Calculate coverage
-      const coveredFeatures = features.filter(f =>
-        targetVocabulary.some(target => f.name.toLowerCase().includes(target.toLowerCase()))
+      // Calculate coverage based on which target terms appear in annotations
+      const coveredTargets = targetVocabulary.filter(target =>
+        features.some(f => f.name.toLowerCase().includes(target.toLowerCase()))
       );
 
+      const coverage = targetVocabulary.length > 0
+        ? ((coveredTargets.length / targetVocabulary.length) * 100).toFixed(1)
+        : '0';
+
+      // Find gaps - target terms not covered
+      const topGaps = targetVocabulary
+        .filter(target => !features.some(f => f.name.toLowerCase().includes(target.toLowerCase())))
+        .slice(0, 10);
+
       const vocabularyBalance = {
-        features: features.slice(0, 20), // Top 20 features
+        features: features.slice(0, 20), // Top 20 terms
         totalFeatures: features.length,
         targetVocabulary: targetVocabulary.length,
-        coverage: ((coveredFeatures.length / targetVocabulary.length) * 100).toFixed(1),
-        topGaps: targetVocabulary
-          .filter(target => !features.some(f => f.name.toLowerCase().includes(target.toLowerCase())))
-          .slice(0, 10)
+        coverage,
+        topGaps
       };
 
       res.json(vocabularyBalance);
@@ -238,35 +248,46 @@ router.get(
     try {
       info('Quality trends analytics requested');
 
-      // Get annotations grouped by date
+      // Get annotations with vision_confidence grouped by date
       const { data: annotations } = await supabase
         .from('annotations')
-        .select('confidence, created_at')
+        .select('vision_confidence, created_at, vision_generated')
         .order('created_at', { ascending: true });
 
       if (!annotations || annotations.length === 0) {
-        res.json({ trends: [], summary: { improvement: 0, currentQuality: 0 } });
+        res.json({ trends: [], summary: { improvement: 0, currentQuality: 0, totalWeeks: 0 } });
         return;
       }
+
+      // Filter to only AI-generated annotations with confidence, or all if none have confidence
+      const annotationsWithConfidence = annotations.filter(a => a.vision_confidence !== null);
+      const dataSource = annotationsWithConfidence.length > 0 ? annotationsWithConfidence : annotations;
 
       // Group by week
       const weeklyData = new Map<string, { total: number; sum: number; count: number }>();
 
-      for (const ann of annotations) {
+      for (const ann of dataSource) {
         const date = new Date(ann.created_at);
-        const weekKey = `${date.getFullYear()}-W${Math.ceil(date.getDate() / 7)}`;
+        // Calculate ISO week number properly
+        const startOfYear = new Date(date.getFullYear(), 0, 1);
+        const days = Math.floor((date.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
+        const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
+        const weekKey = `${date.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}`;
 
         const existing = weeklyData.get(weekKey) || { total: 0, sum: 0, count: 0 };
         existing.count++;
-        existing.sum += ann.confidence || 0;
+        // Use vision_confidence or default to 0.85 for manual annotations (assumed high quality)
+        const confidence = ann.vision_confidence !== null ? ann.vision_confidence : 0.85;
+        existing.sum += confidence;
         existing.total = existing.sum / existing.count;
         weeklyData.set(weekKey, existing);
       }
 
       const trends = Array.from(weeklyData.entries())
+        .sort(([a], [b]) => a.localeCompare(b)) // Sort by week chronologically
         .map(([week, data]) => ({
           period: week,
-          avgConfidence: data.total,
+          avgConfidence: Math.round(data.total * 100) / 100,
           annotationCount: data.count
         }));
 
