@@ -24,6 +24,7 @@ import {
   DeleteConfirmationModal,
   useImageManagement,
   useToast,
+  DashboardSkeleton,
 } from '../../components/admin/image-management';
 
 export const ImageManagementPage: React.FC = () => {
@@ -36,6 +37,7 @@ export const ImageManagementPage: React.FC = () => {
     jobs,
     pendingImages,
     isLoading: dataLoading,
+    hasActiveJobs,
     refetchStats,
     collectMutation,
     annotateMutation,
@@ -53,17 +55,8 @@ export const ImageManagementPage: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [gallerySelectedImages, setGallerySelectedImages] = useState<string[]>([]);
 
-  // Poll for active jobs
-  const hasActiveJobs = jobs.some((j) => j.status === 'running' || j.status === 'pending');
-
-  useEffect(() => {
-    if (hasActiveJobs) {
-      const interval = setInterval(() => {
-        refetchStats();
-      }, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [hasActiveJobs, refetchStats]);
+  // Note: Smart polling is now handled in useImageManagement hook
+  // The hook automatically polls when hasActiveJobs is true
 
   // Collection handler
   const handleCollectImages = async () => {
@@ -210,10 +203,7 @@ export const ImageManagementPage: React.FC = () => {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {isLoading && (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-3 text-gray-600">Loading data...</span>
-          </div>
+          <DashboardSkeleton activeTab={activeTab} />
         )}
 
         {!isLoading && (

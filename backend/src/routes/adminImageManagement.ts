@@ -2245,4 +2245,141 @@ router.post(
   }
 );
 
+/**
+ * GET /api/admin/dashboard
+ * Combined endpoint for initial dashboard load - fetches stats, quota, and jobs in one call
+ * Optimized for faster initial page load by reducing API round trips
+ */
+router.get(
+  '/admin/dashboard',
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
+  async (_req: Request, res: Response): Promise<void> => {
+    try {
+      // Execute all queries in parallel for faster response
+      const [imageStats, imagesBySpecies, annotationStats, annotationCoverage, unsplashQuota] = await Promise.all([
+        pool.query(`
+          SELECT
+            COUNT(DISTINCT i.id) as total_images,
+            COUNT(DISTINCT i.species_id) as unique_species
+          FROM images i
+        `),
+        pool.query(`
+          SELECT
+            s.english_name as species,
+            COUNT(i.id) as count
+          FROM images i
+          JOIN species s ON i.species_id = s.id
+          GROUP BY s.english_name
+          ORDER BY count DESC
+        `),
+        pool.query(`
+          SELECT
+            COUNT(*) as total,
+            COUNT(*) FILTER (WHERE status = 'pending') as pending,
+            COUNT(*) FILTER (WHERE status = 'approved') as approved,
+            COUNT(*) FILTER (WHERE status = 'rejected') as rejected,
+            COUNT(*) FILTER (WHERE status = 'edited') as edited,
+            AVG(confidence) FILTER (WHERE confidence IS NOT NULL) as avg_confidence
+          FROM ai_annotation_items
+        `),
+        pool.query(`
+          SELECT
+            COUNT(DISTINCT i.id) FILTER (WHERE ai.id IS NOT NULL) as annotated,
+            COUNT(DISTINCT i.id) FILTER (WHERE ai.id IS NULL) as unannotated
+          FROM images i
+          LEFT JOIN ai_annotation_items ai ON ai.image_id::text = i.id::text
+        `),
+        getUnsplashQuotaStatus().catch(() => ({ remaining: 50, limit: 50, resetTime: null }))
+      ]);
+
+      // Process results
+      const bySpecies: Record<string, number> = {};
+      for (const row of imagesBySpecies.rows as ImageBySpeciesRow[]) {
+        bySpecies[row.species] = parseInt(row.count);
+      }
+
+      const annoRow = annotationStats.rows[0];
+      const coverageRow = annotationCoverage.rows[0];
+
+      // Get job statistics from in-memory store
+      const jobs: Array<{
+        id: string;
+        type: string;
+        status: string;
+        progress: number;
+        total: number;
+        startedAt: string;
+        completedAt?: string;
+        error?: string;
+        results?: Record<string, number>;
+      }> = [];
+      let activeJobs = 0;
+      let completedJobs = 0;
+      let failedJobs = 0;
+
+      for (const job of jobStore.values()) {
+        jobs.push({
+          id: job.jobId,
+          type: job.type,
+          status: job.status === 'processing' ? 'running' : job.status,
+          progress: job.processed,
+          total: job.total,
+          startedAt: job.startedAt,
+          completedAt: job.completedAt,
+          error: job.error,
+          results: job.results
+        });
+
+        if (job.status === 'processing' || job.status === 'pending') {
+          activeJobs++;
+        } else if (job.status === 'completed') {
+          completedJobs++;
+        } else if (job.status === 'failed') {
+          failedJobs++;
+        }
+      }
+
+      // Sort jobs by startedAt descending
+      jobs.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+
+      res.json({
+        data: {
+          stats: {
+            totalImages: parseInt(imageStats.rows[0].total_images) || 0,
+            pendingAnnotation: parseInt(coverageRow.unannotated) || 0,
+            annotated: parseInt(coverageRow.annotated) || 0,
+            failed: failedJobs,
+            bySpecies,
+            uniqueSpecies: parseInt(imageStats.rows[0].unique_species) || 0,
+            annotations: {
+              total: parseInt(annoRow.total) || 0,
+              pending: parseInt(annoRow.pending) || 0,
+              approved: parseInt(annoRow.approved) || 0,
+              rejected: parseInt(annoRow.rejected) || 0,
+              edited: parseInt(annoRow.edited) || 0,
+              avgConfidence: parseFloat(annoRow.avg_confidence || '0').toFixed(2)
+            },
+            jobs: {
+              active: activeJobs,
+              completed: completedJobs,
+              failed: failedJobs
+            }
+          },
+          quota: {
+            unsplash: unsplashQuota,
+            anthropic: { remaining: 1000, limit: 1000, resetTime: null }
+          },
+          jobs: jobs.slice(0, 20), // Return last 20 jobs
+          hasActiveJobs: activeJobs > 0
+        }
+      });
+
+    } catch (err) {
+      logError('Error fetching dashboard data', err as Error);
+      res.status(500).json({ error: 'Failed to fetch dashboard data' });
+    }
+  }
+);
+
 export default router;

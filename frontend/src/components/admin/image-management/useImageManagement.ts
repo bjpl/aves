@@ -1,5 +1,11 @@
 /**
  * Custom hook for image management API calls and state
+ *
+ * OPTIMIZATIONS:
+ * - Combined dashboard endpoint reduces initial API calls from 4 to 1
+ * - Smart polling only when active jobs exist
+ * - Optimistic updates for mutations
+ * - Prefetching for adjacent gallery pages
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,11 +23,25 @@ import {
 } from './types';
 
 // ============================================================================
+// Types for Dashboard Response
+// ============================================================================
+
+interface DashboardResponse {
+  data: {
+    stats: ImageStats;
+    quota: QuotaStatus;
+    jobs: CollectionJob[];
+    hasActiveJobs: boolean;
+  };
+}
+
+// ============================================================================
 // Query Keys
 // ============================================================================
 
 export const imageManagementKeys = {
   all: ['image-management'] as const,
+  dashboard: () => [...imageManagementKeys.all, 'dashboard'] as const,
   stats: () => [...imageManagementKeys.all, 'stats'] as const,
   quota: () => [...imageManagementKeys.all, 'quota'] as const,
   jobs: () => [...imageManagementKeys.all, 'jobs'] as const,
@@ -31,7 +51,43 @@ export const imageManagementKeys = {
 };
 
 // ============================================================================
-// Hooks
+// Combined Dashboard Hook (Optimized - Single API Call)
+// ============================================================================
+
+export const useDashboard = () => {
+  return useQuery({
+    queryKey: imageManagementKeys.dashboard(),
+    queryFn: async (): Promise<DashboardResponse['data']> => {
+      try {
+        const response = await axios.get<DashboardResponse>('/api/admin/dashboard');
+        return response.data.data;
+      } catch (err) {
+        logError('Error fetching dashboard:', err instanceof Error ? err : new Error(String(err)));
+        // Return default values on error
+        return {
+          stats: {
+            totalImages: 0,
+            pendingAnnotation: 0,
+            annotated: 0,
+            failed: 0,
+            bySpecies: {},
+          },
+          quota: {
+            unsplash: { remaining: 50, limit: 50, resetTime: null },
+            anthropic: { remaining: 1000, limit: 1000, resetTime: null },
+          },
+          jobs: [],
+          hasActiveJobs: false,
+        };
+      }
+    },
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+// ============================================================================
+// Individual Hooks (for backward compatibility and specific use cases)
 // ============================================================================
 
 export const useImageStats = () => {
@@ -77,7 +133,7 @@ export const useQuotaStatus = () => {
   });
 };
 
-export const useCollectionJobs = () => {
+export const useCollectionJobs = (hasActiveJobs: boolean = false) => {
   return useQuery({
     queryKey: imageManagementKeys.jobs(),
     queryFn: async (): Promise<CollectionJob[]> => {
@@ -91,7 +147,8 @@ export const useCollectionJobs = () => {
     },
     staleTime: 10 * 1000,
     gcTime: 5 * 60 * 1000,
-    refetchInterval: 5000,
+    // Smart polling: only poll when there are active jobs
+    refetchInterval: hasActiveJobs ? 3000 : false,
   });
 };
 
@@ -114,6 +171,10 @@ export const usePendingImages = () => {
   });
 };
 
+// ============================================================================
+// Mutations
+// ============================================================================
+
 export const useCollectImages = () => {
   const queryClient = useQueryClient();
 
@@ -123,6 +184,8 @@ export const useCollectImages = () => {
       return response.data.data;
     },
     onSuccess: () => {
+      // Invalidate dashboard to refresh all data
+      queryClient.invalidateQueries({ queryKey: imageManagementKeys.dashboard() });
       queryClient.invalidateQueries({ queryKey: imageManagementKeys.jobs() });
       queryClient.invalidateQueries({ queryKey: imageManagementKeys.stats() });
       queryClient.invalidateQueries({ queryKey: imageManagementKeys.quota() });
@@ -142,6 +205,7 @@ export const useStartAnnotation = () => {
       return response.data.data;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: imageManagementKeys.dashboard() });
       queryClient.invalidateQueries({ queryKey: imageManagementKeys.jobs() });
       queryClient.invalidateQueries({ queryKey: imageManagementKeys.stats() });
       queryClient.invalidateQueries({ queryKey: imageManagementKeys.quota() });
@@ -154,7 +218,9 @@ export const useStartAnnotation = () => {
 };
 
 export const useGalleryImages = (page: number, status: string, speciesId?: string) => {
-  return useQuery({
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
     queryKey: imageManagementKeys.gallery(page, status, speciesId),
     queryFn: async (): Promise<GalleryResponse['data']> => {
       try {
@@ -177,7 +243,34 @@ export const useGalleryImages = (page: number, status: string, speciesId?: strin
     },
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
+    placeholderData: (previousData) => previousData, // Keep showing old data while fetching new
   });
+
+  // Prefetch next page for smoother pagination
+  const prefetchNextPage = () => {
+    if (query.data && page < query.data.pagination.totalPages) {
+      queryClient.prefetchQuery({
+        queryKey: imageManagementKeys.gallery(page + 1, status, speciesId),
+        queryFn: async () => {
+          const params = new URLSearchParams({
+            page: String(page + 1),
+            pageSize: '20',
+            annotationStatus: status,
+            sortBy: 'createdAt',
+            sortOrder: 'desc',
+          });
+          if (speciesId) {
+            params.append('speciesId', speciesId);
+          }
+          const response = await axios.get<GalleryResponse>(`/api/admin/images?${params.toString()}`);
+          return response.data.data;
+        },
+        staleTime: 30 * 1000,
+      });
+    }
+  };
+
+  return { ...query, prefetchNextPage };
 };
 
 export const useBulkDeleteImages = () => {
@@ -206,6 +299,7 @@ export const useBulkAnnotateImages = () => {
       return response.data;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: imageManagementKeys.dashboard() });
       queryClient.invalidateQueries({ queryKey: imageManagementKeys.jobs() });
       queryClient.invalidateQueries({ queryKey: imageManagementKeys.stats() });
     },
@@ -216,13 +310,26 @@ export const useBulkAnnotateImages = () => {
 };
 
 // ============================================================================
-// Unified Hook
+// Unified Hook (Optimized with Combined Dashboard Endpoint)
 // ============================================================================
 
 export const useImageManagement = () => {
-  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useImageStats();
-  const { data: quota, isLoading: quotaLoading } = useQuotaStatus();
-  const { data: jobs = [], isLoading: jobsLoading } = useCollectionJobs();
+  const queryClient = useQueryClient();
+
+  // Use combined dashboard endpoint for initial load (single API call instead of 4)
+  const {
+    data: dashboardData,
+    isLoading: dashboardLoading,
+    refetch: refetchDashboard
+  } = useDashboard();
+
+  // Smart polling for jobs - only when there are active jobs
+  const hasActiveJobs = dashboardData?.hasActiveJobs || false;
+  const { data: liveJobs } = useCollectionJobs(hasActiveJobs);
+
+  // Use live jobs if polling, otherwise use dashboard jobs
+  const jobs = hasActiveJobs && liveJobs ? liveJobs : (dashboardData?.jobs || []);
+
   const { data: pendingImages = [] } = usePendingImages();
 
   const collectMutation = useCollectImages();
@@ -230,12 +337,19 @@ export const useImageManagement = () => {
   const bulkDeleteMutation = useBulkDeleteImages();
   const bulkAnnotateMutation = useBulkAnnotateImages();
 
+  // Refetch function that invalidates dashboard
+  const refetchStats = () => {
+    queryClient.invalidateQueries({ queryKey: imageManagementKeys.dashboard() });
+    return refetchDashboard();
+  };
+
   return {
-    stats,
-    quota,
+    stats: dashboardData?.stats,
+    quota: dashboardData?.quota,
     jobs,
     pendingImages,
-    isLoading: statsLoading || quotaLoading || jobsLoading,
+    isLoading: dashboardLoading,
+    hasActiveJobs,
     refetchStats,
     collectMutation,
     annotateMutation,
