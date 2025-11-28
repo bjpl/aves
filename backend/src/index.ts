@@ -130,20 +130,16 @@ app.use(
 );
 
 // CORS configuration - Allow multiple origins for development and production
-// Combines hardcoded defaults with environment variable CORS_ALLOWED_ORIGINS
-const defaultOrigins = [
+const allowedOrigins = [
   'http://localhost:5173',           // Local development (default Vite)
   'http://localhost:5180',           // Local development (custom Vite port)
   'http://localhost:3000',           // Alternative local port
   'http://localhost:8080',           // Docker nginx container
   'https://aves-frontend.vercel.app', // Vercel production
   'https://aves-frontend-production.up.railway.app', // Railway production
-  'https://brandonperfetti.github.io', // GitHub Pages
+  'https://bjpl.github.io',          // GitHub Pages
   process.env.FRONTEND_URL          // Environment-specific URL
-];
-// Merge with additional origins from CORS_ALLOWED_ORIGINS env var
-const envOrigins = process.env.CORS_ALLOWED_ORIGINS?.split(',').map(o => o.trim()) || [];
-const allowedOrigins = [...new Set([...defaultOrigins, ...envOrigins])].filter(Boolean);
+].filter(Boolean); // Remove undefined values
 
 app.use(cors({
   origin: (origin, callback) => {
