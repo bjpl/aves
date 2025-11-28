@@ -6,7 +6,7 @@
  * PATTERN: Paginated grid with modal detail view and inline actions
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Card, CardHeader, CardBody } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
@@ -24,6 +24,7 @@ import {
   ImageAnnotation,
 } from '../../hooks/useImageGallery';
 import { ImageUploadModal } from './ImageUploadModal';
+import { BulkActionToolbar } from './image-management/BulkActionToolbar';
 
 // ============================================================================
 // Types
@@ -32,6 +33,8 @@ import { ImageUploadModal } from './ImageUploadModal';
 interface ImageGalleryTabProps {
   species: Species[];
   onToast: (type: 'success' | 'error' | 'info', message: string) => void;
+  selectedImages?: string[];
+  onSelectionChange?: (imageIds: string[]) => void;
 }
 
 type AnnotationStatus = 'all' | 'annotated' | 'unannotated';
@@ -160,6 +163,8 @@ interface ImageCardProps {
   onDelete: () => void;
   isDeleting: boolean;
   isAnnotating: boolean;
+  isSelected: boolean;
+  onToggleSelect: () => void;
 }
 
 const ImageCard: React.FC<ImageCardProps> = ({
@@ -169,9 +174,27 @@ const ImageCard: React.FC<ImageCardProps> = ({
   onDelete,
   isDeleting,
   isAnnotating,
+  isSelected,
+  onToggleSelect,
 }) => {
   return (
-    <div className="relative group bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+    <div className={`relative group bg-white rounded-lg shadow-sm border-2 overflow-hidden hover:shadow-md transition-all ${
+      isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+    }`}>
+      {/* Selection Checkbox */}
+      <div className="absolute top-2 left-2 z-10">
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={(e) => {
+            e.stopPropagation();
+            onToggleSelect();
+          }}
+          className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer bg-white shadow-sm"
+          title={isSelected ? 'Deselect image' : 'Select image'}
+        />
+      </div>
+
       {/* Image */}
       <div className="relative aspect-[4/3] cursor-pointer" onClick={onView}>
         <LazyImage
@@ -188,7 +211,7 @@ const ImageCard: React.FC<ImageCardProps> = ({
         </div>
 
         {/* Quality badge */}
-        <div className="absolute top-2 left-2">
+        <div className="absolute bottom-2 left-2">
           {(() => {
             const qualityProps = getQualityBadgeProps(image.qualityScore);
             return (
@@ -200,7 +223,7 @@ const ImageCard: React.FC<ImageCardProps> = ({
         </div>
 
         {/* Annotation badge */}
-        <div className="absolute top-2 right-2">
+        <div className="absolute bottom-2 right-2">
           <Badge
             variant={image.annotationCount > 0 ? 'success' : 'warning'}
             size="sm"
@@ -521,7 +544,12 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
 // Main Component
 // ============================================================================
 
-export const ImageGalleryTab: React.FC<ImageGalleryTabProps> = ({ species, onToast }) => {
+export const ImageGalleryTab: React.FC<ImageGalleryTabProps> = ({
+  species,
+  onToast,
+  selectedImages: externalSelectedImages,
+  onSelectionChange,
+}) => {
   // State
   const [filters, setFilters] = useState<GalleryFilters>({
     page: 1,
@@ -534,11 +562,21 @@ export const ImageGalleryTab: React.FC<ImageGalleryTabProps> = ({ species, onToa
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [internalSelectedImages, setInternalSelectedImages] = useState<string[]>([]);
+
+  // Use external selection state if provided, otherwise use internal state
+  const selectedImages = externalSelectedImages ?? internalSelectedImages;
+  const setSelectedImages = onSelectionChange ?? setInternalSelectedImages;
 
   // Queries & Mutations
   const { data, isLoading, refetch } = useGalleryImages(filters);
   const deleteMutation = useDeleteImage();
   const annotateMutation = useAnnotateImage();
+
+  // Clear selection when filters change
+  useEffect(() => {
+    setSelectedImages([]);
+  }, [filters.speciesId, filters.annotationStatus, filters.qualityFilter, setSelectedImages]);
 
   // Handlers
   const handleFilterChange = useCallback((newFilters: Partial<GalleryFilters>) => {
@@ -581,8 +619,66 @@ export const ImageGalleryTab: React.FC<ImageGalleryTabProps> = ({ species, onToa
     setFilters((prev) => ({ ...prev, page }));
   }, []);
 
+  // Selection handlers
+  const handleToggleSelect = useCallback(
+    (imageId: string) => {
+      setSelectedImages((prev) =>
+        prev.includes(imageId) ? prev.filter((id) => id !== imageId) : [...prev, imageId]
+      );
+    },
+    [setSelectedImages]
+  );
+
+  const handleSelectAll = useCallback(() => {
+    const currentPageImageIds = (data?.images || []).map((img) => img.id);
+    setSelectedImages(currentPageImageIds);
+  }, [data?.images, setSelectedImages]);
+
+  const handleDeselectAll = useCallback(() => {
+    setSelectedImages([]);
+  }, [setSelectedImages]);
+
+  // Bulk action handlers
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedImages.length === 0) return;
+
+    try {
+      // Delete all selected images sequentially
+      for (const imageId of selectedImages) {
+        await deleteMutation.mutateAsync(imageId);
+      }
+      onToast('success', `Deleted ${selectedImages.length} image(s) successfully`);
+      setSelectedImages([]);
+      refetch();
+    } catch {
+      onToast('error', 'Failed to delete selected images');
+    }
+  }, [selectedImages, deleteMutation, onToast, setSelectedImages, refetch]);
+
+  const handleBulkAnnotate = useCallback(async () => {
+    if (selectedImages.length === 0) return;
+
+    try {
+      let successCount = 0;
+      // Annotate all selected images sequentially
+      for (const imageId of selectedImages) {
+        const result = await annotateMutation.mutateAsync(imageId);
+        if (result) successCount++;
+      }
+      onToast('success', `Generated annotations for ${successCount} image(s)`);
+      setSelectedImages([]);
+      refetch();
+    } catch {
+      onToast('error', 'Failed to generate annotations for selected images');
+    }
+  }, [selectedImages, annotateMutation, onToast, setSelectedImages, refetch]);
+
   const images = data?.images || [];
   const pagination = data?.pagination || { total: 0, page: 1, pageSize: 20, totalPages: 0 };
+  const currentPageImageIds = images.map((img) => img.id);
+  const allCurrentPageSelected =
+    currentPageImageIds.length > 0 &&
+    currentPageImageIds.every((id) => selectedImages.includes(id));
 
   return (
     <div>
@@ -612,6 +708,19 @@ export const ImageGalleryTab: React.FC<ImageGalleryTabProps> = ({ species, onToa
 
           {/* Filters */}
           <FilterBar species={species} filters={filters} onFilterChange={handleFilterChange} />
+
+          {/* Bulk Action Toolbar */}
+          <BulkActionToolbar
+            selectedCount={selectedImages.length}
+            onSelectAll={handleSelectAll}
+            onDeselectAll={handleDeselectAll}
+            onDelete={handleBulkDelete}
+            onAnnotate={handleBulkAnnotate}
+            isDeleting={deleteMutation.isPending}
+            isAnnotating={annotateMutation.isPending}
+            totalCount={currentPageImageIds.length}
+            allSelected={allCurrentPageSelected}
+          />
 
           {/* Loading state */}
           {isLoading ? (
@@ -653,6 +762,8 @@ export const ImageGalleryTab: React.FC<ImageGalleryTabProps> = ({ species, onToa
                     onDelete={() => setDeleteConfirmId(image.id)}
                     isDeleting={deleteMutation.isPending && deleteConfirmId === image.id}
                     isAnnotating={annotateMutation.isPending}
+                    isSelected={selectedImages.includes(image.id)}
+                    onToggleSelect={() => handleToggleSelect(image.id)}
                   />
                 ))}
               </div>

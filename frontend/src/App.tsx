@@ -10,6 +10,7 @@ const SpeciesPage = lazy(() => import('./pages/SpeciesPage').then(m => ({ defaul
 const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
 const AdminAnnotationReviewPage = lazy(() => import('./pages/admin/AdminAnnotationReviewPage').then(m => ({ default: m.AdminAnnotationReviewPage })));
 const ImageManagementPage = lazy(() => import('./pages/admin/ImageManagementPage'));
+const MLAnalyticsPage = lazy(() => import('./pages/admin/MLAnalyticsPage').then(m => ({ default: m.MLAnalyticsPage })));
 
 function App() {
   // PATTERN: Hardcoded basename for GitHub Pages deployment
@@ -65,6 +66,12 @@ function App() {
                   >
                     Images
                   </Link>
+                  <Link
+                    to="/admin/analytics"
+                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-orange-600 hover:text-orange-700"
+                  >
+                    Analytics
+                  </Link>
                 </div>
               </div>
             </div>
@@ -88,6 +95,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/admin/annotations" element={<AdminAnnotationReviewPage />} />
             <Route path="/admin/images" element={<ImageManagementPage />} />
+            <Route path="/admin/analytics" element={<MLAnalyticsPage />} />
           </Routes>
         </Suspense>
       </div>

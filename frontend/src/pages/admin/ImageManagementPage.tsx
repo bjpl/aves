@@ -331,7 +331,12 @@ export const ImageManagementPage: React.FC = () => {
 
             {/* Gallery Tab */}
             {activeTab === 'gallery' && (
-              <ImageGalleryTab species={species} onToast={addToast} />
+              <ImageGalleryTab
+                species={species}
+                onToast={addToast}
+                selectedImages={gallerySelectedImages}
+                onSelectionChange={setGallerySelectedImages}
+              />
             )}
 
             {/* Batch Annotation Tab */}

@@ -268,7 +268,7 @@ async function processAndSaveImage(
 // ============================================================================
 
 const CollectImagesSchema = z.object({
-  species: z.array(z.string()).optional(),
+  speciesIds: z.array(z.string().uuid()).optional(), // Accept UUIDs from frontend
   count: z.number().int().min(1).max(10).optional().default(2)
 });
 
@@ -488,7 +488,7 @@ function generateJobId(prefix: string): string {
  *
  * Request body:
  * {
- *   "species": ["Northern Cardinal", "Blue Jay"],  // Optional: filter by species names
+ *   "speciesIds": ["uuid1", "uuid2"],  // Optional: array of species UUIDs from database
  *   "count": 2  // Optional: images per species (1-10, default 2)
  * }
  *
@@ -509,7 +509,7 @@ router.post(
   validateBody(CollectImagesSchema),
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { species, count } = req.body;
+      const { speciesIds, count } = req.body;
 
       // Validate Unsplash configuration
       if (!UNSPLASH_ACCESS_KEY) {
@@ -520,23 +520,71 @@ router.post(
         return;
       }
 
-      // Filter species if specified
-      let speciesToCollect = DEFAULT_BIRD_SPECIES;
-      if (species && species.length > 0) {
-        speciesToCollect = DEFAULT_BIRD_SPECIES.filter(s =>
-          species.some((name: string) =>
-            s.englishName.toLowerCase().includes(name.toLowerCase()) ||
-            s.spanishName.toLowerCase().includes(name.toLowerCase()) ||
-            s.scientificName.toLowerCase().includes(name.toLowerCase())
-          )
+      // Get species data from database using the provided IDs
+      let speciesToCollect: Array<{
+        id: string;
+        scientificName: string;
+        englishName: string;
+        spanishName: string;
+        searchTerms?: string;
+      }> = [];
+
+      if (speciesIds && speciesIds.length > 0) {
+        // Fetch species from database by their IDs
+        const speciesResult = await pool.query(
+          `SELECT
+            id,
+            scientific_name as "scientificName",
+            english_name as "englishName",
+            spanish_name as "spanishName"
+          FROM species
+          WHERE id = ANY($1)`,
+          [speciesIds]
         );
 
-        if (speciesToCollect.length === 0) {
+        if (speciesResult.rows.length === 0) {
           res.status(400).json({
             error: 'No matching species found',
-            availableSpecies: DEFAULT_BIRD_SPECIES.map(s => s.englishName)
+            message: 'The provided species IDs do not exist in the database'
           });
           return;
+        }
+
+        // Map database results to collection format
+        speciesToCollect = speciesResult.rows.map((row: any) => ({
+          id: row.id,
+          scientificName: row.scientificName,
+          englishName: row.englishName,
+          spanishName: row.spanishName,
+          searchTerms: `${row.englishName} bird` // Generate search terms for Unsplash
+        }));
+      } else {
+        // If no species specified, use DEFAULT_BIRD_SPECIES (for backward compatibility)
+        // First, insert them into the database if they don't exist
+        for (const defaultSpecies of DEFAULT_BIRD_SPECIES) {
+          try {
+            const existingSpecies = await pool.query(
+              'SELECT id FROM species WHERE scientific_name = $1',
+              [defaultSpecies.scientificName]
+            );
+
+            let speciesId: string;
+            if (existingSpecies.rows.length === 0) {
+              speciesId = await insertSpecies(defaultSpecies);
+            } else {
+              speciesId = existingSpecies.rows[0].id;
+            }
+
+            speciesToCollect.push({
+              id: speciesId,
+              scientificName: defaultSpecies.scientificName,
+              englishName: defaultSpecies.englishName,
+              spanishName: defaultSpecies.spanishName,
+              searchTerms: defaultSpecies.searchTerms
+            });
+          } catch (err) {
+            logError('Error processing default species', err as Error);
+          }
         }
       }
 
@@ -583,11 +631,12 @@ router.post(
             }
 
             try {
-              // Insert/update species record
-              const speciesId = await insertSpecies(speciesData);
+              // Use the species ID directly (already exists in database)
+              const speciesId = speciesData.id;
 
-              // Search for images
-              const photos = await searchUnsplash(speciesData.searchTerms, count);
+              // Search for images using searchTerms or fallback to english name
+              const searchQuery = speciesData.searchTerms || `${speciesData.englishName} bird`;
+              const photos = await searchUnsplash(searchQuery, count);
 
               if (photos.length === 0) {
                 job.errors.push({

@@ -21,6 +21,7 @@ export interface AnnotationReviewCardProps {
   onActionComplete?: () => void;
   isSelected?: boolean;
   onSelect?: (selected: boolean) => void;
+  onToast?: (type: 'success' | 'error' | 'info', message: string) => void;
 }
 
 export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
@@ -29,6 +30,7 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
   onActionComplete,
   isSelected = false,
   onSelect,
+  onToast,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState({
@@ -548,12 +550,17 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
               const errorMessage = error?.response?.data?.error || error?.message || 'Unknown error';
               const statusCode = error?.response?.status;
 
-              alert(
-                `Failed to save annotation position!\n\n` +
-                `Status: ${statusCode || 'N/A'}\n` +
-                `Error: ${errorMessage}\n\n` +
-                `Check browser console (F12) for more details.`
-              );
+              if (onToast) {
+                onToast('error', `Failed to save annotation position (${statusCode || 'N/A'}): ${errorMessage}`);
+              } else {
+                // Fallback to alert if no toast handler provided
+                alert(
+                  `Failed to save annotation position!\n\n` +
+                  `Status: ${statusCode || 'N/A'}\n` +
+                  `Error: ${errorMessage}\n\n` +
+                  `Check browser console (F12) for more details.`
+                );
+              }
 
               // Don't close the editor so user can try again
             }

@@ -12,6 +12,7 @@ import { useAIAnnotationsPending, useAIAnnotationStats } from '../../hooks/useAI
 import { AnnotationReviewCard } from '../../components/admin/AnnotationReviewCard';
 import { AnnotationAnalyticsDashboard } from '../../components/admin/AnnotationAnalyticsDashboard';
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
+import { useToast, ToastContainer } from '../../components/admin/image-management';
 
 type FilterType = 'all' | 'pending' | 'approved' | 'rejected' | 'edited';
 type SortType = 'newest' | 'oldest' | 'confidence-high' | 'confidence-low' | 'difficulty-high' | 'difficulty-low';
@@ -21,6 +22,7 @@ export const AdminAnnotationReviewPage: React.FC = () => {
   const { user, loading: authLoading } = useSupabaseAuth();
   const { data: annotations, isLoading, error, refetch } = useAIAnnotationsPending();
   const { data: stats } = useAIAnnotationStats();
+  const { toasts, addToast, removeToast } = useToast();
 
   const [filter, setFilter] = useState<FilterType>('pending');
   const [sort, setSort] = useState<SortType>('newest');
@@ -260,6 +262,7 @@ export const AdminAnnotationReviewPage: React.FC = () => {
                   }
                   setSelectedIds(newSelected);
                 }}
+                onToast={addToast}
               />
             ))}
           </div>
@@ -267,6 +270,8 @@ export const AdminAnnotationReviewPage: React.FC = () => {
           </>
         )}
       </div>
+
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );
 };

@@ -16,6 +16,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Spinner } from '../../components/ui/Spinner';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Alert } from '../../components/ui/Alert';
+import { useToast, ToastContainer } from '../../components/admin/image-management';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -23,7 +24,7 @@ export const AnnotationReviewPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AIAnnotationStatus>('pending');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const { toasts, addToast, removeToast } = useToast();
 
   // Fetch data based on active tab
   const { data: annotations = [], isLoading, error } = useAIAnnotations({ status: activeTab });
@@ -56,12 +57,6 @@ export const AnnotationReviewPage: React.FC = () => {
     setSelectedIds((prev) =>
       selected ? [...prev, id] : prev.filter((selectedId) => selectedId !== id)
     );
-  }, []);
-
-  // Toast notification helper
-  const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
   }, []);
 
   // Keyboard shortcuts
@@ -189,13 +184,7 @@ export const AnnotationReviewPage: React.FC = () => {
       </Tabs>
 
       {/* Toast Notifications */}
-      {toast && (
-        <div className="fixed bottom-4 right-4 z-50 animate-slide-up">
-          <Alert variant={toast.type === 'success' ? 'success' : 'error'}>
-            {toast.message}
-          </Alert>
-        </div>
-      )}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
 
       {/* Keyboard Shortcuts Help */}
       <div className="fixed bottom-4 left-4 bg-gray-800 text-white text-xs rounded-lg p-3 shadow-lg">
@@ -261,7 +250,7 @@ export const AnnotationReviewPage: React.FC = () => {
             totalCount={paginatedAnnotations.length}
             onSelectAll={handleSelectAll}
             onClearSelection={handleClearSelection}
-            onBatchComplete={() => showToast('Batch operation completed successfully!')}
+            onBatchComplete={() => addToast('success', 'Batch operation completed successfully!')}
           />
         )}
 
@@ -274,7 +263,8 @@ export const AnnotationReviewPage: React.FC = () => {
                 imageUrl={annotation.imageUrl}
                 isSelected={selectedIds.includes(annotation.id)}
                 onSelect={(selected) => handleToggleSelection(annotation.id, selected)}
-                onActionComplete={() => showToast('Action completed successfully!')}
+                onActionComplete={() => addToast('success', 'Action completed successfully!')}
+                onToast={addToast}
               />
             </div>
           ))}

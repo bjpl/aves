@@ -4,6 +4,7 @@ import { unsplashService } from '../../services/unsplashService';
 import { promptGenerator } from '../../services/promptGenerator';
 import axios from 'axios';
 import { error as logError } from '../../utils/logger';
+import { useToast, ToastContainer } from '../admin/image-management';
 
 interface ImageImporterProps {
   species: Species[];
@@ -16,6 +17,7 @@ export const ImageImporter: React.FC<ImageImporterProps> = ({ species }) => {
   const [importStatus, setImportStatus] = useState<Record<string, string>>({});
   const [generatedPrompt, setGeneratedPrompt] = useState('');
   const [stats, setStats] = useState<any>(null);
+  const { toasts, addToast, removeToast } = useToast();
 
   useEffect(() => {
     fetchStats();
@@ -97,10 +99,11 @@ export const ImageImporter: React.FC<ImageImporterProps> = ({ species }) => {
   const generatePrompts = async () => {
     try {
       const response = await axios.post('/api/images/generate-prompts');
-      alert(`Generated ${response.data.generated} prompts for species missing images`);
+      addToast('success', `Generated ${response.data.generated} prompts for species missing images`);
       fetchStats();
     } catch (err) {
       logError('Failed to generate prompts', err as Error);
+      addToast('error', 'Failed to generate prompts');
     }
   };
 
@@ -246,6 +249,8 @@ export const ImageImporter: React.FC<ImageImporterProps> = ({ species }) => {
           Generate All Missing Prompts
         </button>
       </div>
+
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );
 };

@@ -6,6 +6,7 @@ import React, { useState } from 'react';
 import { useAIExerciseStats, useClearExerciseCache, usePrefetchExercises } from '../../hooks/useAIExercise';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { useToast, ToastContainer } from '../../components/admin/image-management';
 
 export const AIExerciseStatsPage: React.FC = () => {
   const [userId, setUserId] = useState('');
@@ -15,17 +16,18 @@ export const AIExerciseStatsPage: React.FC = () => {
   const { data: stats, isLoading, error, refetch } = useAIExerciseStats();
   const { mutate: clearCache, isPending: isClearing } = useClearExerciseCache();
   const { mutate: prefetchExercises, isPending: isPrefetching } = usePrefetchExercises();
+  const { toasts, addToast, removeToast } = useToast();
 
   const handleClearCache = () => {
     if (!userId) {
-      alert('Please enter a user ID');
+      addToast('error', 'Please enter a user ID');
       return;
     }
 
     if (confirm(`Clear cache for user ${userId}? This cannot be undone.`)) {
       clearCache(userId, {
         onSuccess: () => {
-          alert('Cache cleared successfully');
+          addToast('success', 'Cache cleared successfully');
           refetch();
         },
       });
@@ -34,7 +36,7 @@ export const AIExerciseStatsPage: React.FC = () => {
 
   const handlePrefetch = () => {
     if (!userId) {
-      alert('Please enter a user ID');
+      addToast('error', 'Please enter a user ID');
       return;
     }
 
@@ -42,8 +44,9 @@ export const AIExerciseStatsPage: React.FC = () => {
       { userId, count: prefetchCount },
       {
         onSuccess: (data) => {
-          alert(
-            `Prefetched ${data.prefetched} exercises (${data.cached} from cache)\nCost: $${data.totalCost.toFixed(4)}`
+          addToast(
+            'success',
+            `Prefetched ${data.prefetched} exercises (${data.cached} from cache) - Cost: $${data.totalCost.toFixed(4)}`
           );
           refetch();
         },
@@ -302,6 +305,8 @@ export const AIExerciseStatsPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );
 };
