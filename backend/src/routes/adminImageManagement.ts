@@ -158,7 +158,7 @@ setInterval(cleanupOldJobs, 60 * 60 * 1000);
 
 const adminRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 30, // 30 requests per hour for admin operations
+  max: 1000, // Increased to 1000 - admin routes are auth-protected
   message: { error: 'Too many admin requests. Please try again later.' },
   // Disable trust proxy validation for development
   // In production with proper proxy setup, this should be configured appropriately
