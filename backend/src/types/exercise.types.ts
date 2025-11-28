@@ -8,7 +8,12 @@ export type ExerciseType =
   | 'cultural_context'
   | 'term_matching'
   | 'contextual_fill'
-  | 'image_labeling';
+  | 'image_labeling'
+  | 'spatial_identification'
+  | 'bounding_box_drawing'
+  | 'comparative_analysis'
+  | 'annotation_sequencing'
+  | 'category_sorting';
 
 export interface ExerciseBase {
   id: string;

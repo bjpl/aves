@@ -51,7 +51,7 @@ export function createEnhancedExercisesRouter(pool: Pool): Router {
    * POST /api/enhanced-exercises/generate
    * Generate annotation-aware exercise
    */
-  router.post('/generate', async (req: Request, res: Response) => {
+  router.post('/generate', async (req: Request, res: Response): Promise<void> => {
     try {
       const data = GenerateExerciseSchema.parse(req.body);
 
@@ -69,10 +69,11 @@ export function createEnhancedExercisesRouter(pool: Pool): Router {
       });
 
       if (!exercise) {
-        return res.status(404).json({
+        res.status(404).json({
           error: 'Could not generate exercise',
           reason: 'Insufficient annotation data available'
         });
+        return;
       }
 
       res.json({
@@ -82,10 +83,11 @@ export function createEnhancedExercisesRouter(pool: Pool): Router {
 
     } catch (err) {
       if (err instanceof z.ZodError) {
-        return res.status(400).json({
+        res.status(400).json({
           error: 'Invalid request data',
           details: err.errors
         });
+        return;
       }
 
       logError('Error generating enhanced exercise', err as Error);
@@ -97,7 +99,7 @@ export function createEnhancedExercisesRouter(pool: Pool): Router {
    * POST /api/enhanced-exercises/validate
    * Validate exercise answer and update mastery
    */
-  router.post('/validate', async (req: Request, res: Response) => {
+  router.post('/validate', async (req: Request, res: Response): Promise<void> => {
     try {
       const data = ValidateAnswerSchema.parse(req.body);
 
@@ -224,10 +226,11 @@ export function createEnhancedExercisesRouter(pool: Pool): Router {
 
     } catch (err) {
       if (err instanceof z.ZodError) {
-        return res.status(400).json({
+        res.status(400).json({
           error: 'Invalid request data',
           details: err.errors
         });
+        return;
       }
 
       logError('Error validating exercise answer', err as Error);

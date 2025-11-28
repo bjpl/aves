@@ -99,6 +99,7 @@ export function createApiRateLimiter(): RateLimitRequestHandler {
     },
     skip: skipRateLimiting,
     keyGenerator: generateRateLimitKey,
+    validate: { trustProxy: false },
   });
 }
 
@@ -138,6 +139,7 @@ export function createAuthRateLimiter(): RateLimitRequestHandler {
       const ip = req.ip || 'unknown';
       return `${ip}-${email}`;
     },
+    validate: { trustProxy: false },
   });
 }
 
@@ -155,6 +157,7 @@ export function createAuthenticatedApiRateLimiter(): RateLimitRequestHandler {
     handler: rateLimitHandler,
     skip: skipRateLimiting,
     keyGenerator: generateRateLimitKey,
+    validate: { trustProxy: false },
   });
 }
 
@@ -184,6 +187,7 @@ export function createUploadRateLimiter(): RateLimitRequestHandler {
     },
     skip: skipRateLimiting,
     keyGenerator: generateRateLimitKey,
+    validate: { trustProxy: false },
   });
 }
 
@@ -215,6 +219,7 @@ export function createAIRateLimiter(): RateLimitRequestHandler {
     },
     skip: skipRateLimiting,
     keyGenerator: generateRateLimitKey,
+    validate: { trustProxy: false },
   });
 }
 
@@ -235,6 +240,7 @@ export function createCustomRateLimiter(
     handler: rateLimitHandler,
     skip: skipRateLimiting,
     keyGenerator: generateRateLimitKey,
+    validate: { trustProxy: false },
   });
 }
 
@@ -256,6 +262,7 @@ export function createSlidingWindowRateLimiter(
     handler: rateLimitHandler,
     skip: skipRateLimiting,
     keyGenerator: generateRateLimitKey,
+    validate: { trustProxy: false },
   });
 }
 

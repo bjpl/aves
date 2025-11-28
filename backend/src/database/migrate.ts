@@ -6,16 +6,28 @@ import { info, error as logError } from '../utils/logger';
 
 dotenv.config();
 
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'postgres',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD,
-  ssl: process.env.DB_SSL_ENABLED === 'true' ? {
-    rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false'
-  } : undefined
-});
+// Use DATABASE_URL if available, otherwise use individual connection params
+const connectionConfig = process.env.DATABASE_URL
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.DATABASE_URL.includes('pooler.supabase.com')
+        ? { rejectUnauthorized: false }
+        : process.env.DB_SSL_ENABLED === 'true'
+          ? { rejectUnauthorized: false }
+          : undefined
+    }
+  : {
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432'),
+      database: process.env.DB_NAME || 'postgres',
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD,
+      ssl: process.env.DB_SSL_ENABLED === 'true' ? {
+        rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false'
+      } : undefined
+    };
+
+const pool = new Pool(connectionConfig);
 
 async function runMigrations() {
   info('Starting database migrations');
@@ -42,7 +54,11 @@ async function runMigrations() {
       '009_optimize_cache_indexes.sql',
       '010_create_species_and_images.sql',
       '011_create_annotations_table.sql',
-      '014_annotation_mastery_tracking.sql'
+      '012_normalize_bounding_box_format.sql',
+      '013_add_error_message_to_ai_annotations.sql',
+      '014_annotation_mastery_tracking.sql',
+      '015_add_quality_score_to_images.sql',
+      '016_add_local_upload_columns.sql'
     ];
 
     for (const migration of migrations) {

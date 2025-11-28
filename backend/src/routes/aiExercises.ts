@@ -21,7 +21,8 @@ const router = Router();
 const aiExerciseLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100,
-  message: { error: 'Too many exercise generation requests. Please try again later.' }
+  message: { error: 'Too many exercise generation requests. Please try again later.' },
+  validate: { trustProxy: false } // Disable trust proxy validation (handled at infrastructure level)
 });
 
 // ============================================================================

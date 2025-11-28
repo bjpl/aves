@@ -34,7 +34,8 @@ router.use((req: Request, res: Response, next) => {
 const aiGenerationLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 50, // 50 requests per hour
-  message: { error: 'Too many AI generation requests. Please try again later.' }
+  message: { error: 'Too many AI generation requests. Please try again later.' },
+  validate: { trustProxy: false } // Disable trust proxy validation (handled at infrastructure level)
 });
 
 // ============================================================================
@@ -334,8 +335,7 @@ router.post(
           for (const annotation of annotations) {
             try {
               // Quality metrics disabled while bird detection is disabled
-              const qualityMetrics = null;
-
+              // Pass null values directly since quality metrics collection is disabled
               await pool.query(
                 `INSERT INTO ai_annotation_items (
                   job_id, image_id, spanish_term, english_term, bounding_box,
@@ -353,13 +353,13 @@ router.post(
                   annotation.difficultyLevel,
                   annotation.pronunciation || null,
                   annotation.confidence || 0.8,
-                  qualityMetrics?.quality_score || null,
-                  qualityMetrics?.bird_detected || null,
-                  qualityMetrics?.bird_confidence || null,
-                  qualityMetrics?.bird_size_percentage || null,
-                  qualityMetrics?.image_clarity || null,
-                  qualityMetrics?.image_lighting || null,
-                  qualityMetrics?.image_focus || null
+                  null, // quality_score - disabled
+                  null, // bird_detected - disabled
+                  null, // bird_confidence - disabled
+                  null, // bird_size_percentage - disabled
+                  null, // image_clarity - disabled
+                  null, // image_lighting - disabled
+                  null  // image_focus - disabled
                 ]
               );
             } catch (insertError) {

@@ -87,7 +87,7 @@ router.get(
           totalImages: totalImages || 0,
           avgConfidence: avgRecentConfidence,
           confidenceTrend: confidenceTrend.toFixed(1),
-          annotationsPerImage: totalImages > 0 ? ((totalAnnotations || 0) / totalImages).toFixed(1) : '0'
+          annotationsPerImage: (totalImages ?? 0) > 0 ? ((totalAnnotations || 0) / (totalImages ?? 1)).toFixed(1) : '0'
         },
         qualityMetrics: {
           recentAvgConfidence: avgRecentConfidence,

@@ -163,9 +163,7 @@ export class AnnotationAwareExerciseGenerator {
       metadata: {
         targetFeature: annotation.spanishTerm,
         difficulty: annotation.difficultyLevel,
-        annotationType: annotation.type,
-        reason: targetRec.reason,
-        priority: targetRec.priority
+        annotationType: annotation.type
       }
     };
 

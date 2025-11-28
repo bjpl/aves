@@ -43,7 +43,7 @@ export function createAnnotationMasteryRouter(pool: Pool): Router {
    * POST /api/mastery/update
    * Update mastery record after exercise completion
    */
-  router.post('/update', async (req: Request, res: Response) => {
+  router.post('/update', async (req: Request, res: Response): Promise<void> => {
     try {
       const data = UpdateMasterySchema.parse(req.body);
 
@@ -69,10 +69,11 @@ export function createAnnotationMasteryRouter(pool: Pool): Router {
 
     } catch (err) {
       if (err instanceof z.ZodError) {
-        return res.status(400).json({
+        res.status(400).json({
           error: 'Invalid request data',
           details: err.errors
         });
+        return;
       }
 
       logError('Error updating annotation mastery', err as Error);
@@ -170,7 +171,7 @@ export function createAnnotationMasteryRouter(pool: Pool): Router {
    * GET /api/mastery/recommended/:userId
    * Get intelligent annotation recommendations for practice
    */
-  router.get('/recommended/:userId', async (req: Request, res: Response) => {
+  router.get('/recommended/:userId', async (req: Request, res: Response): Promise<void> => {
     try {
       const { userId } = req.params;
 
@@ -211,10 +212,11 @@ export function createAnnotationMasteryRouter(pool: Pool): Router {
 
     } catch (err) {
       if (err instanceof z.ZodError) {
-        return res.status(400).json({
+        res.status(400).json({
           error: 'Invalid request parameters',
           details: err.errors
         });
+        return;
       }
 
       logError('Error fetching recommended annotations', err as Error);

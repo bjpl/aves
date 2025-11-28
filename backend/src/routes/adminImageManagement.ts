@@ -31,6 +31,18 @@ import { error as logError, info } from '../utils/logger';
 
 const router = Router();
 
+// Debug middleware to log all requests to this router
+router.use((req: Request, res: Response, next) => {
+  info('🖼️ Admin Image Management Router Request', {
+    method: req.method,
+    path: req.path,
+    url: req.url,
+    originalUrl: req.originalUrl,
+    baseUrl: req.baseUrl
+  });
+  next();
+});
+
 // ============================================================================
 // Configuration
 // ============================================================================
@@ -147,7 +159,10 @@ setInterval(cleanupOldJobs, 60 * 60 * 1000);
 const adminRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 30, // 30 requests per hour for admin operations
-  message: { error: 'Too many admin requests. Please try again later.' }
+  message: { error: 'Too many admin requests. Please try again later.' },
+  // Disable trust proxy validation for development
+  // In production with proper proxy setup, this should be configured appropriately
+  validate: { trustProxy: false }
 });
 
 // ============================================================================
@@ -1337,26 +1352,29 @@ router.get(
         }
       }
 
+      // Return in format expected by frontend (wrapped in data, with totalImages etc)
       res.json({
-        images: {
-          total: parseInt(imageStats.rows[0].total_images) || 0,
-          uniqueSpecies: parseInt(imageStats.rows[0].unique_species) || 0,
+        data: {
+          totalImages: parseInt(imageStats.rows[0].total_images) || 0,
+          pendingAnnotation: parseInt(coverageRow.unannotated) || 0,
           annotated: parseInt(coverageRow.annotated) || 0,
-          unannotated: parseInt(coverageRow.unannotated) || 0,
-          bySpecies
-        },
-        annotations: {
-          total: parseInt(annoRow.total) || 0,
-          pending: parseInt(annoRow.pending) || 0,
-          approved: parseInt(annoRow.approved) || 0,
-          rejected: parseInt(annoRow.rejected) || 0,
-          edited: parseInt(annoRow.edited) || 0,
-          avgConfidence: parseFloat(annoRow.avg_confidence || '0').toFixed(2)
-        },
-        jobs: {
-          active: activeJobs,
-          completed: completedJobs,
-          failed: failedJobs
+          failed: failedJobs,
+          bySpecies,
+          // Additional details for extended stats views
+          uniqueSpecies: parseInt(imageStats.rows[0].unique_species) || 0,
+          annotations: {
+            total: parseInt(annoRow.total) || 0,
+            pending: parseInt(annoRow.pending) || 0,
+            approved: parseInt(annoRow.approved) || 0,
+            rejected: parseInt(annoRow.rejected) || 0,
+            edited: parseInt(annoRow.edited) || 0,
+            avgConfidence: parseFloat(annoRow.avg_confidence || '0').toFixed(2)
+          },
+          jobs: {
+            active: activeJobs,
+            completed: completedJobs,
+            failed: failedJobs
+          }
         }
       });
 
@@ -1505,14 +1523,14 @@ router.get(
         qualityFilter,
         sortBy,
         sortOrder
-      } = req.query as {
-        page: number;
-        pageSize: number;
-        speciesId?: string;
-        annotationStatus: 'annotated' | 'unannotated' | 'all';
-        qualityFilter: 'high' | 'medium' | 'low' | 'unscored' | 'all';
-        sortBy: 'createdAt' | 'speciesName' | 'annotationCount' | 'qualityScore';
-        sortOrder: 'asc' | 'desc';
+      } = {
+        page: parseInt(req.query.page as string) || 1,
+        pageSize: parseInt(req.query.pageSize as string) || 20,
+        speciesId: req.query.speciesId as string | undefined,
+        annotationStatus: (req.query.annotationStatus as 'annotated' | 'unannotated' | 'all') || 'all',
+        qualityFilter: (req.query.qualityFilter as 'high' | 'medium' | 'low' | 'unscored' | 'all') || 'all',
+        sortBy: (req.query.sortBy as 'createdAt' | 'speciesName' | 'annotationCount' | 'qualityScore') || 'createdAt',
+        sortOrder: (req.query.sortOrder as 'asc' | 'desc') || 'desc'
       };
 
       // Build WHERE clauses
@@ -1527,11 +1545,11 @@ router.get(
         paramIndex++;
       }
 
-      // Filter by annotation status
+      // Filter by annotation status (use COALESCE to handle NULL values)
       if (annotationStatus === 'annotated') {
-        whereConditions.push('i.annotation_count > 0');
+        whereConditions.push('COALESCE(i.annotation_count, 0) > 0');
       } else if (annotationStatus === 'unannotated') {
-        whereConditions.push('i.annotation_count = 0');
+        whereConditions.push('COALESCE(i.annotation_count, 0) = 0');
       }
       // 'all' = no filter
 
@@ -1585,14 +1603,17 @@ router.get(
       const totalPages = Math.ceil(total / pageSize);
       const offset = (page - 1) * pageSize;
 
-      // Get paginated images with quality score
+      // Get paginated images with quality score and derived fields
       const imagesQuery = `
         SELECT
           i.id,
           i.url,
+          i.description,
           i.species_id as "speciesId",
           s.english_name as "speciesName",
-          i.annotation_count as "annotationCount",
+          s.scientific_name as "scientificName",
+          COALESCE(i.annotation_count, 0) as "annotationCount",
+          (COALESCE(i.annotation_count, 0) > 0) as "hasAnnotations",
           i.quality_score as "qualityScore",
           i.created_at as "createdAt",
           i.width,

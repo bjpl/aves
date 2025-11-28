@@ -544,7 +544,7 @@ export class AnnotationMasteryService {
   }
 
   private mapRowToAnnotationWithMastery(row: any): AnnotationWithMastery {
-    const annotation = this.mapRowToAnnotation(row);
+    const annotation = this.mapRowToAnnotation(row) as AnnotationWithMastery;
 
     if (row.mastery_id) {
       annotation.masteryData = {

@@ -165,6 +165,7 @@ const limiter = rateLimit({
   message: process.env.RATE_LIMIT_MESSAGE || 'Too many requests, please try again later',
   standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
+  validate: { trustProxy: false } // Disable trust proxy validation (handled at infrastructure level)
 });
 app.use('/api/', limiter);
 
@@ -226,6 +227,10 @@ app.get('/api/env-check', (_req, res) => {
 // API routes
 app.use('/api/health', healthRouter);
 app.use('/api', authRouter);
+
+// Admin routes - mount early to avoid conflicts with other routers
+app.use('/api', adminImageManagementRouter);
+
 app.use('/api', annotationsRouter);
 app.use('/api', aiAnnotationsRouter);
 app.use('/api', aiExercisesRouter);
@@ -237,7 +242,6 @@ app.use('/api', batchRouter);
 app.use('/api', mlAnalyticsRouter);
 app.use('/api', feedbackAnalyticsRouter);
 app.use('/api', annotationMasteryRouter);
-app.use('/api', adminImageManagementRouter);
 
 // Error handling middleware
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

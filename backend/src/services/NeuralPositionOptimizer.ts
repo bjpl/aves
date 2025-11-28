@@ -704,7 +704,7 @@ export class NeuralPositionOptimizer {
    */
   private async storeModelMetadata(metadata: ModelMetadata): Promise<void> {
     try {
-      info('Storing model metadata', metadata);
+      info('Storing model metadata', metadata as unknown as Record<string, unknown>);
 
       await pool.query(
         `INSERT INTO neural_models (
