@@ -1676,27 +1676,52 @@ router.get(
   optionalSupabaseAdmin,
   async (_req: Request, res: Response): Promise<void> => {
     try {
+      // Map backend status to frontend expected status
+      const mapStatus = (status: string): string => {
+        switch (status) {
+          case 'processing': return 'running';
+          default: return status;
+        }
+      };
+
+      // Map backend type to frontend expected type
+      const mapType = (type: string): string => {
+        switch (type) {
+          case 'collect': return 'collection';
+          case 'annotate': return 'annotation';
+          default: return type;
+        }
+      };
+
       const jobs: Array<{
-        jobId: string;
+        id: string;
         type: string;
         status: string;
         progress: number;
+        total: number;
         startedAt: string;
         completedAt?: string;
+        speciesIds?: string[];
+        results?: { collected?: number; annotated?: number; failed?: number };
+        error?: string;
       }> = [];
 
       for (const job of jobStore.values()) {
-        const percentage = job.totalItems > 0
-          ? Math.round((job.processedItems / job.totalItems) * 100)
-          : 0;
-
         jobs.push({
-          jobId: job.jobId,
-          type: job.type,
-          status: job.status,
-          progress: percentage,
+          id: job.jobId,
+          type: mapType(job.type),
+          status: mapStatus(job.status),
+          progress: job.processedItems,
+          total: job.totalItems,
           startedAt: job.startedAt,
-          completedAt: job.completedAt
+          completedAt: job.completedAt,
+          speciesIds: job.metadata?.speciesIds || [],
+          results: {
+            collected: job.type === 'collect' ? job.successfulItems : undefined,
+            annotated: job.type === 'annotate' ? job.successfulItems : undefined,
+            failed: job.failedItems > 0 ? job.failedItems : undefined
+          },
+          error: job.errors.length > 0 ? job.errors[job.errors.length - 1].error : undefined
         });
       }
 
@@ -2319,16 +2344,24 @@ router.get(
       let failedJobs = 0;
 
       for (const job of jobStore.values()) {
+        // Map type to frontend expected values
+        const mappedType = job.type === 'collect' ? 'collection' :
+                          job.type === 'annotate' ? 'annotation' : job.type;
+
         jobs.push({
           id: job.jobId,
-          type: job.type,
+          type: mappedType,
           status: job.status === 'processing' ? 'running' : job.status,
-          progress: job.processed,
-          total: job.total,
+          progress: job.processedItems,
+          total: job.totalItems,
           startedAt: job.startedAt,
           completedAt: job.completedAt,
-          error: job.error,
-          results: job.results
+          error: job.errors.length > 0 ? job.errors[job.errors.length - 1].error : undefined,
+          results: {
+            collected: job.type === 'collect' ? job.successfulItems : undefined,
+            annotated: job.type === 'annotate' ? job.successfulItems : undefined,
+            failed: job.failedItems > 0 ? job.failedItems : undefined
+          }
         });
 
         if (job.status === 'processing' || job.status === 'pending') {

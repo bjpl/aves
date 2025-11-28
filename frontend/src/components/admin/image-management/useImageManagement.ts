@@ -138,8 +138,8 @@ export const useCollectionJobs = (hasActiveJobs: boolean = false) => {
     queryKey: imageManagementKeys.jobs(),
     queryFn: async (): Promise<CollectionJob[]> => {
       try {
-        const response = await axios.get<{ data: CollectionJob[] }>('/api/admin/jobs');
-        return response.data.data;
+        const response = await axios.get<{ jobs: CollectionJob[]; count: number }>('/api/admin/images/jobs');
+        return response.data.jobs;
       } catch (err) {
         logError('Error fetching jobs:', err instanceof Error ? err : new Error(String(err)));
         return [];

@@ -48,7 +48,7 @@ export interface CollectionRequest {
 
 export interface AnnotationRequest {
   imageIds?: string[];
-  annotateAll?: boolean;
+  all?: boolean;
 }
 
 export interface GalleryImage {

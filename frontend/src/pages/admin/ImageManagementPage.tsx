@@ -81,7 +81,7 @@ export const ImageManagementPage: React.FC = () => {
   const handleStartAnnotation = async () => {
     try {
       if (annotateAllPending) {
-        await annotateMutation.mutateAsync({ annotateAll: true });
+        await annotateMutation.mutateAsync({ all: true });
         addToast('success', 'Started annotation for all pending images');
       } else {
         if (selectedImages.length === 0) {
