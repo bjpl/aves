@@ -93,9 +93,9 @@ export const MLAnalyticsDashboard: React.FC = () => {
           <CardBody>
             <div className="text-center">
               <p className="text-sm font-medium text-gray-600 mb-1">Vocab Coverage</p>
-              <p className="text-4xl font-bold text-blue-600">{vocabulary?.coverage || '0'}%</p>
+              <p className="text-4xl font-bold text-blue-600">{vocabulary?.coverage || 0}%</p>
               <p className="text-xs text-gray-500 mt-2">
-                {vocabulary?.totalFeatures || 0} of {vocabulary?.targetVocabulary || 31} features
+                {vocabulary?.totalFeatures || 0} features tracked
               </p>
             </div>
           </CardBody>
@@ -107,7 +107,7 @@ export const MLAnalyticsDashboard: React.FC = () => {
             <div className="text-center">
               <p className="text-sm font-medium text-gray-600 mb-1">Throughput</p>
               <p className="text-4xl font-bold text-orange-600">
-                {performance?.pipeline.throughput.toFixed(2) || '0'}
+                {(performance?.pipeline?.throughput || 0).toFixed(2)}
               </p>
               <p className="text-xs text-gray-500 mt-2">
                 images/second
@@ -156,7 +156,7 @@ export const MLAnalyticsDashboard: React.FC = () => {
       {/* VOCABULARY BALANCE & QUALITY TRENDS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Vocabulary Gaps */}
-        {vocabulary && vocabulary.topGaps.length > 0 && (
+        {vocabulary && vocabulary.topGaps && vocabulary.topGaps.length > 0 && (
           <Card variant="elevated">
             <CardHeader>
               <h3 className="text-lg font-semibold text-gray-900">Top Vocabulary Gaps</h3>
@@ -183,7 +183,7 @@ export const MLAnalyticsDashboard: React.FC = () => {
         )}
 
         {/* Quality Trends */}
-        {trends && trends.trends.length > 0 && (
+        {trends && trends.summary && (
           <Card variant="elevated">
             <CardHeader>
               <h3 className="text-lg font-semibold text-gray-900">Quality Trend</h3>
@@ -193,20 +193,22 @@ export const MLAnalyticsDashboard: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-700">Current Quality</span>
                   <span className="text-2xl font-bold text-blue-600">
-                    {(trends.summary.currentQuality * 100).toFixed(1)}%
+                    {((trends.summary.currentQuality || 0) * 100).toFixed(1)}%
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-700">Improvement</span>
-                  <span className={`text-xl font-bold ${parseFloat(trends.summary.improvement) > 0 ? 'text-green-600' : 'text-gray-600'}`}>
-                    {parseFloat(trends.summary.improvement) > 0 ? '+' : ''}{trends.summary.improvement}%
+                  <span className={`text-xl font-bold ${Number(trends.summary.improvement || 0) > 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                    {Number(trends.summary.improvement || 0) > 0 ? '+' : ''}{trends.summary.improvement || 0}%
                   </span>
                 </div>
-                <div className="pt-2 border-t">
-                  <p className="text-xs text-gray-600">
-                    📈 Tracking {trends.summary.totalWeeks} weeks of data
-                  </p>
-                </div>
+                {trends.summary.totalWeeks && (
+                  <div className="pt-2 border-t">
+                    <p className="text-xs text-gray-600">
+                      📈 Tracking {trends.summary.totalWeeks} weeks of data
+                    </p>
+                  </div>
+                )}
               </div>
             </CardBody>
           </Card>
@@ -214,7 +216,7 @@ export const MLAnalyticsDashboard: React.FC = () => {
       </div>
 
       {/* PERFORMANCE METRICS */}
-      {performance && performance.status.pipelineStatus === 'active' && (
+      {performance && performance.status?.pipelineStatus === 'active' && performance.pipeline && (
         <Card variant="elevated">
           <CardHeader>
             <h3 className="text-lg font-semibold text-gray-900">Pipeline Performance</h3>
@@ -224,29 +226,29 @@ export const MLAnalyticsDashboard: React.FC = () => {
               <div className="text-center">
                 <p className="text-sm text-gray-600 mb-1">P50 Latency</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {(performance.pipeline.p50Duration / 1000).toFixed(1)}s
+                  {((performance.pipeline.p50Duration || 0) / 1000).toFixed(1)}s
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-gray-600 mb-1">P95 Latency</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {(performance.pipeline.p95Duration / 1000).toFixed(1)}s
+                  {((performance.pipeline.p95Duration || 0) / 1000).toFixed(1)}s
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-gray-600 mb-1">Success Rate</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {performance.pipeline.successRate}%
+                  {performance.pipeline.successRate || 0}%
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-gray-600 mb-1">Concurrency</p>
                 <p className="text-2xl font-bold text-purple-600">
-                  {performance.pipeline.concurrency}x
+                  {performance.pipeline.concurrency || 1}x
                 </p>
               </div>
             </div>
-            {performance.status.lastRun && (
+            {performance.status?.lastRun && (
               <p className="text-xs text-gray-600 mt-4 text-center">
                 Last run: {new Date(performance.status.lastRun).toLocaleString()}
               </p>
