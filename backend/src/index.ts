@@ -160,13 +160,18 @@ app.use(cors({
 }));
 
 // Rate limiting - Environment configurable
+// Skip rate limiting for admin routes (authenticated routes have their own protection)
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 min default
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '200'), // Increased from 100 to 200
   message: process.env.RATE_LIMIT_MESSAGE || 'Too many requests, please try again later',
   standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
-  validate: { trustProxy: false } // Disable trust proxy validation (handled at infrastructure level)
+  validate: { trustProxy: false }, // Disable trust proxy validation (handled at infrastructure level)
+  skip: (req) => {
+    // Skip rate limiting for admin routes - they require authentication
+    return req.path.startsWith('/admin/');
+  }
 });
 app.use('/api/', limiter);
 
