@@ -41,6 +41,7 @@ export interface AIFeatureFlags {
   enableImageGeneration: boolean;
   enableImageAnalysis: boolean;
   enableAnnotationAI: boolean;
+  enableBirdDetection: boolean;
 }
 
 export interface AIConfig {
@@ -90,6 +91,7 @@ export function loadAIConfig(): AIConfig {
       enableImageGeneration: process.env.ENABLE_IMAGE_GENERATION === 'true',
       enableImageAnalysis: process.env.ENABLE_IMAGE_ANALYSIS === 'true',
       enableAnnotationAI: process.env.ENABLE_ANNOTATION_AI === 'true',
+      enableBirdDetection: process.env.ENABLE_BIRD_DETECTION === 'true',
     },
   };
 }
@@ -216,6 +218,7 @@ export const DEFAULT_AI_CONFIG: AIConfig = {
     enableImageGeneration: false,
     enableImageAnalysis: false,
     enableAnnotationAI: false,
+    enableBirdDetection: false,
   },
 };
 

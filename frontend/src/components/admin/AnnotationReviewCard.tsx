@@ -532,16 +532,11 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
           label={annotation.spanishTerm}
           onSave={async (newBox) => {
             try {
-              console.log('🔧 BBOX Editor - New box from editor:', newBox);
-              console.log('🔧 BBOX Editor - Sending PATCH to annotation:', annotation.id);
-
               // Update bounding box WITHOUT approving (keeps in review queue)
               const result = await updateMutation.mutateAsync({
                 annotationId: annotation.id,
                 updates: { boundingBox: newBox }
               });
-
-              console.log('✅ BBOX Editor - Update successful!', result);
 
               setEditedBbox(newBox);
               setShowBboxEditor(false);

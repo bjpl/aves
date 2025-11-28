@@ -103,13 +103,9 @@ export const useAIAnnotationsPending = () => {
  * Hook: Get AI annotation statistics
  */
 export const useAIAnnotationStats = () => {
-  console.log('🎯 STATS HOOK: useAIAnnotationStats mounted/called');
-
   return useQuery({
     queryKey: aiAnnotationKeys.stats(),
     queryFn: async () => {
-      console.log('📊 STATS QUERY: Fetching annotation stats...');
-
       try {
         const response = await axios.get<{
           data: {
@@ -121,7 +117,6 @@ export const useAIAnnotationStats = () => {
           };
         }>('/api/ai/annotations/stats');
 
-        console.log('📊 STATS QUERY: Stats received:', response.data.data);
         return response.data.data;
       } catch (err) {
         console.error('❌ STATS QUERY: Error fetching stats:', err);
@@ -148,14 +143,11 @@ export const useApproveAnnotation = () => {
 
   return useMutation({
     mutationFn: async (annotationId: string): Promise<AIAnnotation> => {
-      console.log('🚀 APPROVE MUTATION: Starting approve request for:', annotationId);
-
       try {
         const response = await axios.post<{ data: AIAnnotation }>(
           `/api/ai/annotations/${annotationId}/approve`
         );
 
-        console.log('✅ APPROVE MUTATION: Request successful!', response.data);
         return response.data.data;
       } catch (error: any) {
         console.error('❌ APPROVE MUTATION: Request failed!', {
@@ -168,20 +160,14 @@ export const useApproveAnnotation = () => {
       }
     },
     onMutate: async (annotationId) => {
-      console.log('🔄 APPROVE MUTATION: onMutate called for:', annotationId);
-
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: aiAnnotationKeys.all });
 
       // Optimistically update the cache
       const previousData = queryClient.getQueryData<AIAnnotation[]>(aiAnnotationKeys.pending());
 
-      console.log('🔄 APPROVE MUTATION: Previous pending count:', previousData?.length || 0);
-
       if (previousData) {
         const filtered = previousData.filter((a) => a.id !== annotationId);
-        console.log('🔄 APPROVE MUTATION: New pending count after filter:', filtered.length);
-
         queryClient.setQueryData<AIAnnotation[]>(
           aiAnnotationKeys.pending(),
           filtered
@@ -191,8 +177,6 @@ export const useApproveAnnotation = () => {
       return { previousData };
     },
     onSuccess: async (data, annotationId) => {
-      console.log('✅ APPROVE MUTATION: onSuccess called!', { data, annotationId });
-
       // Invalidate and FORCE immediate refetch
       await Promise.all([
         queryClient.invalidateQueries({
@@ -213,8 +197,6 @@ export const useApproveAnnotation = () => {
         queryKey: aiAnnotationKeys.pending(),
         type: 'active'
       });
-
-      console.log('✅ APPROVE MUTATION: Queries invalidated and refetched');
     },
     onError: (err, annotationId, context) => {
       console.error('❌ APPROVE MUTATION: onError called!', {
@@ -226,7 +208,6 @@ export const useApproveAnnotation = () => {
 
       // Rollback on error
       if (context?.previousData) {
-        console.log('🔄 APPROVE MUTATION: Rolling back optimistic update');
         queryClient.setQueryData(aiAnnotationKeys.pending(), context.previousData);
       }
 

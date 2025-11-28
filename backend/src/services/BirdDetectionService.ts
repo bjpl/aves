@@ -47,6 +47,11 @@ export class BirdDetectionService {
   private client: Anthropic;
   private apiKey: string;
 
+  // Simple in-memory cache for validation results
+  private validationCache: Map<string, { result: ValidationResult; timestamp: number }> = new Map();
+  private static readonly CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour cache
+  private static readonly MAX_CACHE_SIZE = 1000; // Maximum cached validations
+
   // Thresholds for quality assessment
   private static readonly MIN_BIRD_SIZE = 0.05; // 5% of image
   private static readonly MIN_CONFIDENCE = 0.6;
@@ -77,6 +82,13 @@ export class BirdDetectionService {
   async validateImage(imageUrl: string): Promise<ValidationResult> {
     if (!this.apiKey) {
       throw new Error('Anthropic API key not configured');
+    }
+
+    // Check cache first
+    const cached = this.getCachedValidation(imageUrl);
+    if (cached) {
+      info('Returning cached bird detection result', { imageUrl });
+      return cached;
     }
 
     try {
@@ -130,6 +142,9 @@ export class BirdDetectionService {
 
       // Determine if image is valid for annotation
       const validationResult = this.evaluateValidation(result);
+
+      // Cache the result
+      this.cacheValidation(imageUrl, validationResult);
 
       info('Bird detection and quality assessment completed', {
         imageUrl,
@@ -462,6 +477,78 @@ Return ONLY the JSON object, nothing else.
    */
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Cache validation result for performance
+   */
+  private cacheValidation(imageUrl: string, result: ValidationResult): void {
+    // Enforce max cache size (LRU-like eviction)
+    if (this.validationCache.size >= BirdDetectionService.MAX_CACHE_SIZE) {
+      // Remove oldest entry
+      const oldestKey = this.validationCache.keys().next().value;
+      if (oldestKey) {
+        this.validationCache.delete(oldestKey);
+      }
+    }
+
+    this.validationCache.set(imageUrl, {
+      result,
+      timestamp: Date.now()
+    });
+  }
+
+  /**
+   * Get cached validation result if still valid
+   */
+  private getCachedValidation(imageUrl: string): ValidationResult | null {
+    const cached = this.validationCache.get(imageUrl);
+    if (!cached) {
+      return null;
+    }
+
+    // Check if cache entry is still valid (not expired)
+    const age = Date.now() - cached.timestamp;
+    if (age > BirdDetectionService.CACHE_TTL_MS) {
+      this.validationCache.delete(imageUrl);
+      return null;
+    }
+
+    return cached.result;
+  }
+
+  /**
+   * Clear the validation cache (useful for testing or manual cache invalidation)
+   */
+  clearCache(): void {
+    this.validationCache.clear();
+    info('Bird detection cache cleared');
+  }
+
+  /**
+   * Get cache statistics
+   */
+  getCacheStats() {
+    const now = Date.now();
+    let validEntries = 0;
+    let expiredEntries = 0;
+
+    for (const [, cached] of this.validationCache) {
+      const age = now - cached.timestamp;
+      if (age <= BirdDetectionService.CACHE_TTL_MS) {
+        validEntries++;
+      } else {
+        expiredEntries++;
+      }
+    }
+
+    return {
+      totalEntries: this.validationCache.size,
+      validEntries,
+      expiredEntries,
+      maxSize: BirdDetectionService.MAX_CACHE_SIZE,
+      cacheTTL: BirdDetectionService.CACHE_TTL_MS
+    };
   }
 
   /**

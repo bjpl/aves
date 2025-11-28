@@ -74,7 +74,7 @@ export const HoverLayer: React.FC<HoverLayerProps> = ({
       performanceMonitor.recordDrawCall();
       performanceMonitor.recordFrame(performance.now());
 
-      if (performanceMonitor.shouldReport(performance.now())) {
+      if (import.meta.env.DEV && performanceMonitor.shouldReport(performance.now())) {
         const metrics = performanceMonitor.getMetrics();
         console.log('[Canvas Performance]', {
           fps: metrics.currentFPS,

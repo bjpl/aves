@@ -4,7 +4,48 @@ import { error as logError } from '../utils/logger';
 
 const router = Router();
 
-// GET /api/species
+/**
+ * @openapi
+ * /api/species:
+ *   get:
+ *     tags:
+ *       - Species
+ *     summary: List all bird species
+ *     description: Retrieve a complete list of bird species with annotation counts
+ *     responses:
+ *       200:
+ *         description: List of species retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 species:
+ *                   type: array
+ *                   items:
+ *                     allOf:
+ *                       - $ref: '#/components/schemas/Species'
+ *                       - type: object
+ *                         properties:
+ *                           annotationCount:
+ *                             type: integer
+ *                             description: Number of annotations for this species
+ *             example:
+ *               species:
+ *                 - id: 1
+ *                   scientificName: Anas platyrhynchos
+ *                   spanishName: Ánade Real
+ *                   englishName: Mallard
+ *                   orderName: Anseriformes
+ *                   familyName: Anatidae
+ *                   annotationCount: 42
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.get('/species', async (_req: Request, res: Response) => {
   try {
     const query = `

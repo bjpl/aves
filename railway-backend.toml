@@ -8,3 +8,6 @@ restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
 healthcheckPath = "/health"
 healthcheckTimeout = 30
+
+[variables]
+NODE_ENV = "production"

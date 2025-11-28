@@ -15,7 +15,12 @@
     "build:all": "npm run build --workspaces",
     "start": "npm run start --workspace=backend",
     "test": "npm run test --workspaces",
-    "lint": "npm run lint --workspaces"
+    "lint": "npm run lint --workspaces",
+    "validate": "node scripts/validate-production.js",
+    "check-secrets": "node scripts/check-secrets.js",
+    "predeploy": "npm run validate",
+    "deploy:railway": "railway up",
+    "logs:railway": "railway logs -f"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

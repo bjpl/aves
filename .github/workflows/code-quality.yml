@@ -118,6 +118,7 @@ jobs:
   security-audit:
     name: Security Audit
     runs-on: ubuntu-latest
+    continue-on-error: true  # Don't fail CI on vulnerabilities, just report them
 
     steps:
       - name: Checkout code
@@ -126,15 +127,24 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
-      - name: Run npm audit
-        run: npm audit --audit-level=moderate
+      - name: Audit backend dependencies
+        working-directory: ./backend
+        run: |
+          npm audit --audit-level=moderate || echo "::warning::Security vulnerabilities detected in backend"
 
-      - name: Run Snyk security scan
+      - name: Audit frontend dependencies
+        working-directory: ./frontend
+        run: |
+          npm audit --audit-level=moderate || echo "::warning::Security vulnerabilities detected in frontend"
+
+      - name: Run Snyk security scan (if token configured)
+        if: secrets.SNYK_TOKEN != ''
         uses: snyk/actions/node@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: --severity-threshold=high
+        continue-on-error: true

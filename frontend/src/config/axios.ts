@@ -27,7 +27,7 @@ if (isAdmin || !isGitHubPages) {
   baseURL = '';
 }
 
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
   console.log('🔧 Axios Config:', {
     isGitHubPages,
     isAdmin,
@@ -54,54 +54,33 @@ api.interceptors.request.use(
     // Check for both Supabase pattern (sb-*-auth-token) and Aves pattern (aves-auth-token)
     let accessToken: string | null = null;
 
-    console.log('🔍 DEBUG: Searching for auth token...');
-    console.log('🔍 DEBUG: localStorage has', localStorage.length, 'items');
-
-    // Log all localStorage keys for debugging
-    const allKeys: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key) {
-        allKeys.push(key);
-      }
-    }
-    console.log('🔍 DEBUG: All localStorage keys:', allKeys);
-
     // Search for auth token (try both patterns)
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
 
       if (key) {
-        console.log(`🔍 DEBUG: Checking key [${i}]: "${key}"`);
-
         // Check if it matches Supabase pattern OR Aves pattern
         const matchesSupabase = key.startsWith('sb-') && key.endsWith('-auth-token');
         const matchesAves = key === 'aves-auth-token';
         const matchesPattern = matchesSupabase || matchesAves;
 
-        console.log(`🔍 DEBUG: Key "${key}" matches pattern:`, matchesPattern);
-
         if (matchesPattern) {
           const value = localStorage.getItem(key);
-          console.log(`🔍 DEBUG: Found matching key "${key}", value length:`, value?.length || 0);
 
           if (value) {
             try {
               const parsed = JSON.parse(value);
-              console.log('🔍 DEBUG: Parsed token structure:', Object.keys(parsed));
-              console.log('🔍 DEBUG: Has access_token field:', 'access_token' in parsed);
-
               accessToken = parsed?.access_token || null;
               if (accessToken) {
-                console.log('✅ Found auth token from key:', key);
-                console.log('✅ Token preview:', accessToken.substring(0, 20) + '...');
+                if (import.meta.env.DEV) {
+                  console.log('✅ Found auth token from key:', key);
+                }
                 break;
               } else {
                 console.warn('⚠️ Key matched pattern but no access_token field found:', key);
               }
             } catch (e) {
               console.error('❌ Failed to parse auth token from key:', key, e);
-              console.error('❌ Value that failed to parse:', value?.substring(0, 100));
             }
           } else {
             console.warn('⚠️ Key matched pattern but value is null/empty:', key);
@@ -112,12 +91,9 @@ api.interceptors.request.use(
 
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
-      console.log('🔐 API Request with auth:', config.method?.toUpperCase(), config.url);
     } else {
       console.error('❌ No auth token found - request will be unauthorized');
-      console.error('❌ Searched', localStorage.length, 'localStorage items');
       console.error('❌ Expected pattern: sb-*-auth-token or aves-auth-token');
-      console.log('🔧 API Request (no auth):', config.method?.toUpperCase(), config.url);
     }
 
     return config;
@@ -128,7 +104,9 @@ api.interceptors.request.use(
 // Response interceptor for error logging
 api.interceptors.response.use(
   (response) => {
-    console.log('✅ API Response:', response.status, response.config.url);
+    if (import.meta.env.DEV) {
+      console.log('✅ API Response:', response.status, response.config.url);
+    }
     return response;
   },
   (error) => {

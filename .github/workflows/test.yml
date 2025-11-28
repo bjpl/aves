@@ -1,12 +1,20 @@
 name: Run Tests
 
+# Full integration test suite with database and optional AI features
+#
+# SECRET CONFIGURATION (optional):
+# - TEST_JWT_SECRET: Custom JWT secret for testing (auto-generated if not set)
+# - TEST_SESSION_SECRET: Custom session secret for testing (auto-generated if not set)
+# - ANTHROPIC_API_KEY: Required ONLY for AI-powered tests (tests skip if not set)
+#
+# This workflow will run successfully without any secrets configured.
+# AI-related tests will be skipped if ANTHROPIC_API_KEY is not provided.
+
 on:
-  # Temporarily disabled automatic triggers to prevent email spam
-  # Fix needed: Missing secrets (TEST_JWT_SECRET, TEST_SESSION_SECRET, ANTHROPIC_API_KEY)
-  # push:
-  #   branches: [ main, develop ]
-  # pull_request:
-  #   branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
   workflow_dispatch:
 
 jobs:
@@ -70,23 +78,27 @@ jobs:
         DB_ALLOW_EXIT_ON_IDLE=true
         DB_SSL_ENABLED=false
 
-        # Security Keys (from GitHub Secrets)
-        JWT_SECRET=${{ secrets.TEST_JWT_SECRET }}
+        # Security Keys
+        # Use GitHub Secrets if configured, otherwise fallback to safe CI defaults
+        # These defaults are ONLY for CI testing and are NOT suitable for production
+        JWT_SECRET=${{ secrets.TEST_JWT_SECRET || 'test-jwt-secret-for-ci-only-min-32-chars-12345' }}
         JWT_EXPIRES_IN=24h
-        SESSION_SECRET=${{ secrets.TEST_SESSION_SECRET }}
+        SESSION_SECRET=${{ secrets.TEST_SESSION_SECRET || 'test-session-secret-for-ci-only-min-32-chars-12345' }}
 
-        # Anthropic Claude (from GitHub Secrets)
-        ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+        # Anthropic Claude (OPTIONAL - AI tests will be skipped if not configured)
+        # To enable AI-powered tests, configure ANTHROPIC_API_KEY secret in GitHub Settings
+        ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY || '' }}
         ANTHROPIC_MODEL=claude-sonnet-4-5-20250629
         ANTHROPIC_MAX_TOKENS=4096
         ANTHROPIC_TEMPERATURE=0.7
 
         # AI Feature Flags
-        ENABLE_VISION_AI=true
+        # AI features disabled if API key not configured
+        ENABLE_VISION_AI=${{ secrets.ANTHROPIC_API_KEY && 'true' || 'false' }}
         VISION_PROVIDER=claude
-        ENABLE_IMAGE_ANALYSIS=true
-        ENABLE_EXERCISE_GENERATION=true
-        ENABLE_IMAGE_GENERATION=true
+        ENABLE_IMAGE_ANALYSIS=${{ secrets.ANTHROPIC_API_KEY && 'true' || 'false' }}
+        ENABLE_EXERCISE_GENERATION=${{ secrets.ANTHROPIC_API_KEY && 'true' || 'false' }}
+        ENABLE_IMAGE_GENERATION=false
 
         # Test Environment
         NODE_ENV=test
@@ -115,7 +127,7 @@ jobs:
     - name: Run type checking
       run: |
         cd backend
-        npm run typecheck
+        npx tsc --noEmit
 
     - name: Run tests
       run: |

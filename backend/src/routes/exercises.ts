@@ -12,7 +12,48 @@ import { error as logError } from '../utils/logger';
 const router = Router();
 const exerciseService = new ExerciseService(pool);
 
-// POST /api/exercises/session/start
+/**
+ * @openapi
+ * /api/exercises/session/start:
+ *   post:
+ *     tags:
+ *       - Exercises
+ *     summary: Start a new exercise session
+ *     description: Creates a new learning session for tracking exercise progress
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 description: Optional custom session ID
+ *                 example: session_1234567890
+ *     responses:
+ *       200:
+ *         description: Session created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 session:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *             example:
+ *               session:
+ *                 id: session_1234567890
+ *                 createdAt: 2025-01-15T10:30:00Z
+ *       500:
+ *         description: Server error
+ */
 router.post(
   '/exercises/session/start',
   validateBody(exerciseSessionStartSchema),
@@ -75,7 +116,46 @@ router.get(
   }
 });
 
-// GET /api/exercises/difficult-terms
+/**
+ * @openapi
+ * /api/exercises/difficult-terms:
+ *   get:
+ *     tags:
+ *       - Exercises
+ *     summary: Get vocabulary terms with low accuracy
+ *     description: Returns terms that learners find most challenging based on exercise performance
+ *     responses:
+ *       200:
+ *         description: Difficult terms retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 difficultTerms:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       spanishTerm:
+ *                         type: string
+ *                       englishTerm:
+ *                         type: string
+ *                       accuracy:
+ *                         type: number
+ *                         format: float
+ *                         description: Success rate (0-1)
+ *                       attempts:
+ *                         type: integer
+ *             example:
+ *               difficultTerms:
+ *                 - spanishTerm: el pico
+ *                   englishTerm: beak
+ *                   accuracy: 0.45
+ *                   attempts: 20
+ *       500:
+ *         description: Server error
+ */
 router.get('/exercises/difficult-terms', async (_req: Request, res: Response) => {
   try {
     const difficultTerms = await exerciseService.getDifficultTerms();

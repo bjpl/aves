@@ -124,7 +124,6 @@ export const usePendingAnnotations = () => {
       }) || [];
 
       info('Pending annotations fetched with image URLs', { count: enrichedAnnotations.length });
-      console.log('Final enriched annotations sample:', enrichedAnnotations[0]);
 
       return enrichedAnnotations;
     },

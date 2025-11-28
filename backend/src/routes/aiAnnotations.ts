@@ -15,6 +15,7 @@ import { patternLearner } from '../services/PatternLearner';
 import { optionalSupabaseAuth, optionalSupabaseAdmin } from '../middleware/optionalSupabaseAuth';
 import { validateBody, validateParams } from '../middleware/validate';
 import { error as logError, info } from '../utils/logger';
+import { getAIConfig } from '../config';
 
 const router = Router();
 
@@ -108,23 +109,78 @@ const AnnotationIdParamSchema = z.object({
 // ============================================================================
 
 /**
- * POST /api/ai/annotations/generate/:imageId
- * Trigger AI annotation generation for a specific image
+ * @openapi
+ * /api/ai/annotations/generate/{imageId}:
+ *   post:
+ *     tags:
+ *       - AI Annotations
+ *     summary: Generate AI annotations for an image
+ *     description: |
+ *       Triggers AI-powered annotation generation using Claude Vision API.
+ *       Creates anatomical annotations with bounding boxes, difficulty levels, and confidence scores.
  *
- * @auth Admin only
- * @rate-limited 50 requests/hour
+ *       **Rate Limited**: 50 requests per hour
  *
- * Request body:
- * {
- *   "imageUrl": "https://example.com/image.jpg"
- * }
- *
- * Response:
- * {
- *   "jobId": "job_1234567890_abc123",
- *   "status": "processing",
- *   "imageId": "550e8400-e29b-41d4-a716-446655440000"
- * }
+ *       **Admin Only**: Requires admin authentication
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: imageId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: UUID of the image to annotate
+ *         example: 550e8400-e29b-41d4-a716-446655440000
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - imageUrl
+ *             properties:
+ *               imageUrl:
+ *                 type: string
+ *                 format: uri
+ *                 description: Public URL of the image to analyze
+ *                 example: https://storage.example.com/birds/mallard-001.jpg
+ *     responses:
+ *       202:
+ *         description: Annotation generation started (async job)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 jobId:
+ *                   type: string
+ *                   description: Unique job identifier for tracking
+ *                 status:
+ *                   type: string
+ *                   enum: [processing]
+ *                 imageId:
+ *                   type: string
+ *                   format: uuid
+ *                 message:
+ *                   type: string
+ *             example:
+ *               jobId: job_1234567890_abc123
+ *               status: processing
+ *               imageId: 550e8400-e29b-41d4-a716-446655440000
+ *               message: Annotation generation started. Check job status for results.
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized - Authentication required
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       429:
+ *         description: Too many requests - Rate limit exceeded
+ *       500:
+ *         description: Server error
  */
 router.post(
   '/ai/annotations/generate/:imageId',
@@ -206,13 +262,12 @@ router.post(
          * Generate annotations with exponential backoff retry
          */
         const generateWithRetry = async (): Promise<AIAnnotation[]> => {
-          // Step 1: Run quality check and bird detection (TEMPORARILY DISABLED for performance)
-          // TODO: Re-enable after optimizing bird detection service
-          info('Skipping bird detection for now (performance optimization)', { jobId, imageId });
+          // Step 1: Run quality check and bird detection (feature flag controlled)
+          const aiConfig = getAIConfig();
           let validationResult = null;
-          const ENABLE_BIRD_DETECTION = false; // Set to true once optimized
 
-          if (ENABLE_BIRD_DETECTION) {
+          if (aiConfig.features.enableBirdDetection) {
+            info('Bird detection enabled - validating image quality', { jobId, imageId });
             try {
               validationResult = await birdDetectionService.validateImage(imageUrl);
 
@@ -250,6 +305,8 @@ router.post(
                 validationError as Error, { jobId, imageId });
               validationResult = null;
             }
+          } else {
+            info('Bird detection disabled via feature flag', { jobId, imageId });
           }
 
           // Step 2: Fetch species information for ML-enhanced generation

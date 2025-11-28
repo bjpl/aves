@@ -31,6 +31,7 @@ import feedbackAnalyticsRouter from './routes/feedbackAnalytics';
 import annotationMasteryRouter from './routes/annotationMastery';
 import adminImageManagementRouter from './routes/adminImageManagement';
 import healthRouter from './routes/health';
+import docsRouter from './routes/docs';
 import { testConnection } from './database/connection';
 import { error as logError, info } from './utils/logger';
 import { devAuthBypass } from './middleware/devAuth';
@@ -226,6 +227,7 @@ app.get('/api/env-check', (_req, res) => {
 
 // API routes
 app.use('/api/health', healthRouter);
+app.use('/api', docsRouter); // API documentation (Swagger UI)
 app.use('/api', authRouter);
 
 // Admin routes - mount early to avoid conflicts with other routers
