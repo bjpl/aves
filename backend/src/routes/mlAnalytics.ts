@@ -44,32 +44,32 @@ router.get(
 
       const analytics = patternLearner.getAnalytics();
 
-      // Get database stats - use vision_confidence for AI-generated annotations
+      // Get database stats from ai_annotation_items (AI-generated annotations)
       const { data: annotationStats } = await supabase
-        .from('annotations')
-        .select('vision_confidence, created_at, vision_generated')
+        .from('ai_annotation_items')
+        .select('confidence, created_at')
         .order('created_at', { ascending: false })
         .limit(1000);
 
       const { count: totalAnnotations } = await supabase
-        .from('annotations')
+        .from('ai_annotation_items')
         .select('*', { count: 'exact', head: true });
 
       const { count: totalImages } = await supabase
         .from('images')
         .select('*', { count: 'exact', head: true });
 
-      // Calculate trends - only use annotations with confidence scores
-      const annotationsWithConfidence = annotationStats?.filter(a => a.vision_confidence !== null) || [];
+      // Calculate trends from AI annotation confidence scores
+      const annotationsWithConfidence = annotationStats?.filter(a => a.confidence !== null) || [];
       const recentAnnotations = annotationsWithConfidence.slice(0, 100);
       const olderAnnotations = annotationsWithConfidence.slice(100, 200);
 
       const avgRecentConfidence = recentAnnotations.length > 0
-        ? recentAnnotations.reduce((sum, a) => sum + (a.vision_confidence || 0), 0) / recentAnnotations.length
+        ? recentAnnotations.reduce((sum, a) => sum + (a.confidence || 0), 0) / recentAnnotations.length
         : 0;
 
       const avgOlderConfidence = olderAnnotations.length > 0
-        ? olderAnnotations.reduce((sum, a) => sum + (a.vision_confidence || 0), 0) / olderAnnotations.length
+        ? olderAnnotations.reduce((sum, a) => sum + (a.confidence || 0), 0) / olderAnnotations.length
         : 0;
 
       const confidenceTrend = avgOlderConfidence > 0
@@ -116,10 +116,10 @@ router.get(
     try {
       info('Vocabulary balance analytics requested');
 
-      // Get vocabulary distribution from annotations - using spanish_term and english_term
+      // Get vocabulary distribution from ai_annotation_items (AI-generated annotations)
       const { data: annotations } = await supabase
-        .from('annotations')
-        .select('spanish_term, english_term, annotation_type, vision_confidence');
+        .from('ai_annotation_items')
+        .select('spanish_term, english_term, annotation_type, confidence');
 
       if (!annotations || annotations.length === 0) {
         res.json({ features: [], totalFeatures: 0, coverage: 0, topGaps: [] });
@@ -134,7 +134,7 @@ router.get(
         const term = ann.english_term || ann.spanish_term || 'unknown';
         const existing = termCounts.get(term) || { count: 0, avgConfidence: 0, total: 0 };
         existing.count++;
-        existing.total += ann.vision_confidence || 0.8; // Default confidence for manual annotations
+        existing.total += ann.confidence || 0.8; // Default confidence if not set
         existing.avgConfidence = existing.total / existing.count;
         termCounts.set(term, existing);
       }
@@ -248,10 +248,10 @@ router.get(
     try {
       info('Quality trends analytics requested');
 
-      // Get annotations with vision_confidence grouped by date
+      // Get annotations with confidence grouped by date from ai_annotation_items
       const { data: annotations } = await supabase
-        .from('annotations')
-        .select('vision_confidence, created_at, vision_generated')
+        .from('ai_annotation_items')
+        .select('confidence, created_at')
         .order('created_at', { ascending: true });
 
       if (!annotations || annotations.length === 0) {
@@ -259,8 +259,8 @@ router.get(
         return;
       }
 
-      // Filter to only AI-generated annotations with confidence, or all if none have confidence
-      const annotationsWithConfidence = annotations.filter(a => a.vision_confidence !== null);
+      // Filter to annotations with confidence scores, or use all if none have confidence
+      const annotationsWithConfidence = annotations.filter(a => a.confidence !== null);
       const dataSource = annotationsWithConfidence.length > 0 ? annotationsWithConfidence : annotations;
 
       // Group by week
@@ -276,8 +276,8 @@ router.get(
 
         const existing = weeklyData.get(weekKey) || { total: 0, sum: 0, count: 0 };
         existing.count++;
-        // Use vision_confidence or default to 0.85 for manual annotations (assumed high quality)
-        const confidence = ann.vision_confidence !== null ? ann.vision_confidence : 0.85;
+        // Use confidence or default to 0.85 if not set
+        const confidence = ann.confidence !== null ? ann.confidence : 0.85;
         existing.sum += confidence;
         existing.total = existing.sum / existing.count;
         weeklyData.set(weekKey, existing);
