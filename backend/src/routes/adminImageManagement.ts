@@ -1345,14 +1345,14 @@ router.get(
       `;
       const imageStats = await pool.query(imageStatsQuery);
 
-      // Get images by species
+      // Get images by species - return species ID as key for proper frontend lookup
       const imagesBySpeciesQuery = `
         SELECT
-          s.english_name as species,
+          s.id as species,
           COUNT(i.id) as count
         FROM images i
         JOIN species s ON i.species_id = s.id
-        GROUP BY s.english_name
+        GROUP BY s.id
         ORDER BY count DESC
       `;
       const imagesBySpecies = await pool.query(imagesBySpeciesQuery);
@@ -1785,6 +1785,63 @@ router.get(
     } catch (err) {
       logError('Error listing jobs', err as Error);
       res.status(500).json({ error: 'Failed to list jobs' });
+    }
+  }
+);
+
+// ============================================================================
+// Pending Images Endpoint
+// ============================================================================
+
+/**
+ * GET /api/admin/images/pending
+ * Get unannotated images for the annotation tab
+ *
+ * @auth Admin only
+ *
+ * Response:
+ * {
+ *   "data": [
+ *     {
+ *       "id": "uuid",
+ *       "speciesId": "uuid",
+ *       "url": "https://...",
+ *       "createdAt": "2025-11-21T12:00:00Z"
+ *     }
+ *   ]
+ * }
+ */
+router.get(
+  '/admin/images/pending',
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
+  async (_req: Request, res: Response): Promise<void> => {
+    try {
+      const result = await pool.query(`
+        SELECT
+          i.id,
+          i.species_id as "speciesId",
+          i.url,
+          i.created_at as "createdAt",
+          s.english_name as "speciesName"
+        FROM images i
+        LEFT JOIN species s ON i.species_id = s.id
+        WHERE NOT EXISTS (
+          SELECT 1 FROM ai_annotation_items ai WHERE ai.image_id::text = i.id::text
+        )
+        ORDER BY i.created_at DESC
+        LIMIT 100
+      `);
+
+      info('Fetched pending images', { count: result.rows.length });
+
+      res.json({
+        data: result.rows
+      });
+
+    } catch (err) {
+      logError('Error fetching pending images', err as Error);
+      res.status(500).json({ error: 'Failed to fetch pending images' });
     }
   }
 );
@@ -2340,11 +2397,11 @@ router.get(
         `),
         pool.query(`
           SELECT
-            s.english_name as species,
+            s.id as species,
             COUNT(i.id) as count
           FROM images i
           JOIN species s ON i.species_id = s.id
-          GROUP BY s.english_name
+          GROUP BY s.id
           ORDER BY count DESC
         `),
         pool.query(`
