@@ -192,18 +192,21 @@ const ImageCard: React.FC<ImageCardProps> = ({
     <div className={`relative group bg-white rounded-lg shadow-sm border-2 overflow-hidden hover:shadow-md transition-all ${
       isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
     }`}>
-      {/* Selection Checkbox */}
+      {/* Selection Checkbox - Always visible with clear styling */}
       <div className="absolute top-2 left-2 z-10">
-        <input
-          type="checkbox"
-          checked={isSelected}
-          onChange={(e) => {
-            e.stopPropagation();
-            onToggleSelect();
-          }}
-          className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer bg-white shadow-sm"
-          title={isSelected ? 'Deselect image' : 'Select image'}
-        />
+        <label className="flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={(e) => {
+              e.stopPropagation();
+              onToggleSelect();
+            }}
+            className="w-5 h-5 rounded border-2 border-gray-400 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer bg-white/90 shadow-md hover:border-blue-500 transition-colors"
+            title={isSelected ? 'Click to deselect' : 'Click to select for batch actions'}
+            aria-label={isSelected ? 'Deselect this image' : 'Select this image for batch actions'}
+          />
+        </label>
       </div>
 
       {/* Image */}
@@ -719,6 +722,18 @@ export const ImageGalleryTab: React.FC<ImageGalleryTabProps> = ({
 
           {/* Filters */}
           <FilterBar species={species} filters={filters} onFilterChange={handleFilterChange} />
+
+          {/* Selection hint when no images selected */}
+          {selectedImages.length === 0 && images.length > 0 && (
+            <div className="flex items-center gap-2 px-4 py-2 mb-4 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600">
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>
+                <strong>Tip:</strong> Check the boxes on images to select them for batch annotation or deletion.
+              </span>
+            </div>
+          )}
 
           {/* Bulk Action Toolbar */}
           <BulkActionToolbar

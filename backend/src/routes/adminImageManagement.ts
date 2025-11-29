@@ -1345,20 +1345,22 @@ router.get(
       `;
       const imageStats = await pool.query(imageStatsQuery);
 
-      // Get images by species - return species ID as key for proper frontend lookup
+      // Get images by species - return species NAME as key for display
       const imagesBySpeciesQuery = `
         SELECT
-          s.id as species,
+          s.english_name as species,
           COUNT(i.id) as count
         FROM images i
         JOIN species s ON i.species_id = s.id
-        GROUP BY s.id
+        GROUP BY s.english_name
         ORDER BY count DESC
       `;
       const imagesBySpecies = await pool.query(imagesBySpeciesQuery);
       const bySpecies: Record<string, number> = {};
       for (const row of imagesBySpecies.rows as ImageBySpeciesRow[]) {
-        bySpecies[row.species] = parseInt(row.count);
+        if (row.species) {
+          bySpecies[row.species] = parseInt(row.count);
+        }
       }
 
       // Get annotation statistics
@@ -2435,11 +2437,11 @@ router.get(
         `),
         pool.query(`
           SELECT
-            s.id as species,
+            s.english_name as species,
             COUNT(i.id) as count
           FROM images i
           JOIN species s ON i.species_id = s.id
-          GROUP BY s.id
+          GROUP BY s.english_name
           ORDER BY count DESC
         `),
         pool.query(`
@@ -2465,7 +2467,9 @@ router.get(
       // Process results
       const bySpecies: Record<string, number> = {};
       for (const row of imagesBySpecies.rows as ImageBySpeciesRow[]) {
-        bySpecies[row.species] = parseInt(row.count);
+        if (row.species) {
+          bySpecies[row.species] = parseInt(row.count);
+        }
       }
 
       const annoRow = annotationStats.rows[0];
