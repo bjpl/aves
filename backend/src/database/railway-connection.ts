@@ -6,7 +6,7 @@ import { info, error as logError } from '../utils/logger';
  * Handles IPv6 issues and pooler authentication problems
  */
 
-// Try multiple connection string formats
+// Try multiple connection string formats (optimized - most likely to work first)
 function getConnectionConfigs(): PoolConfig[] {
   const password = 'ymS5gBm9Wz9q1P11';
   const projectRef = 'ubqnfiwxghkxltluyczd';
@@ -24,31 +24,13 @@ function getConnectionConfigs(): PoolConfig[] {
     });
   }
 
-  // 2. Transaction Mode Pooler - CORRECT FORMAT with project ref in username
+  // 2. Transaction Mode Pooler - CORRECT FORMAT with project ref in username (most likely to work)
   configs.push({
     connectionString: `postgresql://postgres.${projectRef}:${password}@aws-0-us-west-1.pooler.supabase.com:6543/postgres`,
     ssl: { rejectUnauthorized: false }
   });
 
-  // 3. Try different AWS regions (some projects use aws-1)
-  configs.push({
-    connectionString: `postgresql://postgres.${projectRef}:${password}@aws-1-us-west-1.pooler.supabase.com:6543/postgres`,
-    ssl: { rejectUnauthorized: false }
-  });
-
-  // 4. Session mode with correct username format
-  configs.push({
-    connectionString: `postgresql://postgres.${projectRef}:${password}@aws-0-us-west-1.pooler.supabase.com:5432/postgres`,
-    ssl: { rejectUnauthorized: false }
-  });
-
-  // 5. Try generic pooler hostname
-  configs.push({
-    connectionString: `postgresql://postgres.${projectRef}:${password}@pooler.supabase.com:6543/postgres`,
-    ssl: { rejectUnauthorized: false }
-  });
-
-  // 6. Try with explicit parameters to bypass DNS
+  // 3. Try with explicit parameters to bypass DNS (fallback)
   configs.push({
     host: 'aws-0-us-west-1.pooler.supabase.com',
     port: 6543,
@@ -58,14 +40,11 @@ function getConnectionConfigs(): PoolConfig[] {
     ssl: { rejectUnauthorized: false }
   });
 
-  // 7. Alternative regions
-  const regions = ['us-west-2', 'us-east-1', 'us-east-2'];
-  for (const region of regions) {
-    configs.push({
-      connectionString: `postgresql://postgres.${projectRef}:${password}@aws-0-${region}.pooler.supabase.com:6543/postgres`,
-      ssl: { rejectUnauthorized: false }
-    });
-  }
+  // 4. Session mode with correct username format
+  configs.push({
+    connectionString: `postgresql://postgres.${projectRef}:${password}@aws-0-us-west-1.pooler.supabase.com:5432/postgres`,
+    ssl: { rejectUnauthorized: false }
+  });
 
   return configs;
 }
@@ -86,9 +65,9 @@ export async function createRailwayConnection(): Promise<Pool | null> {
     const pool = new Pool({
       ...config,
       max: 20,
-      min: 5,
+      min: 2, // Reduced min connections for faster startup
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 5000, // Quick timeout to try next
+      connectionTimeoutMillis: 3000, // Faster timeout to try next config
       statement_timeout: 10000,
       query_timeout: 10000
     });

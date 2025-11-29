@@ -195,9 +195,16 @@ if (process.env.NODE_ENV === 'development' && process.env.DEV_AUTH_BYPASS === 't
   app.use('/api', devAuthBypass);
 }
 
-// Health check
+// Track database connection status for health checks
+let dbConnectionStatus: 'pending' | 'connected' | 'failed' = 'pending';
+
+// Health check - responds immediately even before DB connects
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    database: dbConnectionStatus
+  });
 });
 
 // Environment diagnostic endpoint (remove in production)
@@ -265,17 +272,28 @@ const startServer = async () => {
   // Validate production configuration before starting
   validateProductionConfig();
 
-  const dbConnected = await testConnection();
-
-  if (!dbConnected) {
-    logError('Failed to connect to database. Server will start but database operations will fail.');
-  }
-
+  // Start listening IMMEDIATELY so healthcheck passes
+  // Database connection happens asynchronously
   app.listen(PORT, () => {
     info(`Server started on port ${PORT}`, {
       port: PORT,
       environment: process.env.NODE_ENV || 'development'
     });
+
+    // Connect to database in background (non-blocking)
+    testConnection()
+      .then((connected) => {
+        dbConnectionStatus = connected ? 'connected' : 'failed';
+        if (!connected) {
+          logError('Failed to connect to database. Server running but database operations will fail.');
+        } else {
+          info('Database connection established successfully');
+        }
+      })
+      .catch((err) => {
+        dbConnectionStatus = 'failed';
+        logError('Database connection error', err);
+      });
   });
 };
 
