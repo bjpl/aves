@@ -73,8 +73,9 @@ router.get('/species', async (_req: Request, res: Response) => {
 
     const result = await pool.query(query);
 
+    // Return data in standard API response format for frontend compatibility
     res.json({
-      species: result.rows
+      data: result.rows
     });
   } catch (err) {
     logError('Error fetching species', err as Error);

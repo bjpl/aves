@@ -136,7 +136,9 @@ class ApiAdapter {
       const response = await this.axiosInstance!.get<ApiResponse<Species[]>>('/api/species', {
         params: filters
       });
-      return response.data.data;
+      // Handle both response formats: { data: [...] } and { species: [...] }
+      const data = response.data.data || (response.data as any).species || [];
+      return data;
     } catch (error) {
       logError('API error, falling back to client storage:', error instanceof Error ? error : new Error(String(error)));
       this.handleApiError(error);
