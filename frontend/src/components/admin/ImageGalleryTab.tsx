@@ -377,10 +377,10 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                     key={annotation.id}
                     className="absolute border-2 border-blue-500 bg-blue-500 bg-opacity-20 rounded"
                     style={{
-                      left: `${annotation.boundingBox.x}%`,
-                      top: `${annotation.boundingBox.y}%`,
-                      width: `${annotation.boundingBox.width}%`,
-                      height: `${annotation.boundingBox.height}%`,
+                      left: `${annotation.boundingBox.x * 100}%`,
+                      top: `${annotation.boundingBox.y * 100}%`,
+                      width: `${annotation.boundingBox.width * 100}%`,
+                      height: `${annotation.boundingBox.height * 100}%`,
                     }}
                     title={`${annotation.spanishTerm} (${annotation.englishTerm})`}
                   >
