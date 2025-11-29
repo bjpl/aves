@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Species, SpeciesFilter } from '../../../../shared/types/species.types';
 import { SpeciesCard } from './SpeciesCard';
 import { SpeciesFilters } from './SpeciesFilters';
@@ -6,6 +7,7 @@ import { useSpecies } from '../../hooks/useSpecies';
 import { debug } from '../../utils/logger';
 
 export const SpeciesBrowser: React.FC = () => {
+  const navigate = useNavigate();
   const { data: species = [], isLoading: loading, error } = useSpecies();
   const [filters, setFilters] = useState<SpeciesFilter>({});
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -59,9 +61,10 @@ export const SpeciesBrowser: React.FC = () => {
   }, [species, filters.orderName]);
 
   const handleSpeciesClick = useCallback((speciesItem: Species) => {
-    // Navigate to species detail page
+    // Navigate to species detail page with state
     debug('Selected species:', { name: speciesItem.spanishName });
-  }, []);
+    navigate(`/species/${speciesItem.id}`, { state: { species: speciesItem } });
+  }, [navigate]);
 
   const handleFilterChange = useCallback((newFilters: SpeciesFilter) => {
     setFilters(newFilters);

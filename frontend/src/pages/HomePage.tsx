@@ -41,10 +41,10 @@ export const HomePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Decorative birds */}
-        <div className="absolute top-20 left-10 text-4xl animate-bounce">🦜</div>
-        <div className="absolute top-40 right-20 text-3xl animate-pulse">🦅</div>
-        <div className="absolute bottom-20 left-1/4 text-4xl animate-bounce delay-150">🦩</div>
+        {/* Decorative birds - hidden on mobile to prevent overlap, reduced motion for accessibility */}
+        <div className="hidden md:block absolute top-20 left-10 text-4xl animate-bounce motion-reduce:animate-none opacity-60 pointer-events-none">🦜</div>
+        <div className="hidden md:block absolute top-40 right-20 text-3xl animate-pulse motion-reduce:animate-none opacity-60 pointer-events-none">🦅</div>
+        <div className="hidden lg:block absolute bottom-20 left-1/4 text-4xl animate-bounce delay-150 motion-reduce:animate-none opacity-60 pointer-events-none">🦩</div>
       </div>
 
       {/* Progress Dashboard */}

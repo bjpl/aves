@@ -5,6 +5,7 @@
 import React from 'react';
 import { Card, CardHeader, CardBody } from '../ui/Card';
 import { Badge } from '../ui/Badge';
+import { Tooltip } from '../ui/Tooltip';
 import { useAnnotationAnalytics, calculateDatasetProgress } from '../../hooks/useAnnotationAnalytics';
 
 /**
@@ -78,7 +79,9 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
         <Card variant="elevated">
           <CardBody>
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 mb-1">Pending Review</p>
+              <Tooltip content="Annotations awaiting human review - these need approval or rejection before being used in the dataset" position="bottom">
+                <p className="text-sm font-medium text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">Pending Review</p>
+              </Tooltip>
               <p className="text-4xl font-bold text-yellow-600">{analytics.overview.pending}</p>
               <p className="text-xs text-gray-500 mt-2">
                 {((analytics.overview.pending / analytics.overview.total) * 100).toFixed(1)}% of total
@@ -91,7 +94,9 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
         <Card variant="elevated">
           <CardBody>
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 mb-1">Approved</p>
+              <Tooltip content="Annotations verified by human reviewers as accurate and ready for the learning dataset" position="bottom">
+                <p className="text-sm font-medium text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">Approved</p>
+              </Tooltip>
               <p className="text-4xl font-bold text-green-600">{analytics.overview.approved}</p>
               <p className="text-xs text-gray-500 mt-2">
                 {((analytics.overview.approved / analytics.overview.total) * 100).toFixed(1)}% of total
@@ -104,7 +109,9 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
         <Card variant="elevated">
           <CardBody>
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 mb-1">Rejected</p>
+              <Tooltip content="Annotations marked as incorrect, poorly positioned, or otherwise unsuitable for the dataset" position="bottom">
+                <p className="text-sm font-medium text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">Rejected</p>
+              </Tooltip>
               <p className="text-4xl font-bold text-red-600">{analytics.overview.rejected}</p>
               <p className="text-xs text-gray-500 mt-2">
                 {((analytics.overview.rejected / analytics.overview.total) * 100).toFixed(1)}% of total
@@ -117,7 +124,9 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
         <Card variant="elevated">
           <CardBody>
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 mb-1">Avg Confidence</p>
+              <Tooltip content="Average AI confidence score across all annotations - higher values indicate more reliable automatic detection" position="bottom">
+                <p className="text-sm font-medium text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">Avg Confidence</p>
+              </Tooltip>
               <p className="text-4xl font-bold text-blue-600">
                 {(parseFloat(analytics.overview.avgConfidence) * 100).toFixed(0)}%
               </p>
@@ -132,7 +141,9 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
       {/* PROGRESS BAR */}
       <Card variant="elevated">
         <CardHeader>
-          <h3 className="text-lg font-semibold text-gray-900">Dataset Progress</h3>
+          <Tooltip content="Progress toward minimum viable dataset size needed for effective Spanish vocabulary learning" position="right">
+            <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400 inline-block">Dataset Progress</h3>
+          </Tooltip>
         </CardHeader>
         <CardBody>
           <div className="space-y-3">
@@ -160,7 +171,9 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
         <Card variant="elevated">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Quality Flags</h3>
+              <Tooltip content="Potential issues detected in annotations that may need manual review or correction" position="right">
+                <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400">Quality Flags</h3>
+              </Tooltip>
               <Badge variant="warning" size="sm">
                 {qualityIssueCount} Issues Detected
               </Badge>

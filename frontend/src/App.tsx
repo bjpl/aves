@@ -7,6 +7,7 @@ const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.H
 const EnhancedLearnPage = lazy(() => import('./pages/EnhancedLearnPage').then(m => ({ default: m.EnhancedLearnPage })));
 const EnhancedPracticePage = lazy(() => import('./pages/EnhancedPracticePage').then(m => ({ default: m.EnhancedPracticePage })));
 const SpeciesPage = lazy(() => import('./pages/SpeciesPage').then(m => ({ default: m.SpeciesPage })));
+const SpeciesDetailPage = lazy(() => import('./pages/SpeciesDetailPage').then(m => ({ default: m.SpeciesDetailPage })));
 const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
 const AdminAnnotationReviewPage = lazy(() => import('./pages/admin/AdminAnnotationReviewPage').then(m => ({ default: m.AdminAnnotationReviewPage })));
 const ImageManagementPage = lazy(() => import('./pages/admin/ImageManagementPage'));
@@ -92,6 +93,7 @@ function App() {
             <Route path="/learn" element={<EnhancedLearnPage />} />
             <Route path="/practice" element={<EnhancedPracticePage />} />
             <Route path="/species" element={<SpeciesPage />} />
+            <Route path="/species/:id" element={<SpeciesDetailPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/admin/annotations" element={<AdminAnnotationReviewPage />} />
             <Route path="/admin/images" element={<ImageManagementPage />} />

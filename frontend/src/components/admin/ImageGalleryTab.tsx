@@ -13,6 +13,7 @@ import { Badge } from '../ui/Badge';
 import { Modal } from '../ui/Modal';
 import { Alert } from '../ui/Alert';
 import { LazyImage } from '../ui/LazyImage';
+import { Tooltip } from '../ui/Tooltip';
 import { Species } from '../../types';
 import {
   useGalleryImages,
@@ -76,7 +77,9 @@ const FilterBar: React.FC<FilterBarProps> = ({ species, filters, onFilterChange 
     <div className="flex flex-wrap gap-4 p-4 bg-gray-50 rounded-lg mb-6">
       {/* Species Filter */}
       <div className="flex-1 min-w-[200px]">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Species</label>
+        <Tooltip content="Filter images by specific bird species" position="top">
+          <label className="block text-sm font-medium text-gray-700 mb-1 cursor-help border-b border-dotted border-gray-400 inline-block">Species</label>
+        </Tooltip>
         <select
           className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
           value={filters.speciesId || ''}
@@ -93,7 +96,9 @@ const FilterBar: React.FC<FilterBarProps> = ({ species, filters, onFilterChange 
 
       {/* Annotation Status Filter */}
       <div className="flex-1 min-w-[200px]">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Annotation Status</label>
+        <Tooltip content="Filter by whether images have been annotated with vocabulary terms" position="top">
+          <label className="block text-sm font-medium text-gray-700 mb-1 cursor-help border-b border-dotted border-gray-400 inline-block">Annotation Status</label>
+        </Tooltip>
         <select
           className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
           value={filters.annotationStatus || 'all'}
@@ -109,7 +114,9 @@ const FilterBar: React.FC<FilterBarProps> = ({ species, filters, onFilterChange 
 
       {/* Quality Filter */}
       <div className="flex-1 min-w-[200px]">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Quality</label>
+        <Tooltip content="Filter by image quality score: High (80-100), Medium (60-79), Low (0-59)" position="top">
+          <label className="block text-sm font-medium text-gray-700 mb-1 cursor-help border-b border-dotted border-gray-400 inline-block">Quality</label>
+        </Tooltip>
         <select
           className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
           value={filters.qualityFilter || 'all'}
@@ -127,7 +134,9 @@ const FilterBar: React.FC<FilterBarProps> = ({ species, filters, onFilterChange 
 
       {/* Sort By */}
       <div className="flex-1 min-w-[200px]">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+        <Tooltip content="Choose how to order images in the gallery" position="top">
+          <label className="block text-sm font-medium text-gray-700 mb-1 cursor-help border-b border-dotted border-gray-400 inline-block">Sort By</label>
+        </Tooltip>
         <select
           className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
           value={filters.sortBy || 'createdAt'}
@@ -142,7 +151,9 @@ const FilterBar: React.FC<FilterBarProps> = ({ species, filters, onFilterChange 
 
       {/* Sort Order */}
       <div className="flex-1 min-w-[150px]">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Order</label>
+        <Tooltip content="Display newest or oldest items first" position="top">
+          <label className="block text-sm font-medium text-gray-700 mb-1 cursor-help border-b border-dotted border-gray-400 inline-block">Order</label>
+        </Tooltip>
         <select
           className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
           value={filters.sortOrder || 'desc'}

@@ -5,6 +5,7 @@
 import React from 'react';
 import { Card, CardHeader, CardBody } from '../ui/Card';
 import { Badge } from '../ui/Badge';
+import { Tooltip } from '../ui/Tooltip';
 import {
   useMLOverview,
   useVocabularyBalance,
@@ -64,7 +65,9 @@ export const MLAnalyticsDashboard: React.FC = () => {
         <Card variant="elevated">
           <CardBody>
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 mb-1">Learned Patterns</p>
+              <Tooltip content="Number of unique visual/vocabulary patterns the ML model has identified from approved annotations" position="bottom">
+                <p className="text-sm font-medium text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">Learned Patterns</p>
+              </Tooltip>
               <p className="text-4xl font-bold text-purple-600">{overview?.patternLearning.totalPatterns || 0}</p>
               <p className="text-xs text-gray-500 mt-2">
                 Across {overview?.patternLearning.speciesTracked || 0} species
@@ -77,7 +80,9 @@ export const MLAnalyticsDashboard: React.FC = () => {
         <Card variant="elevated">
           <CardBody>
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 mb-1">Quality Improvement</p>
+              <Tooltip content="Percentage change in annotation quality comparing recent annotations to historical baseline" position="bottom">
+                <p className="text-sm font-medium text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">Quality Improvement</p>
+              </Tooltip>
               <p className={`text-4xl font-bold ${overview?.qualityMetrics.improvement.startsWith('+') ? 'text-green-600' : 'text-gray-600'}`}>
                 {overview?.qualityMetrics.improvement || '0%'}
               </p>
@@ -92,7 +97,9 @@ export const MLAnalyticsDashboard: React.FC = () => {
         <Card variant="elevated">
           <CardBody>
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 mb-1">Vocab Coverage</p>
+              <Tooltip content="Percentage of expected bird anatomy features (beak, wing, tail, etc.) covered by annotations across all species" position="bottom">
+                <p className="text-sm font-medium text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">Vocab Coverage</p>
+              </Tooltip>
               <p className="text-4xl font-bold text-blue-600">{vocabulary?.coverage || 0}%</p>
               <p className="text-xs text-gray-500 mt-2">
                 {vocabulary?.totalFeatures || 0} features tracked
@@ -105,7 +112,9 @@ export const MLAnalyticsDashboard: React.FC = () => {
         <Card variant="elevated">
           <CardBody>
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 mb-1">Throughput</p>
+              <Tooltip content="Average number of images processed per second by the annotation pipeline" position="bottom">
+                <p className="text-sm font-medium text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">Throughput</p>
+              </Tooltip>
               <p className="text-4xl font-bold text-orange-600">
                 {(performance?.pipeline?.throughput || 0).toFixed(2)}
               </p>
@@ -224,25 +233,33 @@ export const MLAnalyticsDashboard: React.FC = () => {
           <CardBody>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
-                <p className="text-sm text-gray-600 mb-1">P50 Latency</p>
+                <Tooltip content="Median processing time - 50% of images complete within this time" position="bottom">
+                  <p className="text-sm text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">P50 Latency</p>
+                </Tooltip>
                 <p className="text-2xl font-bold text-gray-900">
                   {((performance.pipeline.p50Duration || 0) / 1000).toFixed(1)}s
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-sm text-gray-600 mb-1">P95 Latency</p>
+                <Tooltip content="95th percentile processing time - 95% of images complete within this time (worst-case typical)" position="bottom">
+                  <p className="text-sm text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">P95 Latency</p>
+                </Tooltip>
                 <p className="text-2xl font-bold text-gray-900">
                   {((performance.pipeline.p95Duration || 0) / 1000).toFixed(1)}s
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-sm text-gray-600 mb-1">Success Rate</p>
+                <Tooltip content="Percentage of annotation attempts that completed without errors" position="bottom">
+                  <p className="text-sm text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">Success Rate</p>
+                </Tooltip>
                 <p className="text-2xl font-bold text-green-600">
                   {performance.pipeline.successRate || 0}%
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-sm text-gray-600 mb-1">Concurrency</p>
+                <Tooltip content="Number of images being processed in parallel - higher means faster batch processing" position="bottom">
+                  <p className="text-sm text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">Concurrency</p>
+                </Tooltip>
                 <p className="text-2xl font-bold text-purple-600">
                   {performance.pipeline.concurrency || 1}x
                 </p>

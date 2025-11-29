@@ -8,11 +8,14 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 
+type BoxShape = 'rectangle' | 'ellipse';
+
 interface BoundingBox {
   x: number;      // Top-left X (0-1 normalized)
   y: number;      // Top-left Y (0-1 normalized)
   width: number;  // Width (0-1 normalized)
   height: number; // Height (0-1 normalized)
+  shape?: BoxShape; // Shape type (rectangle or ellipse)
 }
 
 interface BoundingBoxEditorProps {
@@ -30,11 +33,15 @@ export const BoundingBoxEditor: React.FC<BoundingBoxEditorProps> = ({
   onSave,
   onCancel,
 }) => {
-  const [box, setBox] = useState(initialBox);
+  const [box, setBox] = useState({ ...initialBox, shape: initialBox.shape || 'rectangle' as BoxShape });
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleShapeChange = (shape: BoxShape) => {
+    setBox(prev => ({ ...prev, shape }));
+  };
 
   const handleMouseDown = (e: React.MouseEvent, action: 'drag' | 'resize', handle?: string) => {
     e.preventDefault();
@@ -130,10 +137,47 @@ export const BoundingBoxEditor: React.FC<BoundingBoxEditorProps> = ({
       >
         {/* Header */}
         <div className="bg-gray-800 text-white px-6 py-4 rounded-t-lg">
-          <h3 className="text-xl font-bold">Adjust Bounding Box - {label}</h3>
-          <p className="text-sm text-gray-300 mt-1">
-            Drag the box to move • Drag corners/edges to resize • Click Save when done
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-bold">Adjust Bounding Box - {label}</h3>
+              <p className="text-sm text-gray-300 mt-1">
+                Drag the box to move • Drag corners/edges to resize • Click Save when done
+              </p>
+            </div>
+            {/* Shape Selector */}
+            <div className="flex items-center gap-2 bg-gray-700 rounded-lg p-1">
+              <button
+                type="button"
+                onClick={() => handleShapeChange('rectangle')}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                  box.shape === 'rectangle'
+                    ? 'bg-yellow-500 text-yellow-900'
+                    : 'text-gray-300 hover:bg-gray-600'
+                }`}
+                title="Rectangle shape"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                </svg>
+                Rectangle
+              </button>
+              <button
+                type="button"
+                onClick={() => handleShapeChange('ellipse')}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+                  box.shape === 'ellipse'
+                    ? 'bg-yellow-500 text-yellow-900'
+                    : 'text-gray-300 hover:bg-gray-600'
+                }`}
+                title="Ellipse/Circle shape"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <ellipse cx="12" cy="12" rx="10" ry="8" />
+                </svg>
+                Ellipse
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Editor */}
@@ -156,14 +200,18 @@ export const BoundingBoxEditor: React.FC<BoundingBoxEditorProps> = ({
 
             {/* Editable Bounding Box */}
             <div
-              className={`absolute border-4 bg-yellow-400 bg-opacity-20 ${
-                isDragging ? 'cursor-move border-green-400' : 'cursor-move border-yellow-400'
+              className={`absolute ${
+                isDragging ? 'cursor-move' : 'cursor-move'
               }`}
               style={{
                 left: `${box.x * 100}%`,
                 top: `${box.y * 100}%`,
                 width: `${box.width * 100}%`,
                 height: `${box.height * 100}%`,
+                // Apply shape-specific styling
+                borderRadius: box.shape === 'ellipse' ? '50%' : '0',
+                border: `4px solid ${isDragging ? '#22c55e' : '#facc15'}`,
+                backgroundColor: 'rgba(250, 204, 21, 0.2)',
                 boxShadow: isDragging
                   ? '0 0 30px rgba(34, 197, 94, 0.8)'
                   : '0 0 20px rgba(250, 204, 21, 0.6)',
@@ -222,7 +270,7 @@ export const BoundingBoxEditor: React.FC<BoundingBoxEditorProps> = ({
           {/* Coordinates Display */}
           <div className="mt-4 bg-gray-100 rounded-lg p-4">
             <h4 className="text-sm font-semibold text-gray-700 mb-2">Current Coordinates (Normalized 0-1)</h4>
-            <div className="grid grid-cols-4 gap-4 text-sm font-mono">
+            <div className="grid grid-cols-5 gap-4 text-sm font-mono">
               <div>
                 <span className="text-gray-600">X:</span>{' '}
                 <span className="text-blue-600 font-bold">{box.x.toFixed(3)}</span>
@@ -238,6 +286,10 @@ export const BoundingBoxEditor: React.FC<BoundingBoxEditorProps> = ({
               <div>
                 <span className="text-gray-600">H:</span>{' '}
                 <span className="text-green-600 font-bold">{box.height.toFixed(3)}</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Shape:</span>{' '}
+                <span className="text-purple-600 font-bold capitalize">{box.shape}</span>
               </div>
             </div>
           </div>

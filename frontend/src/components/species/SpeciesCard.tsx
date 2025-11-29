@@ -133,8 +133,17 @@ export const SpeciesCard: React.FC<SpeciesCardProps> = React.memo(({
           ))}
         </div>
 
-        {species.annotationCount !== undefined && (
+        {/* Bilingual Description Preview */}
+        {(species.descriptionSpanish || species.descriptionEnglish) && (
           <div className="mt-3 pt-3 border-t border-gray-100">
+            <p className="text-xs text-gray-600 line-clamp-2">
+              {species.descriptionSpanish || species.descriptionEnglish}
+            </p>
+          </div>
+        )}
+
+        {species.annotationCount !== undefined && (
+          <div className="mt-2 pt-2 border-t border-gray-100">
             <p className="text-xs text-gray-500">
               {species.annotationCount} annotations available
             </p>
