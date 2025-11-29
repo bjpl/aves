@@ -1,6 +1,26 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import './App.css';
+
+// Navigation link component with active state
+const NavLink = ({ to, children, isAdmin = false }: { to: string; children: React.ReactNode; isAdmin?: boolean }) => {
+  const location = useLocation();
+  const isActive = location.pathname === to || (to !== '/' && location.pathname.startsWith(to));
+
+  const baseClasses = "inline-flex items-center px-3 py-2 text-sm font-medium transition-colors rounded-md";
+  const activeClasses = isAdmin
+    ? "text-orange-700 bg-orange-50"
+    : "text-blue-700 bg-blue-50";
+  const inactiveClasses = isAdmin
+    ? "text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+    : "text-gray-700 hover:text-gray-900 hover:bg-gray-50";
+
+  return (
+    <Link to={to} className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}>
+      {children}
+    </Link>
+  );
+};
 
 // Lazy load route components for better performance
 const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
@@ -25,10 +45,10 @@ function App() {
     <Router basename={basename}>
       <div className="min-h-screen">
         {/* Navigation */}
-        <nav className="bg-white shadow-sm border-b">
+        <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
-              <div className="flex">
+              <div className="flex items-center">
                 <Link
                   to="/"
                   className="flex items-center px-2 py-2 text-gray-900 hover:text-gray-700"
@@ -36,44 +56,42 @@ function App() {
                   <span className="text-2xl mr-2">🦅</span>
                   <span className="font-bold text-xl">Aves</span>
                 </Link>
-                <div className="ml-6 flex space-x-4">
-                  <Link
-                    to="/learn"
-                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
-                  >
-                    Learn
-                  </Link>
-                  <Link
-                    to="/practice"
-                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
-                  >
-                    Practice
-                  </Link>
-                  <Link
-                    to="/species"
-                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
-                  >
-                    Species
-                  </Link>
-                  <Link
-                    to="/admin/annotations"
-                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-orange-600 hover:text-orange-700 border-l border-gray-200 ml-4 pl-4"
-                  >
-                    Review
-                  </Link>
-                  <Link
-                    to="/admin/images"
-                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-orange-600 hover:text-orange-700"
-                  >
-                    Images
-                  </Link>
-                  <Link
-                    to="/admin/analytics"
-                    className="inline-flex items-center px-3 py-2 text-sm font-medium text-orange-600 hover:text-orange-700"
-                  >
-                    Analytics
-                  </Link>
+
+                {/* Main Navigation */}
+                <div className="hidden sm:ml-8 sm:flex sm:space-x-2">
+                  <NavLink to="/learn">Learn</NavLink>
+                  <NavLink to="/practice">Practice</NavLink>
+                  <NavLink to="/species">Species</NavLink>
                 </div>
+              </div>
+
+              {/* Admin Navigation - Visually separated */}
+              <div className="hidden sm:flex sm:items-center sm:space-x-1">
+                <span className="text-xs text-gray-400 mr-2 hidden md:inline">Admin:</span>
+                <NavLink to="/admin/annotations" isAdmin>
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                  </svg>
+                  Review
+                </NavLink>
+                <NavLink to="/admin/images" isAdmin>
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Images
+                </NavLink>
+                <NavLink to="/admin/analytics" isAdmin>
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  Analytics
+                </NavLink>
+              </div>
+
+              {/* Mobile menu button (future enhancement) */}
+              <div className="sm:hidden flex items-center">
+                <Link to="/learn" className="px-2 py-1 text-gray-700 text-sm">Learn</Link>
+                <Link to="/admin/annotations" className="px-2 py-1 text-orange-600 text-sm">Admin</Link>
               </div>
             </div>
           </div>
