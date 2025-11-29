@@ -47,23 +47,26 @@ export const InteractiveLayer: React.FC<InteractiveLayerProps> = ({
       ctx.lineWidth = 2;
       ctx.setLineDash([5, 5]);
 
-      const x = boundingBox.x;
-      const y = boundingBox.y;
-      const width = boundingBox.width;
-      const height = boundingBox.height;
+      // Transform normalized coordinates (0-1) to canvas pixels
+      const x = boundingBox.x * dimensions.width;
+      const y = boundingBox.y * dimensions.height;
+      const width = boundingBox.width * dimensions.width;
+      const height = boundingBox.height * dimensions.height;
 
       ctx.strokeRect(x, y, width, height);
 
       if (showLabels) {
         ctx.fillStyle = color;
         ctx.globalAlpha = 0.9;
-        ctx.fillRect(x, y - 25, width, 25);
+        const labelHeight = 25;
+        const labelWidth = Math.max(width, 100);
+        ctx.fillRect(x, y - labelHeight, labelWidth, labelHeight);
 
         ctx.globalAlpha = 1;
         ctx.fillStyle = 'white';
         ctx.font = '14px system-ui, -apple-system, sans-serif';
         ctx.textBaseline = 'middle';
-        ctx.fillText(annotation.spanishTerm, x + 5, y - 12);
+        ctx.fillText(annotation.spanishTerm, x + 5, y - labelHeight / 2);
       }
 
       ctx.setLineDash([]);

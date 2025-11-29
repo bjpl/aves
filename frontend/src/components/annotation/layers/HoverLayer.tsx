@@ -49,23 +49,26 @@ export const HoverLayer: React.FC<HoverLayerProps> = ({
         ctx.shadowColor = color;
         ctx.shadowBlur = 10;
 
-        const x = boundingBox.x;
-        const y = boundingBox.y;
-        const width = boundingBox.width;
-        const height = boundingBox.height;
+        // Transform normalized coordinates (0-1) to canvas pixels
+        const x = boundingBox.x * dimensions.width;
+        const y = boundingBox.y * dimensions.height;
+        const width = boundingBox.width * dimensions.width;
+        const height = boundingBox.height * dimensions.height;
 
         ctx.strokeRect(x, y, width, height);
 
         ctx.shadowBlur = 0;
         ctx.fillStyle = color;
         ctx.globalAlpha = 0.95;
-        ctx.fillRect(x, y - 30, Math.max(width, 150), 30);
+        const labelHeight = 30;
+        const labelWidth = Math.max(width, 150);
+        ctx.fillRect(x, y - labelHeight, labelWidth, labelHeight);
 
         ctx.globalAlpha = 1;
         ctx.fillStyle = 'white';
         ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
         ctx.textBaseline = 'middle';
-        ctx.fillText(hoveredAnnotation.spanishTerm, x + 8, y - 15);
+        ctx.fillText(hoveredAnnotation.spanishTerm, x + 8, y - labelHeight / 2);
       }
 
       performance.mark('hover-layer-end');

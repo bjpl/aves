@@ -2302,8 +2302,10 @@ router.post(
     try {
       const { imageId } = req.params;
 
+      info('Starting single image annotation', { imageId, userId: req.user?.userId });
+
       const imageQuery = `
-        SELECT i.id, i.url, s.english_name as species_name
+        SELECT i.id, i.url, i.width, i.height, s.english_name as species_name
         FROM images i
         LEFT JOIN species s ON i.species_id = s.id
         WHERE i.id = $1
@@ -2311,29 +2313,65 @@ router.post(
       const imageResult = await pool.query(imageQuery, [imageId]);
 
       if (imageResult.rows.length === 0) {
-        res.status(404).json({ error: 'Image not found' });
+        res.status(404).json({
+          error: 'Image not found',
+          message: `No image exists with ID: ${imageId}`
+        });
         return;
       }
 
       const image = imageResult.rows[0];
+
+      // Validate image URL is accessible
+      if (!image.url) {
+        res.status(400).json({
+          error: 'Invalid image',
+          message: 'Image does not have a valid URL'
+        });
+        return;
+      }
+
+      // Check if already annotated (warn but don't block)
+      const existingAnnotations = await pool.query(
+        'SELECT COUNT(*) as count FROM ai_annotation_items WHERE image_id::text = $1',
+        [imageId]
+      );
+      const existingCount = parseInt(existingAnnotations.rows[0].count);
+      if (existingCount > 0) {
+        info('Image already has annotations, regenerating', { imageId, existingCount });
+      }
+
       const visionService = new VisionAIService();
 
       if (!visionService.isConfigured()) {
         res.status(503).json({
           error: 'Claude API not configured',
-          message: 'ANTHROPIC_API_KEY environment variable is not set'
+          message: 'ANTHROPIC_API_KEY environment variable is not set. Please configure the API key to enable annotation generation.'
         });
         return;
       }
 
-      const annotations = await visionService.generateAnnotations(
-        image.url,
-        image.id,
-        { species: image.species_name || 'Unknown species', enablePatternLearning: true }
-      );
+      let annotations;
+      try {
+        annotations = await visionService.generateAnnotations(
+          image.url,
+          image.id,
+          { species: image.species_name || 'Unknown species', enablePatternLearning: true }
+        );
+      } catch (visionError) {
+        logError('Vision AI service error', visionError as Error, { imageId });
+        res.status(500).json({
+          error: 'Annotation generation failed',
+          message: (visionError as Error).message || 'Failed to analyze image with Vision AI'
+        });
+        return;
+      }
 
       if (!annotations || annotations.length === 0) {
-        res.status(500).json({ error: 'No annotations generated' });
+        res.status(422).json({
+          error: 'No annotations generated',
+          message: 'The AI was unable to identify any vocabulary features in this image. This may happen with images that have poor visibility, unusual angles, or are not clear photographs of birds.'
+        });
         return;
       }
 

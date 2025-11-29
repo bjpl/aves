@@ -205,6 +205,17 @@ export const useAnnotateImage = () => {
       annotationCount: number;
       jobId: string;
     }> => {
+      // Validate imageId format before making request
+      if (!imageId || typeof imageId !== 'string') {
+        throw new Error('Invalid image ID provided');
+      }
+
+      // UUID format validation
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(imageId)) {
+        throw new Error('Invalid image ID format');
+      }
+
       const response = await axios.post<{
         message: string;
         imageId: string;
@@ -213,13 +224,18 @@ export const useAnnotateImage = () => {
       }>(`/api/admin/images/${imageId}/annotate`);
       return response.data;
     },
-    onSuccess: (_, imageId) => {
+    onSuccess: (data, imageId) => {
       // Invalidate specific image and list queries
       queryClient.invalidateQueries({ queryKey: galleryKeys.detail(imageId) });
       queryClient.invalidateQueries({ queryKey: galleryKeys.all });
     },
-    onError: (err) => {
-      logError('Error annotating image:', err instanceof Error ? err : new Error(String(err)));
+    onError: (err: any) => {
+      // Extract meaningful error message from API response
+      const errorMessage = err?.response?.data?.error
+        || err?.response?.data?.message
+        || err?.message
+        || 'Failed to annotate image';
+      logError('Error annotating image:', new Error(errorMessage));
     },
   });
 };

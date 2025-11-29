@@ -55,7 +55,9 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
     );
   }
 
-  const progress = calculateDatasetProgress(analytics.overview.total, targetCount);
+  // Use APPROVED count for MVP dataset progress (only verified annotations count)
+  const approvedCount = analytics.overview.approved;
+  const progress = calculateDatasetProgress(approvedCount, targetCount);
   const qualityIssueCount = analytics.qualityFlags.tooSmall + analytics.qualityFlags.lowConfidence;
 
   return (
@@ -141,27 +143,36 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
       {/* PROGRESS BAR */}
       <Card variant="elevated">
         <CardHeader>
-          <Tooltip content="Progress toward minimum viable dataset size needed for effective Spanish vocabulary learning" position="right">
-            <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400 inline-block">Dataset Progress</h3>
+          <Tooltip content="Progress toward minimum viable dataset size. Only APPROVED annotations count toward the goal since they are verified and ready for learning." position="right">
+            <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400 inline-block">MVP Dataset Progress</h3>
           </Tooltip>
         </CardHeader>
         <CardBody>
           <div className="space-y-3">
             <div className="flex items-center justify-between text-sm">
               <span className="font-medium text-gray-700">
-                {analytics.overview.total} / {targetCount} annotations
+                <span className="text-green-600 font-bold">{approvedCount}</span>
+                <span className="text-gray-500"> approved</span>
+                <span className="text-gray-400"> / {targetCount} target</span>
               </span>
               <span className="font-bold text-blue-600">{progress}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500 ease-out"
+                className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500 ease-out"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <p className="text-xs text-gray-600">
-              {targetCount - analytics.overview.total} more annotations needed for MVP dataset
-            </p>
+            <div className="flex items-center justify-between text-xs text-gray-600">
+              <span>
+                {targetCount - approvedCount > 0
+                  ? `${targetCount - approvedCount} more approvals needed`
+                  : '✅ MVP target reached!'}
+              </span>
+              <span className="text-gray-400">
+                ({analytics.overview.total} total, {analytics.overview.pending} pending review)
+              </span>
+            </div>
           </div>
         </CardBody>
       </Card>

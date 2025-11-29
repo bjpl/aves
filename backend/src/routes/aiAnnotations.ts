@@ -762,7 +762,8 @@ router.get(
         avgConfidence: parseFloat(overviewResult.rows[0].avg_confidence || '0').toFixed(2)
       };
 
-      // BY SPECIES: Count annotations per species
+      // BY SPECIES: Count ALL annotations per species (not just pending)
+      // This gives accurate species coverage across the entire dataset
       const speciesQuery = `
         SELECT
           s.english_name as species,
@@ -770,30 +771,33 @@ router.get(
         FROM ai_annotation_items ai
         JOIN images img ON ai.image_id::uuid = img.id
         JOIN species s ON img.species_id = s.id
-        WHERE ai.status = 'pending'
         GROUP BY s.english_name
         ORDER BY count DESC
       `;
       const speciesResult = await pool.query(speciesQuery);
       const bySpecies: Record<string, number> = {};
       for (const row of speciesResult.rows) {
-        bySpecies[row.species] = parseInt(row.count);
+        if (row.species) {
+          bySpecies[row.species] = parseInt(row.count);
+        }
       }
 
-      // BY TYPE: Count annotations by type (anatomical, behavioral, etc.)
+      // BY TYPE: Count ALL annotations by type (anatomical, behavioral, etc.)
+      // This gives accurate type distribution across the entire dataset
       const typeQuery = `
         SELECT
           annotation_type as type,
           COUNT(*) as count
         FROM ai_annotation_items
-        WHERE status = 'pending'
         GROUP BY annotation_type
         ORDER BY count DESC
       `;
       const typeResult = await pool.query(typeQuery);
       const byType: Record<string, number> = {};
       for (const row of typeResult.rows) {
-        byType[row.type] = parseInt(row.count);
+        if (row.type) {
+          byType[row.type] = parseInt(row.count);
+        }
       }
 
       // REJECTIONS BY CATEGORY: Parse category from notes field
