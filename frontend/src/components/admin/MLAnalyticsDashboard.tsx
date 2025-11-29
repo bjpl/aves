@@ -2,10 +2,11 @@
 // WHY: Provide visibility into ML pattern learning, vocabulary balance, and quality improvements
 // PATTERN: Data visualization with cards, charts, and progress indicators
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardHeader, CardBody } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Tooltip } from '../ui/Tooltip';
+import { Modal } from '../ui/Modal';
 import {
   useMLOverview,
   useVocabularyBalance,
@@ -13,6 +14,13 @@ import {
   useQualityTrends,
   usePerformanceMetrics
 } from '../../hooks/useMLAnalytics';
+
+interface PatternDetail {
+  feature: string;
+  confidence: number;
+  observations: number;
+  reliability: 'high' | 'medium' | 'low';
+}
 
 /**
  * MLAnalyticsDashboard Component
@@ -30,6 +38,9 @@ export const MLAnalyticsDashboard: React.FC = () => {
   const { data: patterns, isLoading: patternsLoading } = usePatternLearning();
   const { data: trends, isLoading: trendsLoading } = useQualityTrends();
   const { data: performance, isLoading: performanceLoading } = usePerformanceMetrics();
+
+  const [selectedPattern, setSelectedPattern] = useState<PatternDetail | null>(null);
+  const [showAllPatterns, setShowAllPatterns] = useState(false);
 
   const isLoading = overviewLoading || vocabularyLoading || patternsLoading || trendsLoading || performanceLoading;
 
@@ -130,17 +141,28 @@ export const MLAnalyticsDashboard: React.FC = () => {
       {patterns && patterns.topPatterns.length > 0 && (
         <Card variant="elevated">
           <CardHeader>
-            <h3 className="text-lg font-semibold text-gray-900">Top Learned Patterns</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Top Learned Patterns</h3>
+              {patterns.topPatterns.length > 6 && (
+                <button
+                  onClick={() => setShowAllPatterns(true)}
+                  className="text-sm text-blue-600 hover:text-blue-800 underline"
+                >
+                  View all {patterns.topPatterns.length} patterns
+                </button>
+              )}
+            </div>
           </CardHeader>
           <CardBody>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {patterns.topPatterns.slice(0, 6).map((pattern, idx) => (
-                <div
+                <button
                   key={idx}
-                  className={`border-2 rounded-lg p-4 ${
-                    pattern.reliability === 'high' ? 'border-green-300 bg-green-50' :
-                    pattern.reliability === 'medium' ? 'border-yellow-300 bg-yellow-50' :
-                    'border-gray-300 bg-gray-50'
+                  onClick={() => setSelectedPattern(pattern)}
+                  className={`text-left border-2 rounded-lg p-4 cursor-pointer transition-all hover:shadow-md ${
+                    pattern.reliability === 'high' ? 'border-green-300 bg-green-50 hover:border-green-400' :
+                    pattern.reliability === 'medium' ? 'border-yellow-300 bg-yellow-50 hover:border-yellow-400' :
+                    'border-gray-300 bg-gray-50 hover:border-gray-400'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
@@ -152,15 +174,104 @@ export const MLAnalyticsDashboard: React.FC = () => {
                       {(pattern.confidence * 100).toFixed(0)}%
                     </Badge>
                   </div>
-                  <div className="text-xs text-gray-600">
-                    {pattern.observations} observations
+                  <div className="flex items-center justify-between text-xs text-gray-600">
+                    <span>{pattern.observations} observations</span>
+                    <span className="text-blue-600">Click for details</span>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </CardBody>
         </Card>
       )}
+
+      {/* Pattern Detail Modal */}
+      <Modal
+        isOpen={selectedPattern !== null}
+        onClose={() => setSelectedPattern(null)}
+        title="Pattern Details"
+        size="md"
+      >
+        {selectedPattern && (
+          <div className="space-y-4">
+            <div className={`p-4 rounded-lg ${
+              selectedPattern.reliability === 'high' ? 'bg-green-50' :
+              selectedPattern.reliability === 'medium' ? 'bg-yellow-50' :
+              'bg-gray-50'
+            }`}>
+              <h4 className="text-xl font-bold text-gray-900 mb-2">{selectedPattern.feature}</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Confidence Score</p>
+                  <p className="text-2xl font-bold text-blue-600">{(selectedPattern.confidence * 100).toFixed(1)}%</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Observations</p>
+                  <p className="text-2xl font-bold text-purple-600">{selectedPattern.observations}</p>
+                </div>
+              </div>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 mb-2">Reliability Level</p>
+              <Badge
+                variant={selectedPattern.reliability === 'high' ? 'success' : selectedPattern.reliability === 'medium' ? 'warning' : 'default'}
+                size="lg"
+              >
+                {selectedPattern.reliability.charAt(0).toUpperCase() + selectedPattern.reliability.slice(1)} Reliability
+              </Badge>
+            </div>
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>What this means:</strong> The ML system has learned to recognize "{selectedPattern.feature}" with{' '}
+                {selectedPattern.reliability === 'high' ? 'high' : selectedPattern.reliability === 'medium' ? 'moderate' : 'low'}{' '}
+                accuracy based on {selectedPattern.observations} verified examples in the training data.
+              </p>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* All Patterns Modal */}
+      <Modal
+        isOpen={showAllPatterns}
+        onClose={() => setShowAllPatterns(false)}
+        title="All Learned Patterns"
+        size="lg"
+      >
+        {patterns && (
+          <div className="max-h-96 overflow-y-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {patterns.topPatterns.map((pattern, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    setShowAllPatterns(false);
+                    setSelectedPattern(pattern);
+                  }}
+                  className={`text-left border-2 rounded-lg p-3 cursor-pointer transition-all hover:shadow-md ${
+                    pattern.reliability === 'high' ? 'border-green-300 bg-green-50' :
+                    pattern.reliability === 'medium' ? 'border-yellow-300 bg-yellow-50' :
+                    'border-gray-300 bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-gray-900">{pattern.feature}</span>
+                    <Badge
+                      variant={pattern.reliability === 'high' ? 'success' : pattern.reliability === 'medium' ? 'warning' : 'default'}
+                      size="sm"
+                    >
+                      {(pattern.confidence * 100).toFixed(0)}%
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    {pattern.observations} observations
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* VOCABULARY BALANCE & QUALITY TRENDS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
