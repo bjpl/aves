@@ -32,6 +32,7 @@ import annotationMasteryRouter from './routes/annotationMastery';
 import adminImageManagementRouter from './routes/adminImageManagement';
 import healthRouter from './routes/health';
 import docsRouter from './routes/docs';
+import annotationExercisesRouter from './routes/annotationExercises';
 import { testConnection } from './database/connection';
 import { error as logError, info } from './utils/logger';
 import { devAuthBypass } from './middleware/devAuth';
@@ -257,6 +258,7 @@ app.use('/api', batchRouter);
 app.use('/api', mlAnalyticsRouter);
 app.use('/api', feedbackAnalyticsRouter);
 app.use('/api', annotationMasteryRouter);
+app.use('/api/annotation-exercises', annotationExercisesRouter);
 
 // Error handling middleware
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

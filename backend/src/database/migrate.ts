@@ -58,7 +58,8 @@ async function runMigrations() {
       '013_add_error_message_to_ai_annotations.sql',
       '014_annotation_mastery_tracking.sql',
       '015_add_quality_score_to_images.sql',
-      '016_add_local_upload_columns.sql'
+      '016_add_local_upload_columns.sql',
+      '018_create_exercise_pipeline_tables.sql'
     ];
 
     for (const migration of migrations) {
