@@ -1,8 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
+import { Pool } from 'pg';
 import { AnnotationAwareExerciseGenerator } from './AnnotationAwareExerciseGenerator';
 import { AnnotationMasteryService } from './AnnotationMasteryService';
-import { Database } from '../types/supabase';
-import { logger } from '../utils/logger';
+import { info, warn, error as logError } from '../utils/logger';
 
 interface PipelineJob {
   annotationId: string;
@@ -25,16 +24,16 @@ interface ExerciseCache {
 }
 
 export class AnnotationExercisePipeline {
-  private supabase: ReturnType<typeof createClient<Database>>;
+  private pool: Pool;
   private exerciseGenerator: AnnotationAwareExerciseGenerator;
   private masteryService: AnnotationMasteryService;
   private activeJobs: Map<string, PipelineJob> = new Map();
   private exerciseCache: Map<string, ExerciseCache[]> = new Map();
 
-  constructor(supabaseClient: ReturnType<typeof createClient<Database>>) {
-    this.supabase = supabaseClient;
-    this.exerciseGenerator = new AnnotationAwareExerciseGenerator(supabaseClient);
-    this.masteryService = new AnnotationMasteryService(supabaseClient);
+  constructor(pool: Pool) {
+    this.pool = pool;
+    this.masteryService = new AnnotationMasteryService(pool);
+    this.exerciseGenerator = new AnnotationAwareExerciseGenerator(pool, this.masteryService);
   }
 
   /**
@@ -42,7 +41,7 @@ export class AnnotationExercisePipeline {
    * Generates exercises for all applicable users
    */
   async onAnnotationApproved(annotationId: string): Promise<void> {
-    logger.info(`Pipeline triggered for approved annotation: ${annotationId}`);
+    info(`Pipeline triggered for approved annotation: ${annotationId}`);
 
     const job: PipelineJob = {
       annotationId,
@@ -54,7 +53,7 @@ export class AnnotationExercisePipeline {
 
     try {
       // Get annotation details
-      const { data: annotation, error: annotationError } = await this.supabase
+      const { data: annotation, error: annotationError } = await this.pool
         .from('annotations')
         .select('*')
         .eq('id', annotationId)
@@ -86,10 +85,10 @@ export class AnnotationExercisePipeline {
       // Store job in database for monitoring
       await this.storeJobResult(job);
 
-      logger.info(`Pipeline completed for annotation ${annotationId}: ${totalExercisesGenerated} exercises generated for ${users.length} users`);
+      info(`Pipeline completed for annotation ${annotationId}: ${totalExercisesGenerated} exercises generated for ${users.length} users`);
 
     } catch (error) {
-      logger.error(`Pipeline failed for annotation ${annotationId}:`, error);
+      logError(`Pipeline failed for annotation ${annotationId}:`, error);
 
       job.status = 'failed';
       job.errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -107,7 +106,7 @@ export class AnnotationExercisePipeline {
    * Batch generation for multiple approved annotations
    */
   async generateForBatch(annotationIds: string[]): Promise<void> {
-    logger.info(`Batch pipeline triggered for ${annotationIds.length} annotations`);
+    info(`Batch pipeline triggered for ${annotationIds.length} annotations`);
 
     const results = await Promise.allSettled(
       annotationIds.map(id => this.onAnnotationApproved(id))
@@ -116,14 +115,14 @@ export class AnnotationExercisePipeline {
     const succeeded = results.filter(r => r.status === 'fulfilled').length;
     const failed = results.filter(r => r.status === 'rejected').length;
 
-    logger.info(`Batch pipeline completed: ${succeeded} succeeded, ${failed} failed`);
+    info(`Batch pipeline completed: ${succeeded} succeeded, ${failed} failed`);
   }
 
   /**
    * Pre-generate exercises for a user based on their weak areas
    */
   async prefetchExercises(userId: string, count: number = 10): Promise<void> {
-    logger.info(`Pre-fetching ${count} exercises for user ${userId}`);
+    info(`Pre-fetching ${count} exercises for user ${userId}`);
 
     try {
       // Get user's weak annotations
@@ -134,10 +133,10 @@ export class AnnotationExercisePipeline {
         await this.cacheExercises(userId, annotation.annotationId, exercises);
       }
 
-      logger.info(`Pre-fetch completed for user ${userId}`);
+      info(`Pre-fetch completed for user ${userId}`);
 
     } catch (error) {
-      logger.error(`Pre-fetch failed for user ${userId}:`, error);
+      logError(`Pre-fetch failed for user ${userId}:`, error);
       throw error;
     }
   }
@@ -185,12 +184,12 @@ export class AnnotationExercisePipeline {
   async getPipelineStats(): Promise<any> {
     try {
       // Get all logs and group by status in JavaScript
-      const { data: logs, error } = await this.supabase
+      const { data: logs, error } = await this.pool
         .from('annotation_exercise_pipeline_log')
         .select('status');
 
       if (error) {
-        logger.error('Error fetching pipeline logs:', error);
+        logError('Error fetching pipeline logs:', error);
       }
 
       // Group by status manually
@@ -215,7 +214,7 @@ export class AnnotationExercisePipeline {
         timestamp: new Date()
       };
     } catch (error) {
-      logger.error('Error getting pipeline stats:', error);
+      logError('Error getting pipeline stats:', error);
       return {
         activeJobs: 0,
         jobsByStatus: [],
@@ -230,7 +229,7 @@ export class AnnotationExercisePipeline {
 
   private async getTargetUsers(annotationId: string): Promise<string[]> {
     // Get users who have interacted with similar annotations or the same species
-    const { data: annotation } = await this.supabase
+    const { data: annotation } = await this.pool
       .from('annotations')
       .select('species_id')
       .eq('id', annotationId)
@@ -239,7 +238,7 @@ export class AnnotationExercisePipeline {
     if (!annotation) return [];
 
     // Get users who have viewed this species
-    const { data: users } = await this.supabase
+    const { data: users } = await this.pool
       .from('user_species_interactions')
       .select('user_id')
       .eq('species_id', annotation.species_id)
@@ -299,7 +298,7 @@ export class AnnotationExercisePipeline {
     this.exerciseCache.set(cacheKey, [...existing, ...cacheEntries]);
 
     // Also store in database for persistence
-    const { error } = await this.supabase
+    const { error } = await this.pool
       .from('exercise_cache')
       .insert(
         cacheEntries.map(c => ({
@@ -312,12 +311,12 @@ export class AnnotationExercisePipeline {
       );
 
     if (error) {
-      logger.error('Failed to persist exercise cache:', error);
+      logError('Failed to persist exercise cache:', error);
     }
   }
 
   private async storeJobResult(job: PipelineJob): Promise<void> {
-    const { error } = await this.supabase
+    const { error } = await this.pool
       .from('annotation_exercise_pipeline_log')
       .insert({
         annotation_id: job.annotationId,
@@ -330,7 +329,7 @@ export class AnnotationExercisePipeline {
       });
 
     if (error) {
-      logger.error('Failed to store pipeline job result:', error);
+      logError('Failed to store pipeline job result:', error);
     }
   }
 }

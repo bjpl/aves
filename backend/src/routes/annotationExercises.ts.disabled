@@ -1,23 +1,12 @@
 import { Router, Request, Response } from 'express';
-import { createClient } from '@supabase/supabase-js';
+import { pool } from '../database/connection';
 import { AnnotationExercisePipeline } from '../services/AnnotationExercisePipeline';
-import { logger } from '../utils/logger';
-import { Database } from '../types/supabase';
+import { info, error as logError, warn } from '../utils/logger';
 
 const router = Router();
 
-// Initialize Supabase client only if environment variables are available
-let pipeline: AnnotationExercisePipeline | null = null;
-
-if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  const supabase = createClient<Database>(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
-  pipeline = new AnnotationExercisePipeline(supabase);
-} else {
-  logger.warn('Annotation exercise pipeline disabled: Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
-}
+// Initialize annotation exercise pipeline with database pool
+const pipeline = new AnnotationExercisePipeline(pool);
 
 /**
  * GET /api/annotation-exercises/learn
@@ -36,10 +25,6 @@ if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
  */
 router.get('/learn', async (req: Request, res: Response) => {
   try {
-    if (!pipeline) {
-      return res.status(503).json({ error: 'Exercise pipeline not available' });
-    }
-
     const { userId, limit = 10 } = req.query;
 
     if (!userId || typeof userId !== 'string') {
@@ -51,15 +36,15 @@ router.get('/learn', async (req: Request, res: Response) => {
     // Get exercises from pipeline
     const exercises = await pipeline.getExercisesForUser(userId, 'learn', limitNum);
 
-    res.json({
+    return res.json({
       exercises,
       total: exercises.length,
       source: exercises.length > 0 ? 'pipeline' : 'empty'
     });
 
   } catch (error) {
-    logger.error('Error fetching learn exercises:', error);
-    res.status(500).json({ error: 'Failed to fetch learn exercises' });
+    logError('Error fetching learn exercises:', error as Error);
+    return res.status(500).json({ error: 'Failed to fetch learn exercises' });
   }
 });
 
@@ -80,10 +65,6 @@ router.get('/learn', async (req: Request, res: Response) => {
  */
 router.get('/practice', async (req: Request, res: Response) => {
   try {
-    if (!pipeline) {
-      return res.status(503).json({ error: 'Exercise pipeline not available' });
-    }
-
     const { userId, limit = 10 } = req.query;
 
     if (!userId || typeof userId !== 'string') {
@@ -95,15 +76,15 @@ router.get('/practice', async (req: Request, res: Response) => {
     // Get exercises from pipeline
     const exercises = await pipeline.getExercisesForUser(userId, 'practice', limitNum);
 
-    res.json({
+    return res.json({
       exercises,
       total: exercises.length,
       source: exercises.length > 0 ? 'pipeline' : 'empty'
     });
 
   } catch (error) {
-    logger.error('Error fetching practice exercises:', error);
-    res.status(500).json({ error: 'Failed to fetch practice exercises' });
+    logError('Error fetching practice exercises:', error as Error);
+    return res.status(500).json({ error: 'Failed to fetch practice exercises' });
   }
 });
 
@@ -126,10 +107,6 @@ router.get('/practice', async (req: Request, res: Response) => {
  */
 router.post('/prefetch', async (req: Request, res: Response) => {
   try {
-    if (!pipeline) {
-      return res.status(503).json({ error: 'Exercise pipeline not available' });
-    }
-
     const { userId, count = 10 } = req.body;
 
     if (!userId) {
@@ -138,18 +115,18 @@ router.post('/prefetch', async (req: Request, res: Response) => {
 
     // Start prefetch asynchronously
     pipeline.prefetchExercises(userId, count).catch(error => {
-      logger.error(`Prefetch failed for user ${userId}:`, error);
+      logError(`Prefetch failed for user ${userId}:`, error as Error);
     });
 
-    res.json({
+    return res.json({
       message: 'Prefetch initiated',
       userId,
       count
     });
 
   } catch (error) {
-    logger.error('Error initiating prefetch:', error);
-    res.status(500).json({ error: 'Failed to initiate prefetch' });
+    logError('Error initiating prefetch:', error as Error);
+    return res.status(500).json({ error: 'Failed to initiate prefetch' });
   }
 });
 
@@ -170,10 +147,6 @@ router.post('/prefetch', async (req: Request, res: Response) => {
  */
 router.post('/batch-generate', async (req: Request, res: Response) => {
   try {
-    if (!pipeline) {
-      return res.status(503).json({ error: 'Exercise pipeline not available' });
-    }
-
     const { annotationIds } = req.body;
 
     if (!Array.isArray(annotationIds) || annotationIds.length === 0) {
@@ -182,17 +155,17 @@ router.post('/batch-generate', async (req: Request, res: Response) => {
 
     // Start batch generation asynchronously
     pipeline.generateForBatch(annotationIds).catch(error => {
-      logger.error('Batch generation failed:', error);
+      logError('Batch generation failed:', error as Error);
     });
 
-    res.json({
+    return res.json({
       message: 'Batch generation started',
       count: annotationIds.length
     });
 
   } catch (error) {
-    logger.error('Error starting batch generation:', error);
-    res.status(500).json({ error: 'Failed to start batch generation' });
+    logError('Error starting batch generation:', error as Error);
+    return res.status(500).json({ error: 'Failed to start batch generation' });
   }
 });
 
@@ -210,17 +183,13 @@ router.post('/batch-generate', async (req: Request, res: Response) => {
  */
 router.get('/pipeline-stats', async (req: Request, res: Response) => {
   try {
-    if (!pipeline) {
-      return res.status(503).json({ error: 'Exercise pipeline not available' });
-    }
-
     const stats = await pipeline.getPipelineStats();
 
-    res.json(stats);
+    return res.json(stats);
 
   } catch (error) {
-    logger.error('Error fetching pipeline stats:', error);
-    res.status(500).json({ error: 'Failed to fetch pipeline statistics' });
+    logError('Error fetching pipeline stats:', error as Error);
+    return res.status(500).json({ error: 'Failed to fetch pipeline statistics' });
   }
 });
 

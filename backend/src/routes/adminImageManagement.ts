@@ -1952,9 +1952,9 @@ router.get(
           completedAt: job.completedAt,
           speciesIds: job.metadata?.speciesIds || [],
           results: {
-            collected: job.type === 'collect' ? job.successfulItems : undefined,
-            annotated: job.type === 'annotate' ? job.successfulItems : undefined,
-            failed: job.failedItems > 0 ? job.failedItems : undefined
+            collected: job.type === 'collect' ? (job.successfulItems || 0) : 0,
+            annotated: job.type === 'annotate' ? (job.successfulItems || 0) : 0,
+            failed: (job.failedItems || 0)
           },
           error: job.errors.length > 0 ? job.errors[job.errors.length - 1].error : undefined
         });
@@ -2803,9 +2803,9 @@ router.get(
           completedAt: job.completedAt,
           error: job.errors.length > 0 ? job.errors[job.errors.length - 1].error : undefined,
           results: {
-            collected: job.type === 'collect' ? job.successfulItems : undefined,
-            annotated: job.type === 'annotate' ? job.successfulItems : undefined,
-            failed: job.failedItems > 0 ? job.failedItems : undefined
+            collected: job.type === 'collect' ? (job.successfulItems || 0) : 0,
+            annotated: job.type === 'annotate' ? (job.successfulItems || 0) : 0,
+            failed: (job.failedItems || 0)
           }
         });
 

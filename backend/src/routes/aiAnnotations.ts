@@ -1111,25 +1111,24 @@ router.post(
       await client.query('COMMIT');
 
       // Trigger exercise generation pipeline for the newly approved annotation
+      // Temporarily disabled - AnnotationExercisePipeline needs architecture fix (Pool vs Supabase client)
+      /*
       try {
-        // Only trigger pipeline if Supabase is configured
-        if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-          const { AnnotationExercisePipeline } = await import('../services/AnnotationExercisePipeline');
-          const pipeline = new AnnotationExercisePipeline(supabase);
+        const { pool } = await import('../database/connection');
+        const { AnnotationExercisePipeline } = await import('../services/AnnotationExercisePipeline');
+        const pipeline = new AnnotationExercisePipeline(pool);
 
-          // Run pipeline asynchronously - don't block the response
-          pipeline.onAnnotationApproved(approvedAnnotationId).catch(pipelineError => {
-            logError('Pipeline failed for approved annotation', pipelineError);
-          });
+        // Run pipeline asynchronously - don't block the response
+        pipeline.onAnnotationApproved(approvedAnnotationId).catch(pipelineError => {
+          logError('Pipeline failed for approved annotation', pipelineError);
+        });
 
-          info('Exercise pipeline triggered for approved annotation', { approvedAnnotationId });
-        } else {
-          info('Exercise pipeline skipped - Supabase not configured');
-        }
+        info('Exercise pipeline triggered for approved annotation', { approvedAnnotationId });
       } catch (pipelineError) {
         logError('Failed to trigger exercise pipeline', pipelineError as Error);
         // Don't fail the approval if pipeline trigger fails
       }
+      */
 
       info('AI annotation approved', { annotationId, approvedAnnotationId, userId });
 
