@@ -58,3 +58,4 @@ export * from './UserService';
 export * from './VisionAIService';
 export * from './aiExerciseGenerator';
 export * from './userContextBuilder';
+export * from './VisionPreflightService';

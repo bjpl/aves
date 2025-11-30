@@ -25,6 +25,7 @@ import path from 'path';
 import fs from 'fs';
 import { pool } from '../database/connection';
 import { VisionAIService } from '../services/VisionAIService';
+import { ImageQualityValidator } from '../services/ImageQualityValidator';
 import { optionalSupabaseAuth, optionalSupabaseAdmin } from '../middleware/optionalSupabaseAuth';
 import { validateBody, validateParams, validateQuery } from '../middleware/validate';
 import { error as logError, info } from '../utils/logger';
@@ -621,6 +622,7 @@ router.post(
       // Start async collection process
       (async () => {
         const job = jobStore.get(jobId)!;
+        const qualityValidator = new ImageQualityValidator();
 
         try {
           for (const speciesData of speciesToCollect) {
@@ -652,8 +654,66 @@ router.post(
               // Insert each image
               for (const photo of photos) {
                 try {
-                  await insertImage(speciesId, photo, speciesData.englishName);
-                  job.successfulItems++;
+                  const imageId = await insertImage(speciesId, photo, speciesData.englishName);
+
+                  // Run quality check if validator is configured
+                  if (qualityValidator.isConfigured()) {
+                    try {
+                      const analysis = await qualityValidator.analyzeImage(photo.urls.regular);
+                      const qualityScore = analysis.overallScore;
+
+                      // Update quality_score in database
+                      await pool.query(
+                        `UPDATE images SET quality_score = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+                        [qualityScore, imageId]
+                      );
+
+                      info('Collected image quality assessed', {
+                        imageId,
+                        species: speciesData.englishName,
+                        qualityScore,
+                        passed: analysis.passed,
+                        category: analysis.category
+                      });
+
+                      // Only count as successful if quality is adequate
+                      if (qualityScore >= 60) {
+                        job.successfulItems++;
+                      } else {
+                        // Mark as failed if quality too low
+                        const failedChecks = Object.entries(analysis.checks)
+                          .filter(([_, check]) => !check.passed)
+                          .map(([name, check]) => `${name}: ${check.reason}`)
+                          .join(', ');
+
+                        job.errors.push({
+                          item: `${speciesData.englishName}:${photo.id}`,
+                          error: `Quality too low (${qualityScore}/100): ${failedChecks}`,
+                          timestamp: new Date().toISOString()
+                        });
+                        job.failedItems++;
+                        info('Image quality below threshold - marked as failed', {
+                          imageId,
+                          qualityScore,
+                          failedChecks
+                        });
+                      }
+                    } catch (qualityError) {
+                      // If quality check fails, still count as successful but log error
+                      logError('Failed to assess collected image quality', qualityError as Error, {
+                        imageId,
+                        species: speciesData.englishName
+                      });
+                      await pool.query(
+                        `UPDATE images SET quality_score = NULL WHERE id = $1`,
+                        [imageId]
+                      );
+                      job.successfulItems++;
+                    }
+                  } else {
+                    // No quality validator configured, count as successful
+                    job.successfulItems++;
+                  }
                 } catch (imageError) {
                   job.errors.push({
                     item: `${speciesData.englishName}:${photo.id}`,
@@ -802,8 +862,12 @@ router.post(
         width: number;
         height: number;
         originalName: string;
+        qualityScore?: number;
       }> = [];
       const failed: Array<{ filename: string; error: string }> = [];
+
+      // Initialize quality validator
+      const qualityValidator = new ImageQualityValidator();
 
       // Process each file
       for (const file of files) {
@@ -811,7 +875,7 @@ router.post(
           // Process and save the image
           const processed = await processAndSaveImage(file.buffer, file.originalname);
 
-          // Insert into database
+          // Insert into database (without quality_score initially)
           const insertResult = await pool.query(
             `INSERT INTO images (
               species_id, url, thumbnail_url, width, height,
@@ -830,13 +894,68 @@ router.post(
             ]
           );
 
+          const imageId = insertResult.rows[0].id;
+          let qualityScore: number | undefined;
+
+          // Run quality check if validator is configured
+          if (qualityValidator.isConfigured()) {
+            try {
+              // Build full URL for quality check
+              const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3001}`;
+              const fullImageUrl = `${baseUrl}${processed.imagePath}`;
+
+              const analysis = await qualityValidator.analyzeImage(fullImageUrl);
+              qualityScore = analysis.overallScore;
+
+              // Update quality_score in database
+              await pool.query(
+                `UPDATE images SET quality_score = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+                [qualityScore, imageId]
+              );
+
+              info('Image quality assessed', {
+                imageId,
+                filename: file.originalname,
+                qualityScore,
+                passed: analysis.passed,
+                category: analysis.category
+              });
+
+              // Log if quality is below annotation threshold
+              if (qualityScore < 60) {
+                const failedChecks = Object.entries(analysis.checks)
+                  .filter(([_, check]) => !check.passed)
+                  .map(([name, check]) => `${name}: ${check.reason}`)
+                  .join(', ');
+
+                info('Image quality below annotation threshold - skipping auto-annotation', {
+                  imageId,
+                  qualityScore,
+                  failedChecks
+                });
+              }
+            } catch (qualityError) {
+              // Log error but don't fail the upload
+              logError('Failed to assess image quality', qualityError as Error, {
+                imageId,
+                filename: file.originalname
+              });
+              // Set quality_score to NULL on error
+              await pool.query(
+                `UPDATE images SET quality_score = NULL WHERE id = $1`,
+                [imageId]
+              );
+            }
+          }
+
           uploaded.push({
-            id: insertResult.rows[0].id,
+            id: imageId,
             url: processed.imagePath,
             thumbnailUrl: processed.thumbnailPath,
             width: processed.width,
             height: processed.height,
-            originalName: file.originalname
+            originalName: file.originalname,
+            qualityScore
           });
 
         } catch (fileError) {
@@ -1012,6 +1131,7 @@ router.post(
       // Start async annotation process
       (async () => {
         const job = jobStore.get(jobId)!;
+        const qualityValidator = new ImageQualityValidator();
         const BATCH_SIZE = 5;
         const DELAY_BETWEEN_IMAGES = 2000;
         const DELAY_BETWEEN_BATCHES = 3000;
@@ -1039,6 +1159,58 @@ router.post(
                 if (parseInt(existingCheck.rows[0].count) > 0) {
                   info('Image already annotated, skipping', { imageId: image.id });
                   job.processedItems++;
+                  continue;
+                }
+
+                // Check quality score first
+                let qualityScore: number | null = null;
+                const qualityCheck = await pool.query(
+                  'SELECT quality_score FROM images WHERE id = $1',
+                  [image.id]
+                );
+
+                if (qualityCheck.rows.length > 0) {
+                  qualityScore = qualityCheck.rows[0].quality_score;
+                }
+
+                // If no quality score exists, assess it now
+                if (qualityScore === null && qualityValidator.isConfigured()) {
+                  try {
+                    const analysis = await qualityValidator.analyzeImage(image.url);
+                    qualityScore = analysis.overallScore;
+
+                    // Update quality_score in database
+                    await pool.query(
+                      `UPDATE images SET quality_score = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+                      [qualityScore, image.id]
+                    );
+
+                    info('Image quality assessed before annotation', {
+                      imageId: image.id,
+                      qualityScore,
+                      passed: analysis.passed,
+                      category: analysis.category
+                    });
+                  } catch (qualityError) {
+                    logError('Failed to assess image quality', qualityError as Error, {
+                      imageId: image.id
+                    });
+                  }
+                }
+
+                // Skip annotation if quality is too low
+                if (qualityScore !== null && qualityScore < 60) {
+                  job.errors.push({
+                    item: image.id,
+                    error: `Image quality too low for annotation (${qualityScore}/100)`,
+                    timestamp: new Date().toISOString()
+                  });
+                  job.failedItems++;
+                  job.processedItems++;
+                  info('Skipping annotation for low-quality image', {
+                    imageId: image.id,
+                    qualityScore
+                  });
                   continue;
                 }
 
@@ -2071,6 +2243,7 @@ router.post(
       // Start async annotation process
       (async () => {
         const job = jobStore.get(jobId)!;
+        const qualityValidator = new ImageQualityValidator();
         const DELAY_BETWEEN_IMAGES = 2000;
 
         try {
@@ -2090,6 +2263,58 @@ router.post(
               if (parseInt(existingCheck.rows[0].count) > 0) {
                 info('Image already annotated, skipping', { imageId: image.id });
                 job.processedItems++;
+                continue;
+              }
+
+              // Check quality score first
+              let qualityScore: number | null = null;
+              const qualityCheck = await pool.query(
+                'SELECT quality_score FROM images WHERE id = $1',
+                [image.id]
+              );
+
+              if (qualityCheck.rows.length > 0) {
+                qualityScore = qualityCheck.rows[0].quality_score;
+              }
+
+              // If no quality score exists, assess it now
+              if (qualityScore === null && qualityValidator.isConfigured()) {
+                try {
+                  const analysis = await qualityValidator.analyzeImage(image.url);
+                  qualityScore = analysis.overallScore;
+
+                  // Update quality_score in database
+                  await pool.query(
+                    `UPDATE images SET quality_score = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+                    [qualityScore, image.id]
+                  );
+
+                  info('Image quality assessed in bulk annotation', {
+                    imageId: image.id,
+                    qualityScore,
+                    passed: analysis.passed,
+                    category: analysis.category
+                  });
+                } catch (qualityError) {
+                  logError('Failed to assess image quality', qualityError as Error, {
+                    imageId: image.id
+                  });
+                }
+              }
+
+              // Skip annotation if quality is too low
+              if (qualityScore !== null && qualityScore < 60) {
+                job.errors.push({
+                  item: image.id,
+                  error: `Image quality too low for annotation (${qualityScore}/100)`,
+                  timestamp: new Date().toISOString()
+                });
+                job.failedItems++;
+                job.processedItems++;
+                info('Skipping bulk annotation for low-quality image', {
+                  imageId: image.id,
+                  qualityScore
+                });
                 continue;
               }
 
@@ -2341,6 +2566,54 @@ router.post(
         res.status(400).json({
           error: 'Invalid image',
           message: 'Image does not have a valid URL'
+        });
+        return;
+      }
+
+      // Check quality score first
+      const qualityValidator = new ImageQualityValidator();
+      let qualityScore: number | null = null;
+
+      const qualityCheck = await pool.query(
+        'SELECT quality_score FROM images WHERE id = $1',
+        [imageId]
+      );
+
+      if (qualityCheck.rows.length > 0) {
+        qualityScore = qualityCheck.rows[0].quality_score;
+      }
+
+      // If no quality score exists, assess it now
+      if (qualityScore === null && qualityValidator.isConfigured()) {
+        try {
+          const analysis = await qualityValidator.analyzeImage(image.url);
+          qualityScore = analysis.overallScore;
+
+          // Update quality_score in database
+          await pool.query(
+            `UPDATE images SET quality_score = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+            [qualityScore, imageId]
+          );
+
+          info('Image quality assessed for single annotation', {
+            imageId,
+            qualityScore,
+            passed: analysis.passed,
+            category: analysis.category
+          });
+        } catch (qualityError) {
+          logError('Failed to assess image quality', qualityError as Error, {
+            imageId
+          });
+        }
+      }
+
+      // Block annotation if quality is too low
+      if (qualityScore !== null && qualityScore < 60) {
+        res.status(422).json({
+          error: 'Image quality too low for annotation',
+          message: `Image quality score (${qualityScore}/100) is below the minimum threshold of 60. The image may be too small, blurry, poorly lit, or the bird may not be clearly visible. Please upload a higher quality image.`,
+          qualityScore
         });
         return;
       }
