@@ -81,9 +81,8 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
         <Card variant="elevated">
           <CardBody>
             <div className="text-center">
-              <Tooltip content="Annotations awaiting human review - these need approval or rejection before being used in the dataset" position="bottom">
-                <p className="text-sm font-medium text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">Pending Review</p>
-              </Tooltip>
+              <p className="text-sm font-medium text-gray-600 mb-1">Pending Review</p>
+              <p className="text-xs text-gray-500 mb-2 px-2">Annotations awaiting human review</p>
               <p className="text-4xl font-bold text-yellow-600">{analytics.overview.pending}</p>
               <p className="text-xs text-gray-500 mt-2">
                 {((analytics.overview.pending / analytics.overview.total) * 100).toFixed(1)}% of total
@@ -96,9 +95,8 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
         <Card variant="elevated">
           <CardBody>
             <div className="text-center">
-              <Tooltip content="Annotations verified by human reviewers as accurate and ready for the learning dataset" position="bottom">
-                <p className="text-sm font-medium text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">Approved</p>
-              </Tooltip>
+              <p className="text-sm font-medium text-gray-600 mb-1">Approved</p>
+              <p className="text-xs text-gray-500 mb-2 px-2">Verified annotations ready for dataset</p>
               <p className="text-4xl font-bold text-green-600">{analytics.overview.approved}</p>
               <p className="text-xs text-gray-500 mt-2">
                 {((analytics.overview.approved / analytics.overview.total) * 100).toFixed(1)}% of total
@@ -111,9 +109,8 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
         <Card variant="elevated">
           <CardBody>
             <div className="text-center">
-              <Tooltip content="Annotations marked as incorrect, poorly positioned, or otherwise unsuitable for the dataset" position="bottom">
-                <p className="text-sm font-medium text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">Rejected</p>
-              </Tooltip>
+              <p className="text-sm font-medium text-gray-600 mb-1">Rejected</p>
+              <p className="text-xs text-gray-500 mb-2 px-2">Annotations marked as unsuitable</p>
               <p className="text-4xl font-bold text-red-600">{analytics.overview.rejected}</p>
               <p className="text-xs text-gray-500 mt-2">
                 {((analytics.overview.rejected / analytics.overview.total) * 100).toFixed(1)}% of total
@@ -126,9 +123,8 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
         <Card variant="elevated">
           <CardBody>
             <div className="text-center">
-              <Tooltip content="Average AI confidence score across all annotations - higher values indicate more reliable automatic detection" position="bottom">
-                <p className="text-sm font-medium text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">Avg Confidence</p>
-              </Tooltip>
+              <p className="text-sm font-medium text-gray-600 mb-1">Avg Confidence</p>
+              <p className="text-xs text-gray-500 mb-2 px-2">Average AI confidence score</p>
               <p className="text-4xl font-bold text-blue-600">
                 {(parseFloat(analytics.overview.avgConfidence) * 100).toFixed(0)}%
               </p>
@@ -143,9 +139,10 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
       {/* PROGRESS BAR */}
       <Card variant="elevated">
         <CardHeader>
-          <Tooltip content="Progress toward minimum viable dataset size. Only APPROVED annotations count toward the goal since they are verified and ready for learning." position="right">
-            <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400 inline-block">MVP Dataset Progress</h3>
-          </Tooltip>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">MVP Dataset Progress</h3>
+            <p className="text-xs text-gray-600 mt-1">Progress toward minimum viable dataset (approved annotations only)</p>
+          </div>
         </CardHeader>
         <CardBody>
           <div className="space-y-3">
@@ -182,9 +179,10 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
         <Card variant="elevated">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <Tooltip content="Potential issues detected in annotations that may need manual review or correction" position="right">
-                <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400">Quality Flags</h3>
-              </Tooltip>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Quality Flags</h3>
+                <p className="text-xs text-gray-600 mt-1">Potential issues detected requiring review</p>
+              </div>
               <Badge variant="warning" size="sm">
                 {qualityIssueCount} Issues Detected
               </Badge>
@@ -249,9 +247,10 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
         {/* Species Coverage */}
         <Card variant="elevated">
           <CardHeader>
-            <Tooltip content="Distribution of annotations across different bird species - helps identify which species have sufficient training data" position="right">
-              <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400 inline-block">Species Coverage</h3>
-            </Tooltip>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Species Coverage</h3>
+              <p className="text-xs text-gray-600 mt-1">Distribution of annotations across bird species</p>
+            </div>
           </CardHeader>
           <CardBody>
             {Object.keys(analytics.bySpecies).length > 0 ? (
@@ -285,9 +284,10 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
         {/* Type Distribution */}
         <Card variant="elevated">
           <CardHeader>
-            <Tooltip content="Breakdown by annotation type (whole_bird, bounding_box, polygon) - shows what types of annotations are being created" position="right">
-              <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400 inline-block">Annotation Types</h3>
-            </Tooltip>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Annotation Types</h3>
+              <p className="text-xs text-gray-600 mt-1">Breakdown by annotation type (whole_bird, bounding_box, polygon)</p>
+            </div>
           </CardHeader>
           <CardBody>
             {Object.keys(analytics.byType).length > 0 ? (
@@ -327,9 +327,10 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
       {Object.keys(analytics.rejectionsByCategory).length > 0 && (
         <Card variant="elevated">
           <CardHeader>
-            <Tooltip content="Common reasons annotations were rejected - use these patterns to improve collection and annotation quality" position="right">
-              <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400 inline-block">Rejection Categories</h3>
-            </Tooltip>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Rejection Categories</h3>
+              <p className="text-xs text-gray-600 mt-1">Common reasons for rejected annotations</p>
+            </div>
           </CardHeader>
           <CardBody>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">

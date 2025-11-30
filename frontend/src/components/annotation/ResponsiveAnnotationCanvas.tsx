@@ -105,10 +105,11 @@ export const ResponsiveAnnotationCanvas: React.FC<ResponsiveAnnotationCanvasProp
       if (!annotation.isVisible) return;
 
       const { boundingBox } = annotation;
-      const x = boundingBox.x * scale;
-      const y = boundingBox.y * scale;
-      const width = boundingBox.width * scale;
-      const height = boundingBox.height * scale;
+      // Convert normalized coordinates (0-1) to canvas pixels
+      const x = boundingBox.x * canvas.width;
+      const y = boundingBox.y * canvas.height;
+      const width = boundingBox.width * canvas.width;
+      const height = boundingBox.height * canvas.height;
 
       // Determine annotation state
       const isHovered = hoveredAnnotation?.id === annotation.id;
@@ -169,6 +170,9 @@ export const ResponsiveAnnotationCanvas: React.FC<ResponsiveAnnotationCanvasProp
 
   // Get annotation at coordinate
   const getAnnotationAtPoint = useCallback((point: Coordinate): Annotation | null => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+
     // Add touch tolerance for mobile
     const tolerance = isMobile ? 20 : 0;
 
@@ -176,10 +180,11 @@ export const ResponsiveAnnotationCanvas: React.FC<ResponsiveAnnotationCanvasProp
       if (!annotation.isVisible) continue;
 
       const { boundingBox } = annotation;
-      const x = boundingBox.x * scale;
-      const y = boundingBox.y * scale;
-      const width = boundingBox.width * scale;
-      const height = boundingBox.height * scale;
+      // Convert normalized coordinates (0-1) to canvas pixels
+      const x = boundingBox.x * canvas.width;
+      const y = boundingBox.y * canvas.height;
+      const width = boundingBox.width * canvas.width;
+      const height = boundingBox.height * canvas.height;
 
       if (
         point.x >= x - tolerance &&

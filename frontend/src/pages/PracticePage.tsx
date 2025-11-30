@@ -3,13 +3,13 @@ import { ExerciseContainer } from '../components/exercises/ExerciseContainer';
 import { AIExerciseContainer } from '../components/exercises/AIExerciseContainer';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { Annotation } from '../../../shared/types/annotation.types';
+import { useAnnotations } from '../hooks/useAnnotations';
 import { usePrefetchExercises, useAIExerciseAvailability } from '../hooks/useAIExercise';
 import { debug } from '../utils/logger';
 import type { Exercise } from '../types';
 
-// Rich educational content following pedagogical best practices
-const sampleAnnotations: Annotation[] = [
+// Sample annotations only used as fallback if API data is unavailable
+const fallbackAnnotations = [
   // BEGINNER LEVEL - Recognition & Basic Vocabulary
   {
     id: '1',
@@ -187,8 +187,12 @@ export const PracticePage: React.FC = () => {
   });
 
   // Hooks
+  const { data: apiAnnotations = [], isLoading: annotationsLoading } = useAnnotations();
   const { isAvailable: isAIAvailable } = useAIExerciseAvailability();
   const { mutate: prefetchExercises } = usePrefetchExercises();
+
+  // Use API annotations if available, otherwise fallback to samples
+  const annotations = apiAnnotations.length > 0 ? apiAnnotations : fallbackAnnotations;
 
   // Prefetch exercises on page load if AI mode is enabled
   useEffect(() => {
@@ -304,7 +308,16 @@ export const PracticePage: React.FC = () => {
 
         {/* Exercise Container */}
         <div className="bg-white rounded-lg shadow-lg p-8">
-          {useAIExercises && isAIAvailable ? (
+          {annotationsLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="text-gray-500">Loading exercises...</div>
+            </div>
+          ) : annotations.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64">
+              <div className="text-gray-500 mb-4">No annotations available for practice.</div>
+              <p className="text-sm text-gray-400">Please add annotations in the admin panel first.</p>
+            </div>
+          ) : useAIExercises && isAIAvailable ? (
             <AIExerciseContainer
               userId={userId}
               exerciseType="adaptive"
@@ -314,7 +327,7 @@ export const PracticePage: React.FC = () => {
             />
           ) : (
             <ExerciseContainer
-              annotations={sampleAnnotations}
+              annotations={annotations}
               onComplete={(progress) => {
                 debug('Session complete', { progress });
               }}

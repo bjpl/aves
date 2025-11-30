@@ -725,7 +725,7 @@ export const ImageGalleryTab: React.FC<ImageGalleryTabProps> = ({
       <Card variant="elevated" padding="lg">
         <CardHeader
           title="Image Gallery"
-          subtitle={`Browse and manage ${pagination.total} collected images`}
+          subtitle={`Browse and manage ${pagination.total} bird images (each card represents one image)`}
         />
         <CardBody>
           {/* Action Bar */}

@@ -63,11 +63,13 @@ export const Tooltip: React.FC<TooltipProps> = ({
       {children}
       {isVisible && !disabled && (
         <div
-          className={`absolute z-50 ${positionStyles[position]} whitespace-nowrap ${className}`}
+          className={`absolute z-50 ${positionStyles[position]} ${className}`}
           role="tooltip"
         >
-          <div className="bg-gray-900 text-white text-sm px-3 py-2 rounded-lg shadow-lg">
-            {content}
+          <div className="bg-gray-900 text-white text-sm px-3 py-2 rounded-lg shadow-lg max-w-xs">
+            <div className="whitespace-normal break-words">
+              {content}
+            </div>
             <div className={`absolute border-8 ${arrowStyles[position]}`} />
           </div>
         </div>

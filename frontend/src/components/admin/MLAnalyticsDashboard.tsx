@@ -60,9 +60,9 @@ export const MLAnalyticsDashboard: React.FC = () => {
       {/* HEADER */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">ML Optimization Dashboard</h2>
+          <h2 className="text-2xl font-bold text-gray-900">ML Analytics</h2>
           <p className="text-sm text-gray-600 mt-1">
-            Pattern learning, vocabulary balance, and quality improvements
+            Machine learning patterns, vocabulary coverage, and quality metrics
           </p>
         </div>
         <Badge variant={patterns?.learningStatus === 'active' ? 'success' : 'warning'} size="lg">
@@ -76,9 +76,8 @@ export const MLAnalyticsDashboard: React.FC = () => {
         <Card variant="elevated">
           <CardBody>
             <div className="text-center">
-              <Tooltip content="Number of unique visual/vocabulary patterns the ML model has identified from approved annotations" position="bottom">
-                <p className="text-sm font-medium text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">Learned Patterns</p>
-              </Tooltip>
+              <p className="text-sm font-medium text-gray-600 mb-1">Learned Patterns</p>
+              <p className="text-xs text-gray-500 mb-2 px-2">Unique patterns identified from approved annotations</p>
               <p className="text-4xl font-bold text-purple-600">{overview?.patternLearning.totalPatterns || 0}</p>
               <p className="text-xs text-gray-500 mt-2">
                 Across {overview?.patternLearning.speciesTracked || 0} species
@@ -91,9 +90,8 @@ export const MLAnalyticsDashboard: React.FC = () => {
         <Card variant="elevated">
           <CardBody>
             <div className="text-center">
-              <Tooltip content="Percentage change in annotation quality comparing recent annotations to historical baseline" position="bottom">
-                <p className="text-sm font-medium text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">Quality Improvement</p>
-              </Tooltip>
+              <p className="text-sm font-medium text-gray-600 mb-1">Quality Improvement</p>
+              <p className="text-xs text-gray-500 mb-2 px-2">Change in annotation quality over time</p>
               <p className={`text-4xl font-bold ${overview?.qualityMetrics.improvement.startsWith('+') ? 'text-green-600' : 'text-gray-600'}`}>
                 {overview?.qualityMetrics.improvement || '0%'}
               </p>
@@ -108,9 +106,8 @@ export const MLAnalyticsDashboard: React.FC = () => {
         <Card variant="elevated">
           <CardBody>
             <div className="text-center">
-              <Tooltip content="Percentage of expected bird anatomy features (beak, wing, tail, etc.) covered by annotations across all species" position="bottom">
-                <p className="text-sm font-medium text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">Vocab Coverage</p>
-              </Tooltip>
+              <p className="text-sm font-medium text-gray-600 mb-1">Vocab Coverage</p>
+              <p className="text-xs text-gray-500 mb-2 px-2">Bird anatomy features covered by annotations</p>
               <p className="text-4xl font-bold text-blue-600">{vocabulary?.coverage || 0}%</p>
               <p className="text-xs text-gray-500 mt-2">
                 {vocabulary?.totalFeatures || 0} features tracked
@@ -123,9 +120,8 @@ export const MLAnalyticsDashboard: React.FC = () => {
         <Card variant="elevated">
           <CardBody>
             <div className="text-center">
-              <Tooltip content="Average number of images processed per second by the annotation pipeline" position="bottom">
-                <p className="text-sm font-medium text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">Throughput</p>
-              </Tooltip>
+              <p className="text-sm font-medium text-gray-600 mb-1">Throughput</p>
+              <p className="text-xs text-gray-500 mb-2 px-2">Images processed per second</p>
               <p className="text-4xl font-bold text-orange-600">
                 {(performance?.pipeline?.throughput || 0).toFixed(2)}
               </p>
@@ -142,9 +138,10 @@ export const MLAnalyticsDashboard: React.FC = () => {
         <Card variant="elevated">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <Tooltip content="Visual and vocabulary features the ML model has learned to recognize from approved annotations. Higher confidence patterns are more reliably detected." position="right">
-                <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400 inline-block">Top Learned Patterns</h3>
-              </Tooltip>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Top Learned Patterns</h3>
+                <p className="text-xs text-gray-600 mt-1">Visual and vocabulary features recognized from approved annotations</p>
+              </div>
               {patterns.topPatterns.length > 6 && (
                 <button
                   onClick={() => setShowAllPatterns(true)}
@@ -281,9 +278,10 @@ export const MLAnalyticsDashboard: React.FC = () => {
         {vocabulary && vocabulary.topGaps && vocabulary.topGaps.length > 0 && (
           <Card variant="elevated">
             <CardHeader>
-              <Tooltip content="Bird anatomy features that are underrepresented in the dataset. Filling these gaps improves the model's ability to identify all parts of a bird." position="right">
-                <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400 inline-block">Top Vocabulary Gaps</h3>
-              </Tooltip>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Top Vocabulary Gaps</h3>
+                <p className="text-xs text-gray-600 mt-1">Underrepresented bird anatomy features needing more annotations</p>
+              </div>
             </CardHeader>
             <CardBody>
               <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -309,9 +307,10 @@ export const MLAnalyticsDashboard: React.FC = () => {
         {trends && trends.summary && (
           <Card variant="elevated">
             <CardHeader>
-              <Tooltip content="Comparison of annotation quality over time. Positive improvement means recent annotations are higher quality than historical baseline." position="right">
-                <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400 inline-block">Quality Trend</h3>
-              </Tooltip>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Quality Trend</h3>
+                <p className="text-xs text-gray-600 mt-1">Annotation quality comparison over time</p>
+              </div>
             </CardHeader>
             <CardBody>
               <div className="space-y-3">
@@ -344,40 +343,37 @@ export const MLAnalyticsDashboard: React.FC = () => {
       {performance && performance.status?.pipelineStatus === 'active' && performance.pipeline && (
         <Card variant="elevated">
           <CardHeader>
-            <Tooltip content="Real-time metrics showing how efficiently the annotation pipeline is processing images" position="right">
-              <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400 inline-block">Pipeline Performance</h3>
-            </Tooltip>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Pipeline Performance</h3>
+              <p className="text-xs text-gray-600 mt-1">Real-time annotation processing metrics</p>
+            </div>
           </CardHeader>
           <CardBody>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
-                <Tooltip content="Median processing time - 50% of images complete within this time" position="bottom">
-                  <p className="text-sm text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">P50 Latency</p>
-                </Tooltip>
+                <p className="text-sm text-gray-600 mb-1">P50 Latency</p>
+                <p className="text-xs text-gray-500 mb-2">Median processing time</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {((performance.pipeline.p50Duration || 0) / 1000).toFixed(1)}s
                 </p>
               </div>
               <div className="text-center">
-                <Tooltip content="95th percentile processing time - 95% of images complete within this time (worst-case typical)" position="bottom">
-                  <p className="text-sm text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">P95 Latency</p>
-                </Tooltip>
+                <p className="text-sm text-gray-600 mb-1">P95 Latency</p>
+                <p className="text-xs text-gray-500 mb-2">95th percentile time</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {((performance.pipeline.p95Duration || 0) / 1000).toFixed(1)}s
                 </p>
               </div>
               <div className="text-center">
-                <Tooltip content="Percentage of annotation attempts that completed without errors" position="bottom">
-                  <p className="text-sm text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">Success Rate</p>
-                </Tooltip>
+                <p className="text-sm text-gray-600 mb-1">Success Rate</p>
+                <p className="text-xs text-gray-500 mb-2">Completed without errors</p>
                 <p className="text-2xl font-bold text-green-600">
                   {performance.pipeline.successRate || 0}%
                 </p>
               </div>
               <div className="text-center">
-                <Tooltip content="Number of images being processed in parallel - higher means faster batch processing" position="bottom">
-                  <p className="text-sm text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400">Concurrency</p>
-                </Tooltip>
+                <p className="text-sm text-gray-600 mb-1">Concurrency</p>
+                <p className="text-xs text-gray-500 mb-2">Parallel processing</p>
                 <p className="text-2xl font-bold text-purple-600">
                   {performance.pipeline.concurrency || 1}x
                 </p>
@@ -396,9 +392,10 @@ export const MLAnalyticsDashboard: React.FC = () => {
       {patterns && patterns.speciesInsights.length > 0 && (
         <Card variant="elevated">
           <CardHeader>
-            <Tooltip content="AI-generated recommendations for improving dataset coverage per species. Shows which features need more annotations for each bird type." position="right">
-              <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400 inline-block">Species-Specific Recommendations</h3>
-            </Tooltip>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Species-Specific Recommendations</h3>
+              <p className="text-xs text-gray-600 mt-1">AI-generated suggestions for improving dataset coverage per species</p>
+            </div>
           </CardHeader>
           <CardBody>
             <div className="space-y-3 max-h-96 overflow-y-auto">

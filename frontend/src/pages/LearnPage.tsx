@@ -106,12 +106,18 @@ export const LearnPage: React.FC = () => {
           {/* Image with annotations */}
           <div className={`${isMobile ? '' : 'lg:col-span-2'}`}>
             <div className="bg-white rounded-lg shadow-lg p-4">
-              <ResponsiveAnnotationCanvas
-                imageUrl="https://images.unsplash.com/photo-1444464666168-49d633b86797?w=1200"
-                annotations={annotations}
-                onAnnotationDiscover={handleAnnotationDiscover}
-                showLabels={false}
-              />
+              {annotations.length > 0 ? (
+                <ResponsiveAnnotationCanvas
+                  imageUrl="https://images.unsplash.com/photo-1551031895-7f8e06d714f8?w=1200"
+                  annotations={annotations}
+                  onAnnotationDiscover={handleAnnotationDiscover}
+                  showLabels={false}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
+                  <p className="text-gray-500">No annotations available. Please add some in the admin panel.</p>
+                </div>
+              )}
 
               {/* Progress bar */}
               <div className="mt-4">
