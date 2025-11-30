@@ -1113,7 +1113,7 @@ router.post(
       // Trigger exercise generation pipeline for the newly approved annotation
       try {
         // Only trigger pipeline if Supabase is configured
-        if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+        if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
           const { AnnotationExercisePipeline } = await import('../services/AnnotationExercisePipeline');
           const pipeline = new AnnotationExercisePipeline(supabase);
 

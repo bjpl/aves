@@ -9,14 +9,14 @@ const router = Router();
 // Initialize Supabase client only if environment variables are available
 let pipeline: AnnotationExercisePipeline | null = null;
 
-if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
   const supabase = createClient<Database>(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY
+    process.env.SUPABASE_SERVICE_ROLE_KEY
   );
   pipeline = new AnnotationExercisePipeline(supabase);
 } else {
-  logger.warn('Annotation exercise pipeline disabled: Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
+  logger.warn('Annotation exercise pipeline disabled: Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
 }
 
 /**
