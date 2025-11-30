@@ -19,9 +19,9 @@ export const SpeciesBrowser: React.FC = () => {
     if (filters.searchTerm) {
       const term = filters.searchTerm.toLowerCase();
       result = result.filter((s: Species) =>
-        s.spanishName.toLowerCase().includes(term) ||
-        s.englishName.toLowerCase().includes(term) ||
-        s.scientificName.toLowerCase().includes(term)
+        s.spanishName?.toLowerCase().includes(term) ||
+        s.englishName?.toLowerCase().includes(term) ||
+        s.scientificName?.toLowerCase().includes(term)
       );
     }
 
@@ -38,11 +38,11 @@ export const SpeciesBrowser: React.FC = () => {
     }
 
     if (filters.habitat) {
-      result = result.filter((s: Species) => s.habitats.includes(filters.habitat as string));
+      result = result.filter((s: Species) => Array.isArray(s.habitats) && s.habitats.includes(filters.habitat as string));
     }
 
     if (filters.primaryColor) {
-      result = result.filter((s: Species) => s.primaryColors.includes(filters.primaryColor as string));
+      result = result.filter((s: Species) => Array.isArray(s.primaryColors) && s.primaryColors.includes(filters.primaryColor as string));
     }
 
     return result;
@@ -50,12 +50,12 @@ export const SpeciesBrowser: React.FC = () => {
 
   // Extract available filter options from data
   const availableFilters = useMemo(() => {
-    const orders = [...new Set(species.map((s: Species) => s.orderName))].sort() as string[];
+    const orders = [...new Set(species.map((s: Species) => s.orderName).filter(Boolean))].sort() as string[];
     const families = filters.orderName
-      ? ([...new Set(species.filter((s: Species) => s.orderName === filters.orderName).map((s: Species) => s.familyName))].sort() as string[])
-      : ([...new Set(species.map((s: Species) => s.familyName))].sort() as string[]);
-    const habitats = [...new Set(species.flatMap((s: Species) => s.habitats))].sort() as string[];
-    const colors = [...new Set(species.flatMap((s: Species) => s.primaryColors))].sort() as string[];
+      ? ([...new Set(species.filter((s: Species) => s.orderName === filters.orderName).map((s: Species) => s.familyName).filter(Boolean))].sort() as string[])
+      : ([...new Set(species.map((s: Species) => s.familyName).filter(Boolean))].sort() as string[]);
+    const habitats = [...new Set(species.flatMap((s: Species) => Array.isArray(s.habitats) ? s.habitats : []))].sort() as string[];
+    const colors = [...new Set(species.flatMap((s: Species) => Array.isArray(s.primaryColors) ? s.primaryColors : []))].sort() as string[];
 
     return { orders, families, habitats, colors };
   }, [species, filters.orderName]);

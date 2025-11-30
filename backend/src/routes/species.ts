@@ -58,8 +58,8 @@ router.get('/species', async (_req: Request, res: Response) => {
         s.family_name as "familyName",
         s.genus,
         s.size_category as "sizeCategory",
-        s.primary_colors as "primaryColors",
-        s.habitats,
+        COALESCE(s.primary_colors, '{}') as "primaryColors",
+        COALESCE(s.habitats, '{}') as "habitats",
         s.conservation_status as "conservationStatus",
         s.description_spanish as "descriptionSpanish",
         s.description_english as "descriptionEnglish",
@@ -83,6 +83,44 @@ router.get('/species', async (_req: Request, res: Response) => {
   }
 });
 
+// GET /api/species/:id/image - Get primary image for a species
+router.get('/species/:id/image', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    // Get the first image for this species with highest annotation count
+    const query = `
+      SELECT url, thumbnail_url
+      FROM images
+      WHERE species_id = $1
+      ORDER BY annotation_count DESC NULLS LAST, created_at DESC
+      LIMIT 1
+    `;
+
+    const result = await pool.query(query, [id]);
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'No image found for this species' });
+      return;
+    }
+
+    const image = result.rows[0];
+    const imageUrl = image.url || image.thumbnail_url;
+
+    // If URL is external, redirect
+    if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
+      res.redirect(imageUrl);
+      return;
+    }
+
+    // If it's a local path, serve the file
+    res.status(404).json({ error: 'Image URL not available' });
+  } catch (err) {
+    logError('Error fetching species image', err as Error);
+    res.status(500).json({ error: 'Failed to fetch species image' });
+  }
+});
+
 // GET /api/species/:id
 router.get('/species/:id', async (req: Request, res: Response): Promise<void> => {
   try {
@@ -98,8 +136,8 @@ router.get('/species/:id', async (req: Request, res: Response): Promise<void> =>
         s.family_name as "familyName",
         s.genus,
         s.size_category as "sizeCategory",
-        s.primary_colors as "primaryColors",
-        s.habitats,
+        COALESCE(s.primary_colors, '{}') as "primaryColors",
+        COALESCE(s.habitats, '{}') as "habitats",
         s.conservation_status as "conservationStatus",
         s.description_spanish as "descriptionSpanish",
         s.description_english as "descriptionEnglish",

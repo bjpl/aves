@@ -8,10 +8,10 @@ export interface Species {
   englishName: string;
   orderName: string;
   familyName: string;
-  genus: string;
-  sizeCategory: SizeCategory;
-  primaryColors: string[];
-  habitats: string[];
+  genus?: string;
+  sizeCategory?: SizeCategory;
+  primaryColors?: string[];
+  habitats?: string[];
   conservationStatus?: ConservationStatus;
   descriptionSpanish?: string;
   descriptionEnglish?: string;
