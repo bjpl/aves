@@ -205,6 +205,23 @@ router.get(
 
       const analytics = patternLearner.getAnalytics();
 
+      // FIX: Get actual approved annotation counts from database instead of in-memory counts
+      // This fixes the issue where observation counts include ALL annotations (pending/rejected)
+      // instead of only APPROVED annotations
+      const { data: approvedCounts } = await supabase
+        .from('ai_annotation_items')
+        .select('spanish_term, english_term, image_id')
+        .eq('status', 'approved'); // Only count approved annotations
+
+      // Build a map of feature -> approved count
+      const approvedCountMap = new Map<string, number>();
+      if (approvedCounts) {
+        for (const item of approvedCounts) {
+          const featureKey = item.spanish_term;
+          approvedCountMap.set(featureKey, (approvedCountMap.get(featureKey) || 0) + 1);
+        }
+      }
+
       // Get species-specific recommendations
       const speciesRecommendations = analytics.speciesBreakdown.map(species => ({
         species: species.species,
@@ -218,9 +235,10 @@ router.get(
           totalPatterns: analytics.totalPatterns,
           speciesTracked: analytics.speciesTracked,
         },
+        // Use actual approved counts from database instead of in-memory observation counts
         topPatterns: analytics.topFeatures.map(f => ({
           feature: f.feature,
-          observations: f.observations,
+          observations: approvedCountMap.get(f.feature) || 0, // Use approved count from database
           confidence: f.confidence,
           reliability: f.confidence >= 0.85 ? 'high' : f.confidence >= 0.75 ? 'medium' : 'low'
         })),

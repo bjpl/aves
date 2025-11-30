@@ -704,6 +704,12 @@ Note: Use these as reference points, not strict requirements`;
 
   /**
    * Generate pattern analytics report
+   *
+   * ⚠️ IMPORTANT: observationCount includes ALL annotations learned from (approved, pending, rejected).
+   * For user-facing analytics, callers should query the database for actual approved annotation counts
+   * by filtering ai_annotation_items where status = 'approved'.
+   *
+   * This in-memory count is useful for ML training but NOT for display purposes.
    */
   getAnalytics(): {
     totalPatterns: number;
@@ -716,7 +722,7 @@ Note: Use these as reference points, not strict requirements`;
       .slice(0, 10)
       .map(p => ({
         feature: p.featureType,
-        observations: p.observationCount,
+        observations: p.observationCount, // ⚠️ This counts ALL annotations, not just approved
         confidence: p.averageConfidence
       }));
 
