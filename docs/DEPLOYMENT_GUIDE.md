@@ -72,7 +72,7 @@ Set in Vercel Dashboard:
 Set in Railway Dashboard:
 - `DATABASE_URL`: PostgreSQL connection string
 - `SUPABASE_URL`: Your Supabase URL
-- `SUPABASE_SERVICE_KEY`: Your Supabase service key
+- `SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key
 - `JWT_SECRET`: Strong random secret (min 32 chars)
 - `ANTHROPIC_API_KEY`: Your Anthropic API key
 - `NODE_ENV`: production
