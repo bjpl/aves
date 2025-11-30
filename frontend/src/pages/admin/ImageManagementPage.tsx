@@ -711,7 +711,7 @@ export const ImageManagementPage: React.FC = () => {
                 <Card variant="elevated" padding="lg">
                   <CardHeader title="API Quota Status" subtitle="Current usage and limits" />
                   <CardBody>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 gap-6">
                       <div>
                         <h4 className="font-medium text-gray-700 mb-2">Unsplash API</h4>
                         <ProgressBar
@@ -733,31 +733,6 @@ export const ImageManagementPage: React.FC = () => {
                           {quota?.unsplash.resetTime && (
                             <span className="ml-2">
                               (Resets: {new Date(quota.unsplash.resetTime).toLocaleString()})
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-700 mb-2">Anthropic API</h4>
-                        <ProgressBar
-                          value={quota?.anthropic.remaining || 0}
-                          max={quota?.anthropic.limit || 1000}
-                          variant="gradient"
-                          color={
-                            (quota?.anthropic.remaining || 0) < 100
-                              ? 'danger'
-                              : (quota?.anthropic.remaining || 0) < 500
-                              ? 'warning'
-                              : 'success'
-                          }
-                          showLabel
-                          label="Tokens Remaining"
-                        />
-                        <p className="text-sm text-gray-500 mt-2">
-                          {quota?.anthropic.remaining || 0} / {quota?.anthropic.limit || 1000} requests
-                          {quota?.anthropic.resetTime && (
-                            <span className="ml-2">
-                              (Resets: {new Date(quota.anthropic.resetTime).toLocaleString()})
                             </span>
                           )}
                         </p>
