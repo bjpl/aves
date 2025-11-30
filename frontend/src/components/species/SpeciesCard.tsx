@@ -24,7 +24,7 @@ export const SpeciesCard: React.FC<SpeciesCardProps> = React.memo(({
     }
   };
 
-  const getSizeIcon = (size: string) => {
+  const getSizeIcon = (size?: string) => {
     switch (size) {
       case 'small': return '🐦';
       case 'medium': return '🦅';
@@ -68,7 +68,7 @@ export const SpeciesCard: React.FC<SpeciesCardProps> = React.memo(({
         </div>
 
         <div className="flex gap-1">
-          {species.habitats.slice(0, 2).map(habitat => (
+          {Array.isArray(species.habitats) && species.habitats.slice(0, 2).map(habitat => (
             <span key={habitat} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
               {habitat}
             </span>
@@ -111,7 +111,7 @@ export const SpeciesCard: React.FC<SpeciesCardProps> = React.memo(({
 
         <div className="mt-3 flex items-center justify-between">
           <div className="flex gap-1">
-            {species.primaryColors.slice(0, 3).map(color => (
+            {Array.isArray(species.primaryColors) && species.primaryColors.slice(0, 3).map(color => (
               <span
                 key={color}
                 className="w-4 h-4 rounded-full border border-gray-300"
@@ -126,7 +126,7 @@ export const SpeciesCard: React.FC<SpeciesCardProps> = React.memo(({
         </div>
 
         <div className="mt-2 flex flex-wrap gap-1">
-          {species.habitats.slice(0, 2).map(habitat => (
+          {Array.isArray(species.habitats) && species.habitats.slice(0, 2).map(habitat => (
             <span key={habitat} className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded">
               {habitat}
             </span>
