@@ -183,21 +183,47 @@ export class AnnotationExercisePipeline {
    * Get monitoring statistics for the pipeline
    */
   async getPipelineStats(): Promise<any> {
-    const { data: stats } = await this.supabase
-      .from('annotation_exercise_pipeline_log')
-      .select('status, count(*)')
-      .group('status');
+    try {
+      // Get all logs and group by status in JavaScript
+      const { data: logs, error } = await this.supabase
+        .from('annotation_exercise_pipeline_log')
+        .select('status');
 
-    const activeJobs = Array.from(this.activeJobs.values());
-    const cacheSize = Array.from(this.exerciseCache.values())
-      .reduce((total, cache) => total + cache.length, 0);
+      if (error) {
+        logger.error('Error fetching pipeline logs:', error);
+      }
 
-    return {
-      activeJobs: activeJobs.length,
-      jobsByStatus: stats || [],
-      cacheSize,
-      timestamp: new Date()
-    };
+      // Group by status manually
+      const statusCounts = logs?.reduce((acc: any, log: any) => {
+        acc[log.status] = (acc[log.status] || 0) + 1;
+        return acc;
+      }, {}) || {};
+
+      const jobsByStatus = Object.entries(statusCounts).map(([status, count]) => ({
+        status,
+        count
+      }));
+
+      const activeJobs = Array.from(this.activeJobs.values());
+      const cacheSize = Array.from(this.exerciseCache.values())
+        .reduce((total, cache) => total + cache.length, 0);
+
+      return {
+        activeJobs: activeJobs.length,
+        jobsByStatus,
+        cacheSize,
+        timestamp: new Date()
+      };
+    } catch (error) {
+      logger.error('Error getting pipeline stats:', error);
+      return {
+        activeJobs: 0,
+        jobsByStatus: [],
+        cacheSize: 0,
+        timestamp: new Date(),
+        error: 'Failed to fetch stats'
+      };
+    }
   }
 
   // Private helper methods

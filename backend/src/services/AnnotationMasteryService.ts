@@ -203,7 +203,7 @@ export class AnnotationMasteryService {
           am.confidence_level,
           am.last_seen_at,
           am.next_review_at
-        FROM user_weak_annotations am
+        FROM annotation_mastery am
         JOIN annotations a ON am.annotation_id = a.id
         WHERE am.user_id = $1
       `;
