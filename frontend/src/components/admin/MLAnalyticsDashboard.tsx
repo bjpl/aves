@@ -57,14 +57,8 @@ export const MLAnalyticsDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* HEADER */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">ML Analytics</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Machine learning patterns, vocabulary coverage, and quality metrics
-          </p>
-        </div>
+      {/* Status Badge - Only show status, not duplicate title */}
+      <div className="flex items-center justify-end">
         <Badge variant={patterns?.learningStatus === 'active' ? 'success' : 'warning'} size="lg">
           {patterns?.learningStatus === 'active' ? '🧠 Learning Active' : '⏳ Initializing'}
         </Badge>
