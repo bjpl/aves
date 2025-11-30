@@ -6,14 +6,18 @@ import { Database } from '../types/supabase';
 
 const router = Router();
 
-// Initialize Supabase client
-const supabase = createClient<Database>(
-  process.env.SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_KEY || ''
-);
+// Initialize Supabase client only if environment variables are available
+let pipeline: AnnotationExercisePipeline | null = null;
 
-// Initialize pipeline
-const pipeline = new AnnotationExercisePipeline(supabase);
+if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+  const supabase = createClient<Database>(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY
+  );
+  pipeline = new AnnotationExercisePipeline(supabase);
+} else {
+  logger.warn('Annotation exercise pipeline disabled: Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
+}
 
 /**
  * GET /api/annotation-exercises/learn
@@ -32,6 +36,10 @@ const pipeline = new AnnotationExercisePipeline(supabase);
  */
 router.get('/learn', async (req: Request, res: Response) => {
   try {
+    if (!pipeline) {
+      return res.status(503).json({ error: 'Exercise pipeline not available' });
+    }
+
     const { userId, limit = 10 } = req.query;
 
     if (!userId || typeof userId !== 'string') {
@@ -72,6 +80,10 @@ router.get('/learn', async (req: Request, res: Response) => {
  */
 router.get('/practice', async (req: Request, res: Response) => {
   try {
+    if (!pipeline) {
+      return res.status(503).json({ error: 'Exercise pipeline not available' });
+    }
+
     const { userId, limit = 10 } = req.query;
 
     if (!userId || typeof userId !== 'string') {
@@ -114,6 +126,10 @@ router.get('/practice', async (req: Request, res: Response) => {
  */
 router.post('/prefetch', async (req: Request, res: Response) => {
   try {
+    if (!pipeline) {
+      return res.status(503).json({ error: 'Exercise pipeline not available' });
+    }
+
     const { userId, count = 10 } = req.body;
 
     if (!userId) {
@@ -154,6 +170,10 @@ router.post('/prefetch', async (req: Request, res: Response) => {
  */
 router.post('/batch-generate', async (req: Request, res: Response) => {
   try {
+    if (!pipeline) {
+      return res.status(503).json({ error: 'Exercise pipeline not available' });
+    }
+
     const { annotationIds } = req.body;
 
     if (!Array.isArray(annotationIds) || annotationIds.length === 0) {
@@ -190,6 +210,10 @@ router.post('/batch-generate', async (req: Request, res: Response) => {
  */
 router.get('/pipeline-stats', async (req: Request, res: Response) => {
   try {
+    if (!pipeline) {
+      return res.status(503).json({ error: 'Exercise pipeline not available' });
+    }
+
     const stats = await pipeline.getPipelineStats();
 
     res.json(stats);

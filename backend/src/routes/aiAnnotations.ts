@@ -1112,15 +1112,20 @@ router.post(
 
       // Trigger exercise generation pipeline for the newly approved annotation
       try {
-        const { AnnotationExercisePipeline } = await import('../services/AnnotationExercisePipeline');
-        const pipeline = new AnnotationExercisePipeline(supabase);
+        // Only trigger pipeline if Supabase is configured
+        if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+          const { AnnotationExercisePipeline } = await import('../services/AnnotationExercisePipeline');
+          const pipeline = new AnnotationExercisePipeline(supabase);
 
-        // Run pipeline asynchronously - don't block the response
-        pipeline.onAnnotationApproved(approvedAnnotationId).catch(pipelineError => {
-          logError('Pipeline failed for approved annotation', pipelineError);
-        });
+          // Run pipeline asynchronously - don't block the response
+          pipeline.onAnnotationApproved(approvedAnnotationId).catch(pipelineError => {
+            logError('Pipeline failed for approved annotation', pipelineError);
+          });
 
-        info('Exercise pipeline triggered for approved annotation', { approvedAnnotationId });
+          info('Exercise pipeline triggered for approved annotation', { approvedAnnotationId });
+        } else {
+          info('Exercise pipeline skipped - Supabase not configured');
+        }
       } catch (pipelineError) {
         logError('Failed to trigger exercise pipeline', pipelineError as Error);
         // Don't fail the approval if pipeline trigger fails
