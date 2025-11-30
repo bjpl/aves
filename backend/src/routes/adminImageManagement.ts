@@ -1345,21 +1345,33 @@ router.get(
       `;
       const imageStats = await pool.query(imageStatsQuery);
 
-      // Get images by species - return species NAME as key for display
+      // Get images by species - return species NAME as key for display with sample image
       const imagesBySpeciesQuery = `
         SELECT
+          s.id as species_id,
           s.english_name as species,
-          COUNT(i.id) as count
+          COUNT(i.id) as count,
+          (
+            SELECT i2.url
+            FROM images i2
+            WHERE i2.species_id = s.id
+            ORDER BY i2.created_at DESC
+            LIMIT 1
+          ) as sample_image_url
         FROM images i
         JOIN species s ON i.species_id = s.id
-        GROUP BY s.english_name
+        GROUP BY s.id, s.english_name
         ORDER BY count DESC
       `;
       const imagesBySpecies = await pool.query(imagesBySpeciesQuery);
-      const bySpecies: Record<string, number> = {};
-      for (const row of imagesBySpecies.rows as ImageBySpeciesRow[]) {
+      const bySpecies: Record<string, { count: number; sampleImageUrl: string | null; speciesId: string }> = {};
+      for (const row of imagesBySpecies.rows) {
         if (row.species) {
-          bySpecies[row.species] = parseInt(row.count);
+          bySpecies[row.species] = {
+            count: parseInt(row.count),
+            sampleImageUrl: row.sample_image_url,
+            speciesId: row.species_id
+          };
         }
       }
 
@@ -2437,11 +2449,19 @@ router.get(
         `),
         pool.query(`
           SELECT
+            s.id as species_id,
             s.english_name as species,
-            COUNT(i.id) as count
+            COUNT(i.id) as count,
+            (
+              SELECT i2.url
+              FROM images i2
+              WHERE i2.species_id = s.id
+              ORDER BY i2.created_at DESC
+              LIMIT 1
+            ) as sample_image_url
           FROM images i
           JOIN species s ON i.species_id = s.id
-          GROUP BY s.english_name
+          GROUP BY s.id, s.english_name
           ORDER BY count DESC
         `),
         pool.query(`
@@ -2465,10 +2485,14 @@ router.get(
       ]);
 
       // Process results
-      const bySpecies: Record<string, number> = {};
-      for (const row of imagesBySpecies.rows as ImageBySpeciesRow[]) {
+      const bySpecies: Record<string, { count: number; sampleImageUrl: string | null; speciesId: string }> = {};
+      for (const row of imagesBySpecies.rows) {
         if (row.species) {
-          bySpecies[row.species] = parseInt(row.count);
+          bySpecies[row.species] = {
+            count: parseInt(row.count),
+            sampleImageUrl: row.sample_image_url,
+            speciesId: row.species_id
+          };
         }
       }
 

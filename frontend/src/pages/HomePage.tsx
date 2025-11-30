@@ -14,7 +14,7 @@ export const HomePage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-green-50 to-yellow-50">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="text-center">
             <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-blue-600">
@@ -24,7 +24,7 @@ export const HomePage: React.FC = () => {
             <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
               Beautiful photos of birds. Real Spanish vocabulary. Natural learning.
             </p>
-            <div className="flex gap-4 justify-center">
+            <div className="flex gap-4 justify-center flex-wrap">
               <Link
                 to="/learn"
                 className="px-8 py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
@@ -41,10 +41,10 @@ export const HomePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Decorative birds - hidden on mobile to prevent overlap, reduced motion for accessibility */}
-        <div className="hidden md:block absolute top-20 left-10 text-4xl animate-bounce motion-reduce:animate-none opacity-60 pointer-events-none">🦜</div>
-        <div className="hidden md:block absolute top-40 right-20 text-3xl animate-pulse motion-reduce:animate-none opacity-60 pointer-events-none">🦅</div>
-        <div className="hidden lg:block absolute bottom-20 left-1/4 text-4xl animate-bounce delay-150 motion-reduce:animate-none opacity-60 pointer-events-none">🦩</div>
+        {/* Decorative birds - hidden on mobile to prevent overlap, reduced motion for accessibility, positioned behind content */}
+        <div className="hidden lg:block absolute top-20 left-10 text-4xl animate-bounce motion-reduce:animate-none opacity-50 pointer-events-none z-0">🦜</div>
+        <div className="hidden lg:block absolute top-40 right-20 text-3xl animate-pulse motion-reduce:animate-none opacity-50 pointer-events-none z-0">🦅</div>
+        <div className="hidden lg:block absolute bottom-20 left-1/4 text-4xl animate-bounce delay-150 motion-reduce:animate-none opacity-50 pointer-events-none z-0">🦩</div>
       </div>
 
       {/* Progress Dashboard */}

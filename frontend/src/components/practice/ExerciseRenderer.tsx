@@ -43,11 +43,19 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
       <div className="space-y-6">
         <h3 className="text-xl font-semibold text-center">{question}</h3>
         {imageUrl && (
-          <img
-            src={imageUrl}
-            alt="Bird to identify"
-            className="w-full max-w-md mx-auto rounded-lg shadow-md"
-          />
+          <div className="relative w-full max-w-md mx-auto">
+            <img
+              src={imageUrl}
+              alt="Bird to identify"
+              className="w-full rounded-lg shadow-md object-cover aspect-video"
+              onError={(e) => {
+                // Fallback on image load error
+                const target = e.target as HTMLImageElement;
+                target.src = 'https://via.placeholder.com/400x300?text=Image+Not+Available';
+              }}
+              loading="lazy"
+            />
+          </div>
         )}
         <div className="grid grid-cols-2 gap-3">
           {options.map((option) => (
@@ -72,6 +80,20 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
           <h3 className="text-2xl font-semibold mb-2">{question}</h3>
           {translation && <p className="text-gray-600 italic">{translation}</p>}
         </div>
+        {imageUrl && (
+          <div className="relative w-full max-w-sm mx-auto">
+            <img
+              src={imageUrl}
+              alt="Bird reference"
+              className="w-full rounded-lg shadow-md object-cover aspect-square"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none'; // Hide if image fails to load
+              }}
+              loading="lazy"
+            />
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
           {options.map((option) => (
             <button
@@ -92,6 +114,20 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
     return (
       <div className="space-y-6">
         <h3 className="text-2xl font-semibold text-center">{question}</h3>
+        {imageUrl && (
+          <div className="relative w-full max-w-sm mx-auto">
+            <img
+              src={imageUrl}
+              alt="Bird reference"
+              className="w-full rounded-lg shadow-md object-cover aspect-square"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none'; // Hide if image fails to load
+              }}
+              loading="lazy"
+            />
+          </div>
+        )}
         <div className="space-y-3 max-w-md mx-auto">
           {options.map((option) => (
             <button

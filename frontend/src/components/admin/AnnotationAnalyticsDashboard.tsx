@@ -194,46 +194,50 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Too Small */}
               {analytics.qualityFlags.tooSmall > 0 && (
-                <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-yellow-900 mb-1">
-                        ⚠️ Too Small (&lt;2%)
-                      </p>
-                      <p className="text-xs text-yellow-700">
-                        Bounding boxes covering less than 2% of image area
-                      </p>
+                <Tooltip content="Annotations where the bounding box is very small relative to the full image. Small boxes may indicate birds that are too distant or images better suited for close-up shots." position="top">
+                  <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 cursor-help">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-yellow-900 mb-1">
+                          ⚠️ Too Small (&lt;2%)
+                        </p>
+                        <p className="text-xs text-yellow-700">
+                          Bounding boxes covering less than 2% of image area
+                        </p>
+                      </div>
+                      <span className="text-2xl font-bold text-yellow-600">
+                        {analytics.qualityFlags.tooSmall}
+                      </span>
                     </div>
-                    <span className="text-2xl font-bold text-yellow-600">
-                      {analytics.qualityFlags.tooSmall}
-                    </span>
+                    <p className="text-xs text-yellow-800 mt-2">
+                      💡 Suggestion: Consider rejecting or requesting better images
+                    </p>
                   </div>
-                  <p className="text-xs text-yellow-800 mt-2">
-                    💡 Suggestion: Consider rejecting or requesting better images
-                  </p>
-                </div>
+                </Tooltip>
               )}
 
               {/* Low Confidence */}
               {analytics.qualityFlags.lowConfidence > 0 && (
-                <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-red-900 mb-1">
-                        ⚠️ Low Confidence (&lt;70%)
-                      </p>
-                      <p className="text-xs text-red-700">
-                        AI confidence score below recommended threshold
-                      </p>
+                <Tooltip content="Annotations where the AI model's confidence in its detection is below 70%. Low confidence may indicate unclear images, difficult angles, or species the model hasn't learned well yet." position="top">
+                  <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4 cursor-help">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-red-900 mb-1">
+                          ⚠️ Low Confidence (&lt;70%)
+                        </p>
+                        <p className="text-xs text-red-700">
+                          AI confidence score below recommended threshold
+                        </p>
+                      </div>
+                      <span className="text-2xl font-bold text-red-600">
+                        {analytics.qualityFlags.lowConfidence}
+                      </span>
                     </div>
-                    <span className="text-2xl font-bold text-red-600">
-                      {analytics.qualityFlags.lowConfidence}
-                    </span>
+                    <p className="text-xs text-red-800 mt-2">
+                      💡 Suggestion: Review carefully before approving
+                    </p>
                   </div>
-                  <p className="text-xs text-red-800 mt-2">
-                    💡 Suggestion: Review carefully before approving
-                  </p>
-                </div>
+                </Tooltip>
               )}
             </div>
           </CardBody>
@@ -245,7 +249,9 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
         {/* Species Coverage */}
         <Card variant="elevated">
           <CardHeader>
-            <h3 className="text-lg font-semibold text-gray-900">Species Coverage</h3>
+            <Tooltip content="Distribution of annotations across different bird species - helps identify which species have sufficient training data" position="right">
+              <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400 inline-block">Species Coverage</h3>
+            </Tooltip>
           </CardHeader>
           <CardBody>
             {Object.keys(analytics.bySpecies).length > 0 ? (
@@ -258,9 +264,13 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
                       className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded hover:bg-gray-100 transition-colors"
                     >
                       <span className="text-sm font-medium text-gray-700">{species}</span>
-                      <Badge variant="info" size="sm">
-                        {count} annotations
-                      </Badge>
+                      <Tooltip content={`Total number of annotations for this species across all images`} position="left">
+                        <div className="cursor-help">
+                          <Badge variant="info" size="sm">
+                            {count} annotations
+                          </Badge>
+                        </div>
+                      </Tooltip>
                     </div>
                   ))}
               </div>
@@ -275,7 +285,9 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
         {/* Type Distribution */}
         <Card variant="elevated">
           <CardHeader>
-            <h3 className="text-lg font-semibold text-gray-900">Annotation Types</h3>
+            <Tooltip content="Breakdown by annotation type (whole_bird, bounding_box, polygon) - shows what types of annotations are being created" position="right">
+              <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400 inline-block">Annotation Types</h3>
+            </Tooltip>
           </CardHeader>
           <CardBody>
             {Object.keys(analytics.byType).length > 0 ? (
@@ -287,7 +299,9 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
                     return (
                       <div key={type} className="space-y-1">
                         <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium text-gray-700 capitalize">{type}</span>
+                          <Tooltip content={`${type === 'whole_bird' ? 'Full image annotation' : type === 'bounding_box' ? 'Rectangular region highlighting specific feature' : 'Precise polygon outline of feature'}`} position="right">
+                            <span className="font-medium text-gray-700 capitalize cursor-help border-b border-dotted border-gray-400">{type}</span>
+                          </Tooltip>
                           <span className="text-gray-600">{count} ({percentage.toFixed(1)}%)</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
@@ -313,26 +327,31 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
       {Object.keys(analytics.rejectionsByCategory).length > 0 && (
         <Card variant="elevated">
           <CardHeader>
-            <h3 className="text-lg font-semibold text-gray-900">Rejection Categories</h3>
+            <Tooltip content="Common reasons annotations were rejected - use these patterns to improve collection and annotation quality" position="right">
+              <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400 inline-block">Rejection Categories</h3>
+            </Tooltip>
           </CardHeader>
           <CardBody>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {Object.entries(analytics.rejectionsByCategory)
                 .sort(([, a], [, b]) => b - a)
                 .map(([category, count]) => (
-                  <div
+                  <Tooltip
                     key={category}
-                    className="bg-red-50 border border-red-200 rounded-lg p-3"
+                    content={`Number of annotations rejected for: ${category.replace(/_/g, ' ')}`}
+                    position="top"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-red-900">
-                        {category.replace(/_/g, ' ')}
-                      </span>
-                      <Badge variant="danger" size="sm">
-                        {count}
-                      </Badge>
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 cursor-help">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-red-900">
+                          {category.replace(/_/g, ' ')}
+                        </span>
+                        <Badge variant="danger" size="sm">
+                          {count}
+                        </Badge>
+                      </div>
                     </div>
-                  </div>
+                  </Tooltip>
                 ))}
             </div>
           </CardBody>

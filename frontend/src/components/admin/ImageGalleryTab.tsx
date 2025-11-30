@@ -229,21 +229,35 @@ const ImageCard: React.FC<ImageCardProps> = ({
           {(() => {
             const qualityProps = getQualityBadgeProps(image.qualityScore);
             return (
-              <Badge variant={qualityProps.variant} size="sm" title="Quality Score">
-                {qualityProps.label}
-              </Badge>
+              <Tooltip
+                content={`Image quality score: ${image.qualityScore !== null ? `${image.qualityScore}% (${image.qualityScore >= 80 ? 'High - excellent for training' : image.qualityScore >= 60 ? 'Medium - acceptable quality' : 'Low - may need better image'})` : 'Not yet scored'}`}
+                position="right"
+              >
+                <div className="cursor-help">
+                  <Badge variant={qualityProps.variant} size="sm" title="Quality Score">
+                    {qualityProps.label}
+                  </Badge>
+                </div>
+              </Tooltip>
             );
           })()}
         </div>
 
         {/* Annotation badge */}
         <div className="absolute bottom-2 right-2">
-          <Badge
-            variant={image.annotationCount > 0 ? 'success' : 'warning'}
-            size="sm"
+          <Tooltip
+            content={`${image.annotationCount} vocabulary annotations${image.annotationCount === 0 ? ' - click Annotate to generate' : ' - click View to see details'}`}
+            position="left"
           >
-            {image.annotationCount} annotations
-          </Badge>
+            <div className="cursor-help">
+              <Badge
+                variant={image.annotationCount > 0 ? 'success' : 'warning'}
+                size="sm"
+              >
+                {image.annotationCount} annotations
+              </Badge>
+            </div>
+          </Tooltip>
         </div>
       </div>
 
@@ -258,37 +272,49 @@ const ImageCard: React.FC<ImageCardProps> = ({
 
         {/* Actions */}
         <div className="flex gap-2 mt-3">
-          <Button variant="secondary" size="sm" onClick={onView} className="flex-1">
-            View
-          </Button>
+          <Tooltip content="View full image details and annotations" position="top">
+            <div className="flex-1">
+              <Button variant="secondary" size="sm" onClick={onView} className="w-full">
+                View
+              </Button>
+            </div>
+          </Tooltip>
           {image.annotationCount === 0 && (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={onAnnotate}
-              isLoading={isAnnotating}
-              disabled={isAnnotating}
-              className="flex-1"
-            >
-              Annotate
-            </Button>
+            <Tooltip content="Generate AI-powered vocabulary annotations for this image" position="top">
+              <div className="flex-1">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={onAnnotate}
+                  isLoading={isAnnotating}
+                  disabled={isAnnotating}
+                  className="w-full"
+                >
+                  Annotate
+                </Button>
+              </div>
+            </Tooltip>
           )}
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={onDelete}
-            isLoading={isDeleting}
-            disabled={isDeleting}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              />
-            </svg>
-          </Button>
+          <Tooltip content="Permanently delete this image and all associated annotations" position="top">
+            <div>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={onDelete}
+                isLoading={isDeleting}
+                disabled={isDeleting}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+              </Button>
+            </div>
+          </Tooltip>
         </div>
       </div>
     </div>
@@ -704,20 +730,24 @@ export const ImageGalleryTab: React.FC<ImageGalleryTabProps> = ({
         <CardBody>
           {/* Action Bar */}
           <div className="flex justify-end mb-4">
-            <Button
-              variant="primary"
-              onClick={() => setShowUploadModal(true)}
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                />
-              </svg>
-              Upload Images
-            </Button>
+            <Tooltip content="Upload new bird images from your computer to add to the dataset" position="left">
+              <div>
+                <Button
+                  variant="primary"
+                  onClick={() => setShowUploadModal(true)}
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                    />
+                  </svg>
+                  Upload Images
+                </Button>
+              </div>
+            </Tooltip>
           </div>
 
           {/* Filters */}

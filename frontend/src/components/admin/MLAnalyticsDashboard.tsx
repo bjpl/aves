@@ -142,7 +142,9 @@ export const MLAnalyticsDashboard: React.FC = () => {
         <Card variant="elevated">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Top Learned Patterns</h3>
+              <Tooltip content="Visual and vocabulary features the ML model has learned to recognize from approved annotations. Higher confidence patterns are more reliably detected." position="right">
+                <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400 inline-block">Top Learned Patterns</h3>
+              </Tooltip>
               {patterns.topPatterns.length > 6 && (
                 <button
                   onClick={() => setShowAllPatterns(true)}
@@ -279,20 +281,21 @@ export const MLAnalyticsDashboard: React.FC = () => {
         {vocabulary && vocabulary.topGaps && vocabulary.topGaps.length > 0 && (
           <Card variant="elevated">
             <CardHeader>
-              <h3 className="text-lg font-semibold text-gray-900">Top Vocabulary Gaps</h3>
+              <Tooltip content="Bird anatomy features that are underrepresented in the dataset. Filling these gaps improves the model's ability to identify all parts of a bird." position="right">
+                <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400 inline-block">Top Vocabulary Gaps</h3>
+              </Tooltip>
             </CardHeader>
             <CardBody>
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {vocabulary.topGaps.map((gap, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between py-2 px-3 bg-yellow-50 border border-yellow-200 rounded hover:bg-yellow-100 transition-colors"
-                  >
-                    <span className="text-sm font-medium text-gray-700">{gap}</span>
-                    <Badge variant="warning" size="sm">
-                      Missing
-                    </Badge>
-                  </div>
+                  <Tooltip key={idx} content={`Feature "${gap}" needs more annotations to improve ML detection accuracy`} position="left">
+                    <div className="flex items-center justify-between py-2 px-3 bg-yellow-50 border border-yellow-200 rounded hover:bg-yellow-100 transition-colors cursor-help">
+                      <span className="text-sm font-medium text-gray-700">{gap}</span>
+                      <Badge variant="warning" size="sm">
+                        Missing
+                      </Badge>
+                    </div>
+                  </Tooltip>
                 ))}
               </div>
               <p className="text-xs text-gray-600 mt-3">
@@ -306,7 +309,9 @@ export const MLAnalyticsDashboard: React.FC = () => {
         {trends && trends.summary && (
           <Card variant="elevated">
             <CardHeader>
-              <h3 className="text-lg font-semibold text-gray-900">Quality Trend</h3>
+              <Tooltip content="Comparison of annotation quality over time. Positive improvement means recent annotations are higher quality than historical baseline." position="right">
+                <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400 inline-block">Quality Trend</h3>
+              </Tooltip>
             </CardHeader>
             <CardBody>
               <div className="space-y-3">
@@ -339,7 +344,9 @@ export const MLAnalyticsDashboard: React.FC = () => {
       {performance && performance.status?.pipelineStatus === 'active' && performance.pipeline && (
         <Card variant="elevated">
           <CardHeader>
-            <h3 className="text-lg font-semibold text-gray-900">Pipeline Performance</h3>
+            <Tooltip content="Real-time metrics showing how efficiently the annotation pipeline is processing images" position="right">
+              <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400 inline-block">Pipeline Performance</h3>
+            </Tooltip>
           </CardHeader>
           <CardBody>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -389,7 +396,9 @@ export const MLAnalyticsDashboard: React.FC = () => {
       {patterns && patterns.speciesInsights.length > 0 && (
         <Card variant="elevated">
           <CardHeader>
-            <h3 className="text-lg font-semibold text-gray-900">Species-Specific Recommendations</h3>
+            <Tooltip content="AI-generated recommendations for improving dataset coverage per species. Shows which features need more annotations for each bird type." position="right">
+              <h3 className="text-lg font-semibold text-gray-900 cursor-help border-b border-dotted border-gray-400 inline-block">Species-Specific Recommendations</h3>
+            </Tooltip>
           </CardHeader>
           <CardBody>
             <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -401,25 +410,34 @@ export const MLAnalyticsDashboard: React.FC = () => {
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-semibold text-gray-900">{insight.species}</span>
                     <div className="flex gap-2">
-                      <Badge variant="info" size="sm">
-                        {insight.annotations} annotations
-                      </Badge>
-                      <Badge variant="default" size="sm">
-                        {insight.features} features
-                      </Badge>
+                      <Tooltip content={`Total annotations collected for ${insight.species}`} position="left">
+                        <div className="cursor-help">
+                          <Badge variant="info" size="sm">
+                            {insight.annotations} annotations
+                          </Badge>
+                        </div>
+                      </Tooltip>
+                      <Tooltip content={`Number of different features annotated for ${insight.species}`} position="left">
+                        <div className="cursor-help">
+                          <Badge variant="default" size="sm">
+                            {insight.features} features
+                          </Badge>
+                        </div>
+                      </Tooltip>
                     </div>
                   </div>
                   {insight.recommendedFeatures.length > 0 && (
                     <div className="mt-2">
-                      <p className="text-xs text-gray-600 mb-1">Recommended features:</p>
+                      <Tooltip content="These features are underrepresented for this species and should be prioritized in future annotations" position="right">
+                        <p className="text-xs text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400 inline-block">Recommended features:</p>
+                      </Tooltip>
                       <div className="flex flex-wrap gap-1">
                         {insight.recommendedFeatures.map((feature, fIdx) => (
-                          <span
-                            key={fIdx}
-                            className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
-                          >
-                            {feature}
-                          </span>
+                          <Tooltip key={fIdx} content={`Priority feature to annotate for ${insight.species}`} position="top">
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full cursor-help">
+                              {feature}
+                            </span>
+                          </Tooltip>
                         ))}
                       </div>
                     </div>
