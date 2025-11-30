@@ -2,6 +2,7 @@ import React from 'react';
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { Species } from '../../../shared/types/species.types';
 import { LazyImage } from '../components/ui/LazyImage';
+import { useSpeciesById } from '../hooks/useSpecies';
 
 export const SpeciesDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -9,8 +10,46 @@ export const SpeciesDetailPage: React.FC = () => {
   const navigate = useNavigate();
 
   // Get species from navigation state or fetch if needed
-  const species = location.state?.species as Species | undefined;
+  const stateSpecies = location.state?.species as Species | undefined;
+  const { data: fetchedSpecies, isLoading, error } = useSpeciesById(id || '');
 
+  // Use state species if available (faster), otherwise use fetched data
+  const species = stateSpecies || fetchedSpecies;
+
+  // Loading state
+  if (isLoading && !stateSpecies) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🦅</div>
+          <div className="text-gray-600">Loading species details...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error && !stateSpecies) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🦅</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Error Loading Species</h2>
+          <p className="text-gray-600 mb-4">
+            {error instanceof Error ? error.message : 'Unable to load species details'}
+          </p>
+          <Link
+            to="/species"
+            className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Back to Species Browser
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Not found state
   if (!species) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -149,7 +188,7 @@ export const SpeciesDetailPage: React.FC = () => {
               )}
 
               {/* Colors */}
-              {species.primaryColors.length > 0 && (
+              {Array.isArray(species.primaryColors) && species.primaryColors.length > 0 && (
                 <div className="mb-6">
                   <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
                     Primary Colors
@@ -168,7 +207,7 @@ export const SpeciesDetailPage: React.FC = () => {
               )}
 
               {/* Habitats */}
-              {species.habitats.length > 0 && (
+              {Array.isArray(species.habitats) && species.habitats.length > 0 && (
                 <div className="mb-6">
                   <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
                     Habitats

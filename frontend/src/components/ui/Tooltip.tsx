@@ -63,18 +63,20 @@ export const Tooltip: React.FC<TooltipProps> = ({
       {children}
       {isVisible && !disabled && (
         <div
-          className={`fixed z-[9999] ${positionStyles[position]} ${className}`}
+          className={`absolute z-[9999] ${positionStyles[position]} ${className}`}
           role="tooltip"
           style={{
-            // Use fixed positioning to escape any overflow:hidden containers
-            position: 'fixed',
+            // Use absolute positioning relative to parent
+            position: 'absolute',
+            maxWidth: '280px', // Increased from implicit max-w-xs (320px) for better readability
+            wordWrap: 'break-word',
           }}
         >
-          <div className="bg-gray-900 text-white text-sm px-3 py-2 rounded-lg shadow-lg max-w-xs pointer-events-none">
-            <div className="whitespace-normal break-words">
+          <div className="bg-gray-900 text-white text-sm px-3 py-2 rounded-lg shadow-xl pointer-events-none">
+            <div className="whitespace-normal break-words leading-relaxed">
               {content}
             </div>
-            <div className={`absolute border-8 ${arrowStyles[position]}`} />
+            <div className={`absolute border-6 ${arrowStyles[position]}`} style={{ borderWidth: '6px' }} />
           </div>
         </div>
       )}

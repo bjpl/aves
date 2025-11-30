@@ -5,8 +5,8 @@ interface Annotation {
   term: string;
   english: string;
   pronunciation: string;
-  x: number;
-  y: number;
+  x: number; // Percentage (0-100)
+  y: number; // Percentage (0-100)
   description: string;
 }
 
@@ -35,6 +35,10 @@ export const InteractiveBirdImage: React.FC<InteractiveBirdImageProps> = ({
         src={imageUrl}
         alt={altText}
         className="w-full rounded-lg"
+        onError={(e) => {
+          console.error('Image failed to load:', imageUrl);
+          e.currentTarget.src = 'https://via.placeholder.com/800x600?text=Image+Not+Available';
+        }}
       />
 
       {/* Annotation Hotspots */}

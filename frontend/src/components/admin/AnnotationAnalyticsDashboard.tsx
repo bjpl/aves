@@ -82,7 +82,7 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
           <CardBody>
             <div className="text-center">
               <p className="text-sm font-medium text-gray-600 mb-1">Pending Review</p>
-              <p className="text-xs text-gray-500 mb-2 px-2">Annotations awaiting human review</p>
+              <p className="text-xs text-gray-500 mb-2 px-2">Annotations awaiting human review decision</p>
               <p className="text-4xl font-bold text-yellow-600">{analytics.overview.pending}</p>
               <p className="text-xs text-gray-500 mt-2">
                 {((analytics.overview.pending / analytics.overview.total) * 100).toFixed(1)}% of total
@@ -192,50 +192,46 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Too Small */}
               {analytics.qualityFlags.tooSmall > 0 && (
-                <Tooltip content="Annotations where the bounding box is very small relative to the full image. Small boxes may indicate birds that are too distant or images better suited for close-up shots." position="top">
-                  <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 cursor-help">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="text-sm font-semibold text-yellow-900 mb-1">
-                          ⚠️ Too Small (&lt;2%)
-                        </p>
-                        <p className="text-xs text-yellow-700">
-                          Bounding boxes covering less than 2% of image area
-                        </p>
-                      </div>
-                      <span className="text-2xl font-bold text-yellow-600">
-                        {analytics.qualityFlags.tooSmall}
-                      </span>
+                <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-yellow-900 mb-1">
+                        ⚠️ Too Small (&lt;2%)
+                      </p>
+                      <p className="text-xs text-yellow-700">
+                        Bounding boxes covering less than 2% of image area
+                      </p>
                     </div>
-                    <p className="text-xs text-yellow-800 mt-2">
-                      💡 Suggestion: Consider rejecting or requesting better images
-                    </p>
+                    <span className="text-2xl font-bold text-yellow-600">
+                      {analytics.qualityFlags.tooSmall}
+                    </span>
                   </div>
-                </Tooltip>
+                  <p className="text-xs text-yellow-800 mt-2">
+                    💡 Small boxes may indicate distant birds or images needing close-up shots
+                  </p>
+                </div>
               )}
 
               {/* Low Confidence */}
               {analytics.qualityFlags.lowConfidence > 0 && (
-                <Tooltip content="Annotations where the AI model's confidence in its detection is below 70%. Low confidence may indicate unclear images, difficult angles, or species the model hasn't learned well yet." position="top">
-                  <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4 cursor-help">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="text-sm font-semibold text-red-900 mb-1">
-                          ⚠️ Low Confidence (&lt;70%)
-                        </p>
-                        <p className="text-xs text-red-700">
-                          AI confidence score below recommended threshold
-                        </p>
-                      </div>
-                      <span className="text-2xl font-bold text-red-600">
-                        {analytics.qualityFlags.lowConfidence}
-                      </span>
+                <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-red-900 mb-1">
+                        ⚠️ Low Confidence (&lt;70%)
+                      </p>
+                      <p className="text-xs text-red-700">
+                        AI confidence score below recommended threshold
+                      </p>
                     </div>
-                    <p className="text-xs text-red-800 mt-2">
-                      💡 Suggestion: Review carefully before approving
-                    </p>
+                    <span className="text-2xl font-bold text-red-600">
+                      {analytics.qualityFlags.lowConfidence}
+                    </span>
                   </div>
-                </Tooltip>
+                  <p className="text-xs text-red-800 mt-2">
+                    💡 May indicate unclear images or difficult angles - review carefully
+                  </p>
+                </div>
               )}
             </div>
           </CardBody>
@@ -263,13 +259,9 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
                       className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded hover:bg-gray-100 transition-colors"
                     >
                       <span className="text-sm font-medium text-gray-700">{species}</span>
-                      <Tooltip content={`Total number of annotations for this species across all images`} position="left">
-                        <div className="cursor-help">
-                          <Badge variant="info" size="sm">
-                            {count} annotations
-                          </Badge>
-                        </div>
-                      </Tooltip>
+                      <Badge variant="info" size="sm">
+                        {count} annotations
+                      </Badge>
                     </div>
                   ))}
               </div>
@@ -299,9 +291,7 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
                     return (
                       <div key={type} className="space-y-1">
                         <div className="flex items-center justify-between text-sm">
-                          <Tooltip content={`${type === 'whole_bird' ? 'Full image annotation' : type === 'bounding_box' ? 'Rectangular region highlighting specific feature' : 'Precise polygon outline of feature'}`} position="right">
-                            <span className="font-medium text-gray-700 capitalize cursor-help border-b border-dotted border-gray-400">{type}</span>
-                          </Tooltip>
+                          <span className="font-medium text-gray-700 capitalize">{type.replace('_', ' ')}</span>
                           <span className="text-gray-600">{count} ({percentage.toFixed(1)}%)</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
@@ -337,22 +327,16 @@ export const AnnotationAnalyticsDashboard: React.FC<AnnotationAnalyticsDashboard
               {Object.entries(analytics.rejectionsByCategory)
                 .sort(([, a], [, b]) => b - a)
                 .map(([category, count]) => (
-                  <Tooltip
-                    key={category}
-                    content={`Number of annotations rejected for: ${category.replace(/_/g, ' ')}`}
-                    position="top"
-                  >
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 cursor-help">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-red-900">
-                          {category.replace(/_/g, ' ')}
-                        </span>
-                        <Badge variant="danger" size="sm">
-                          {count}
-                        </Badge>
-                      </div>
+                  <div key={category} className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-red-900">
+                        {category.replace(/_/g, ' ')}
+                      </span>
+                      <Badge variant="danger" size="sm">
+                        {count}
+                      </Badge>
                     </div>
-                  </Tooltip>
+                  </div>
                 ))}
             </div>
           </CardBody>

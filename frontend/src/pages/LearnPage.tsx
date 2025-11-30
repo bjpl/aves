@@ -7,18 +7,47 @@ import { Link } from 'react-router-dom';
 import { ResponsiveAnnotationCanvas } from '../components/annotation/ResponsiveAnnotationCanvas';
 import { AudioPlayer } from '../components/audio/AudioPlayer';
 import { Annotation } from '../types';
-import { useAnnotations } from '../hooks/useAnnotations';
 import { useProgress } from '../hooks/useProgress';
 import { useMobileDetect } from '../hooks/useMobileDetect';
+import { usePendingAnnotations } from '../hooks/useSupabaseAnnotations';
+import { info, error as logError } from '../utils/logger';
 
 export const LearnPage: React.FC = () => {
   const [selectedAnnotation, setSelectedAnnotation] = useState<Annotation | null>(null);
   const [discoveredTerms, setDiscoveredTerms] = useState<Set<string>>(new Set());
   const [showPracticePrompt, setShowPracticePrompt] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  const { data: annotations = [], isLoading: loading } = useAnnotations();
+  // Fetch approved annotations from pipeline
+  const { data: approvedAnnotations = [], isLoading: loading } = usePendingAnnotations();
   const { progress, recordTermDiscovery } = useProgress();
   const { isMobile } = useMobileDetect();
+
+  // Group annotations by image
+  const annotationsByImage = useMemo(() => {
+    const grouped = new Map<string, { imageUrl: string; annotations: Annotation[] }>();
+
+    approvedAnnotations
+      .filter(a => a.status === 'approved' && a.imageUrl)
+      .forEach(annotation => {
+        const key = annotation.imageUrl!;
+        if (!grouped.has(key)) {
+          grouped.set(key, { imageUrl: key, annotations: [] });
+        }
+        grouped.get(key)!.annotations.push(annotation);
+      });
+
+    return Array.from(grouped.values());
+  }, [approvedAnnotations]);
+
+  const currentImage = annotationsByImage[currentImageIndex] || { imageUrl: '', annotations: [] };
+
+  useEffect(() => {
+    info('Learn tab loaded', {
+      totalAnnotations: approvedAnnotations.length,
+      imagesWithAnnotations: annotationsByImage.length
+    });
+  }, [approvedAnnotations.length, annotationsByImage.length]);
 
   // Track discovered terms
   useEffect(() => {
@@ -63,9 +92,32 @@ export const LearnPage: React.FC = () => {
     );
   }
 
+  if (annotationsByImage.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50">
+        <div className="text-center max-w-md p-8 bg-white rounded-lg shadow-lg">
+          <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">No Learning Materials Yet</h2>
+          <p className="text-gray-600 mb-4">
+            Learning materials will appear here once annotations are approved by administrators.
+          </p>
+          <Link
+            to="/"
+            className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Go Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const totalAnnotations = approvedAnnotations.length;
   const discoveryProgress = useMemo(() =>
-    Math.round((discoveredTerms.size / annotations.length) * 100),
-    [discoveredTerms.size, annotations.length]
+    totalAnnotations > 0 ? Math.round((discoveredTerms.size / totalAnnotations) * 100) : 0,
+    [discoveredTerms.size, totalAnnotations]
   );
 
   return (
@@ -94,28 +146,64 @@ export const LearnPage: React.FC = () => {
               <div className="bg-white rounded-lg px-4 py-2 shadow-sm">
                 <span className="text-sm text-gray-500">Total</span>
                 <span className="ml-2 font-bold text-blue-600">
-                  {annotations.length}
+                  {totalAnnotations}
                 </span>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Image navigation (if multiple images) */}
+        {annotationsByImage.length > 1 && (
+          <div className="mb-4 flex items-center justify-center gap-4">
+            <button
+              onClick={() => setCurrentImageIndex(Math.max(0, currentImageIndex - 1))}
+              disabled={currentImageIndex === 0}
+              className={`px-4 py-2 rounded-lg ${
+                currentImageIndex === 0
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              } transition-colors`}
+            >
+              ← Previous Image
+            </button>
+            <span className="text-sm text-gray-600">
+              Image {currentImageIndex + 1} of {annotationsByImage.length}
+            </span>
+            <button
+              onClick={() => setCurrentImageIndex(Math.min(annotationsByImage.length - 1, currentImageIndex + 1))}
+              disabled={currentImageIndex === annotationsByImage.length - 1}
+              className={`px-4 py-2 rounded-lg ${
+                currentImageIndex === annotationsByImage.length - 1
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              } transition-colors`}
+            >
+              Next Image →
+            </button>
+          </div>
+        )}
+
         {/* Main learning area */}
         <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'} gap-6`}>
           {/* Image with annotations */}
           <div className={`${isMobile ? '' : 'lg:col-span-2'}`}>
             <div className="bg-white rounded-lg shadow-lg p-4">
-              {annotations.length > 0 ? (
-                <ResponsiveAnnotationCanvas
-                  imageUrl="https://images.unsplash.com/photo-1551031895-7f8e06d714f8?w=1200"
-                  annotations={annotations}
-                  onAnnotationDiscover={handleAnnotationDiscover}
-                  showLabels={false}
-                />
+              {currentImage.imageUrl ? (
+                <>
+                  <ResponsiveAnnotationCanvas
+                    imageUrl={currentImage.imageUrl}
+                    annotations={currentImage.annotations}
+                    onAnnotationDiscover={handleAnnotationDiscover}
+                    showLabels={false}
+                  />
+                  <div className="mt-2 text-sm text-gray-500 text-center">
+                    {currentImage.annotations.length} vocabulary terms on this image
+                  </div>
+                </>
               ) : (
                 <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
-                  <p className="text-gray-500">No annotations available. Please add some in the admin panel.</p>
+                  <p className="text-gray-500">No image available.</p>
                 </div>
               )}
 

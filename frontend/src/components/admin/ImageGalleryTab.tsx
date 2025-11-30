@@ -77,9 +77,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ species, filters, onFilterChange 
     <div className="flex flex-wrap gap-4 p-4 bg-gray-50 rounded-lg mb-6">
       {/* Species Filter */}
       <div className="flex-1 min-w-[200px]">
-        <Tooltip content="Filter images by specific bird species" position="top">
-          <label className="block text-sm font-medium text-gray-700 mb-1 cursor-help border-b border-dotted border-gray-400 inline-block">Species</label>
-        </Tooltip>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Species</label>
         <select
           className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
           value={filters.speciesId || ''}
@@ -96,9 +94,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ species, filters, onFilterChange 
 
       {/* Annotation Status Filter */}
       <div className="flex-1 min-w-[200px]">
-        <Tooltip content="Filter by whether images have been annotated with vocabulary terms" position="top">
-          <label className="block text-sm font-medium text-gray-700 mb-1 cursor-help border-b border-dotted border-gray-400 inline-block">Annotation Status</label>
-        </Tooltip>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Annotation Status</label>
         <select
           className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
           value={filters.annotationStatus || 'all'}
@@ -114,9 +110,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ species, filters, onFilterChange 
 
       {/* Quality Filter */}
       <div className="flex-1 min-w-[200px]">
-        <Tooltip content="Filter by image quality score: High (80-100), Medium (60-79), Low (0-59)" position="top">
-          <label className="block text-sm font-medium text-gray-700 mb-1 cursor-help border-b border-dotted border-gray-400 inline-block">Quality</label>
-        </Tooltip>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Quality</label>
         <select
           className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
           value={filters.qualityFilter || 'all'}
@@ -134,9 +128,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ species, filters, onFilterChange 
 
       {/* Sort By */}
       <div className="flex-1 min-w-[200px]">
-        <Tooltip content="Choose how to order images in the gallery" position="top">
-          <label className="block text-sm font-medium text-gray-700 mb-1 cursor-help border-b border-dotted border-gray-400 inline-block">Sort By</label>
-        </Tooltip>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
         <select
           className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
           value={filters.sortBy || 'createdAt'}
@@ -151,9 +143,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ species, filters, onFilterChange 
 
       {/* Sort Order */}
       <div className="flex-1 min-w-[150px]">
-        <Tooltip content="Display newest or oldest items first" position="top">
-          <label className="block text-sm font-medium text-gray-700 mb-1 cursor-help border-b border-dotted border-gray-400 inline-block">Order</label>
-        </Tooltip>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Order</label>
         <select
           className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
           value={filters.sortOrder || 'desc'}
@@ -229,35 +219,26 @@ const ImageCard: React.FC<ImageCardProps> = ({
           {(() => {
             const qualityProps = getQualityBadgeProps(image.qualityScore);
             return (
-              <Tooltip
-                content={`Image quality score: ${image.qualityScore !== null ? `${image.qualityScore}% (${image.qualityScore >= 80 ? 'High - excellent for training' : image.qualityScore >= 60 ? 'Medium - acceptable quality' : 'Low - may need better image'})` : 'Not yet scored'}`}
-                position="right"
+              <Badge
+                variant={qualityProps.variant}
+                size="sm"
+                title={`Quality: ${image.qualityScore !== null ? `${image.qualityScore}%` : 'Not scored'}`}
               >
-                <div className="cursor-help">
-                  <Badge variant={qualityProps.variant} size="sm" title="Quality Score">
-                    {qualityProps.label}
-                  </Badge>
-                </div>
-              </Tooltip>
+                {qualityProps.label}
+              </Badge>
             );
           })()}
         </div>
 
         {/* Annotation badge */}
         <div className="absolute bottom-2 right-2">
-          <Tooltip
-            content={`${image.annotationCount} vocabulary annotations${image.annotationCount === 0 ? ' - click Annotate to generate' : ' - click View to see details'}`}
-            position="left"
+          <Badge
+            variant={image.annotationCount > 0 ? 'success' : 'warning'}
+            size="sm"
+            title={`${image.annotationCount} vocabulary annotation${image.annotationCount !== 1 ? 's' : ''}`}
           >
-            <div className="cursor-help">
-              <Badge
-                variant={image.annotationCount > 0 ? 'success' : 'warning'}
-                size="sm"
-              >
-                {image.annotationCount} annotations
-              </Badge>
-            </div>
-          </Tooltip>
+            {image.annotationCount}
+          </Badge>
         </div>
       </div>
 
@@ -272,49 +253,45 @@ const ImageCard: React.FC<ImageCardProps> = ({
 
         {/* Actions */}
         <div className="flex gap-2 mt-3">
-          <Tooltip content="View full image details and annotations" position="top">
-            <div className="flex-1">
-              <Button variant="secondary" size="sm" onClick={onView} className="w-full">
-                View
-              </Button>
-            </div>
-          </Tooltip>
+          <div className="flex-1">
+            <Button variant="secondary" size="sm" onClick={onView} className="w-full" title="View details">
+              View
+            </Button>
+          </div>
           {image.annotationCount === 0 && (
-            <Tooltip content="Generate AI-powered vocabulary annotations for this image" position="top">
-              <div className="flex-1">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={onAnnotate}
-                  isLoading={isAnnotating}
-                  disabled={isAnnotating}
-                  className="w-full"
-                >
-                  Annotate
-                </Button>
-              </div>
-            </Tooltip>
-          )}
-          <Tooltip content="Permanently delete this image and all associated annotations" position="top">
-            <div>
+            <div className="flex-1">
               <Button
-                variant="danger"
+                variant="primary"
                 size="sm"
-                onClick={onDelete}
-                isLoading={isDeleting}
-                disabled={isDeleting}
+                onClick={onAnnotate}
+                isLoading={isAnnotating}
+                disabled={isAnnotating}
+                className="w-full"
+                title="Generate annotations"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
+                Annotate
               </Button>
             </div>
-          </Tooltip>
+          )}
+          <div>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={onDelete}
+              isLoading={isDeleting}
+              disabled={isDeleting}
+              title="Delete image"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -730,24 +707,21 @@ export const ImageGalleryTab: React.FC<ImageGalleryTabProps> = ({
         <CardBody>
           {/* Action Bar */}
           <div className="flex justify-end mb-4">
-            <Tooltip content="Upload new bird images from your computer to add to the dataset" position="left">
-              <div>
-                <Button
-                  variant="primary"
-                  onClick={() => setShowUploadModal(true)}
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                    />
-                  </svg>
-                  Upload Images
-                </Button>
-              </div>
-            </Tooltip>
+            <Button
+              variant="primary"
+              onClick={() => setShowUploadModal(true)}
+              title="Upload new images"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                />
+              </svg>
+              Upload Images
+            </Button>
           </div>
 
           {/* Filters */}

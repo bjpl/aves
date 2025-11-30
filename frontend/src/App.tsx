@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import './App.css';
 
 // Navigation link component with active state
@@ -19,6 +20,54 @@ const NavLink = ({ to, children, isAdmin = false }: { to: string; children: Reac
     <Link to={to} className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}>
       {children}
     </Link>
+  );
+};
+
+// User account button component with logout functionality
+const UserAccountButton = () => {
+  const { user, signOut, loading } = useSupabaseAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/');
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="px-3 py-2">
+        <div className="animate-pulse flex items-center">
+          <div className="w-4 h-4 bg-gray-300 rounded-full"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (user) {
+    return (
+      <button
+        onClick={handleLogout}
+        className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors rounded-md"
+      >
+        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+        Logout
+      </button>
+    );
+  }
+
+  return (
+    <NavLink to="/login">
+      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      </svg>
+      Login
+    </NavLink>
   );
 };
 
@@ -89,12 +138,7 @@ function App() {
 
                 {/* User Account/Login Button */}
                 <div className="ml-2 pl-2 border-l border-gray-300">
-                  <NavLink to="/login">
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Login
-                  </NavLink>
+                  <UserAccountButton />
                 </div>
               </div>
 

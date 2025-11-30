@@ -22,6 +22,57 @@ const CreateAnnotationSchema = z.object({
   difficultyLevel: z.number().int().min(1).max(5)
 });
 
+// GET /api/annotations - Get all annotations (optionally filtered by imageId query param)
+router.get('/annotations', async (req: Request, res: Response) => {
+  try {
+    const { imageId } = req.query;
+
+    let query = `
+      SELECT
+        id,
+        image_id as "imageId",
+        bounding_box as "boundingBox",
+        annotation_type as "type",
+        spanish_term as "spanishTerm",
+        english_term as "englishTerm",
+        pronunciation,
+        difficulty_level as "difficultyLevel",
+        is_visible as "isVisible",
+        created_at as "createdAt",
+        updated_at as "updatedAt"
+      FROM annotations
+      WHERE is_visible = true
+    `;
+
+    const values: any[] = [];
+
+    if (imageId && typeof imageId === 'string') {
+      query += ' AND image_id = $1';
+      values.push(imageId);
+    }
+
+    query += ' ORDER BY created_at ASC';
+
+    const result = await pool.query(query, values);
+
+    const annotations = result.rows.map((row: any) => ({
+      ...row,
+      boundingBox: typeof row.boundingBox === 'string'
+        ? JSON.parse(row.boundingBox)
+        : row.boundingBox
+    }));
+
+    res.json({ data: annotations });
+  } catch (err) {
+    const error = err as Error;
+    logError('Error fetching annotations', error, {
+      message: error.message,
+      stack: error.stack?.slice(0, 200)
+    });
+    res.status(500).json({ error: 'Failed to fetch annotations', details: error.message });
+  }
+});
+
 // GET /api/annotations/:imageId
 router.get('/annotations/:imageId', async (req: Request, res: Response) => {
   try {

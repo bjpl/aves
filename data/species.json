@@ -2,181 +2,261 @@
   {
     "id": "sp-001",
     "scientificName": "Cardinalis cardinalis",
-    "englishName": "Northern Cardinal",
     "spanishName": "Cardenal Rojo",
+    "englishName": "Northern Cardinal",
     "orderName": "Passeriformes",
     "familyName": "Cardinalidae",
     "genus": "Cardinalis",
-    "habitats": ["forest", "urban", "suburban"],
     "sizeCategory": "medium",
-    "primaryColors": ["red", "black", "orange"],
+    "primaryColors": [
+      "red",
+      "black",
+      "orange"
+    ],
+    "habitats": [
+      "forest",
+      "urban",
+      "suburban"
+    ],
     "conservationStatus": "LC",
-    "primaryImageUrl": "https://images.unsplash.com/photo-1551031895-7f8e06d714f8?w=800",
-    "descriptionSpanish": "Ave distintiva de color rojo brillante con cresta prominente y pico fuerte para comer semillas.",
+    "descriptionSpanish": "Distinctive red bird with a prominent crest and strong beak for seed-eating.",
     "descriptionEnglish": "Distinctive red bird with a prominent crest and strong beak for seed-eating.",
-    "funFact": "Cardinals are one of the few bird species where both males and females sing.",
-    "annotationCount": 2
+    "funFact": "",
+    "primaryImageUrl": "https://images.unsplash.com/photo-1551031895-7f8e06d714f8?w=800",
+    "annotationCount": 0
   },
   {
     "id": "sp-002",
     "scientificName": "Cyanocitta cristata",
-    "englishName": "Blue Jay",
     "spanishName": "Arrendajo Azul",
+    "englishName": "Blue Jay",
     "orderName": "Passeriformes",
     "familyName": "Corvidae",
     "genus": "Cyanocitta",
-    "habitats": ["forest", "urban", "parks"],
     "sizeCategory": "medium",
-    "primaryColors": ["blue", "white", "black"],
+    "primaryColors": [
+      "blue",
+      "white",
+      "black"
+    ],
+    "habitats": [
+      "forest",
+      "urban",
+      "parks"
+    ],
     "conservationStatus": "LC",
-    "primaryImageUrl": "https://images.unsplash.com/photo-1598310052520-35e1de0dc5fe?w=800",
-    "descriptionSpanish": "Córvido inteligente con plumaje azul brillante y cresta distintiva.",
+    "descriptionSpanish": "Intelligent corvid with bright blue plumage and a distinctive crest.",
     "descriptionEnglish": "Intelligent corvid with bright blue plumage and a distinctive crest.",
-    "funFact": "Blue Jays can mimic the calls of hawks to warn other birds or scare away competitors.",
-    "annotationCount": 2
+    "funFact": "",
+    "primaryImageUrl": "https://images.unsplash.com/photo-1598310052520-35e1de0dc5fe?w=800",
+    "annotationCount": 0
   },
   {
     "id": "sp-003",
     "scientificName": "Turdus migratorius",
-    "englishName": "American Robin",
     "spanishName": "Petirrojo Americano",
+    "englishName": "American Robin",
     "orderName": "Passeriformes",
     "familyName": "Turdidae",
     "genus": "Turdus",
-    "habitats": ["urban", "suburban", "grassland"],
     "sizeCategory": "medium",
-    "primaryColors": ["orange", "gray", "white"],
+    "primaryColors": [
+      "orange",
+      "gray",
+      "white"
+    ],
+    "habitats": [
+      "urban",
+      "suburban",
+      "grassland"
+    ],
     "conservationStatus": "LC",
-    "primaryImageUrl": "https://images.unsplash.com/photo-1617039320517-27901e96a3fa?w=800",
-    "descriptionSpanish": "Tordo común conocido por su pecho naranja-rojo y canto melodioso.",
+    "descriptionSpanish": "Common thrush known for its orange-red breast and melodious song.",
     "descriptionEnglish": "Common thrush known for its orange-red breast and melodious song.",
-    "funFact": "American Robins can eat up to 14 feet of earthworms in a single day.",
-    "annotationCount": 1
+    "funFact": "",
+    "primaryImageUrl": "https://images.unsplash.com/photo-1617039320517-27901e96a3fa?w=800",
+    "annotationCount": 0
   },
   {
     "id": "sp-004",
     "scientificName": "Archilochus colubris",
-    "englishName": "Ruby-throated Hummingbird",
     "spanishName": "Colibrí Garganta de Rubí",
+    "englishName": "Ruby-throated Hummingbird",
     "orderName": "Apodiformes",
     "familyName": "Trochilidae",
     "genus": "Archilochus",
-    "habitats": ["forest", "gardens", "meadows"],
     "sizeCategory": "tiny",
-    "primaryColors": ["green", "red", "white"],
+    "primaryColors": [
+      "green",
+      "red",
+      "white"
+    ],
+    "habitats": [
+      "forest",
+      "gardens",
+      "meadows"
+    ],
     "conservationStatus": "LC",
-    "primaryImageUrl": "https://images.unsplash.com/photo-1552728089-57bdde30beb3?w=800",
-    "descriptionSpanish": "Ave diminuta capaz de mantenerse suspendida en el aire y volar hacia atrás, con plumaje iridiscente.",
+    "descriptionSpanish": "Tiny bird capable of hovering and flying backwards, with iridescent plumage.",
     "descriptionEnglish": "Tiny bird capable of hovering and flying backwards, with iridescent plumage.",
-    "funFact": "Hummingbirds can beat their wings up to 80 times per second.",
-    "annotationCount": 1
+    "funFact": "",
+    "primaryImageUrl": "https://images.unsplash.com/photo-1552728089-57bdde30beb3?w=800",
+    "annotationCount": 0
   },
   {
     "id": "sp-005",
     "scientificName": "Bubo virginianus",
-    "englishName": "Great Horned Owl",
     "spanishName": "Búho Cornudo",
+    "englishName": "Great Horned Owl",
     "orderName": "Strigiformes",
     "familyName": "Strigidae",
     "genus": "Bubo",
-    "habitats": ["forest", "desert", "urban"],
     "sizeCategory": "large",
-    "primaryColors": ["brown", "gray", "white"],
+    "primaryColors": [
+      "brown",
+      "gray",
+      "white"
+    ],
+    "habitats": [
+      "forest",
+      "desert",
+      "urban"
+    ],
     "conservationStatus": "LC",
-    "primaryImageUrl": "https://images.unsplash.com/photo-1557401751-376608588678?w=800",
-    "descriptionSpanish": "Búho grande con penachos distintivos en las orejas y garras poderosas para cazar.",
+    "descriptionSpanish": "Large owl with distinctive ear tufts and powerful talons for hunting.",
     "descriptionEnglish": "Large owl with distinctive ear tufts and powerful talons for hunting.",
-    "funFact": "Great Horned Owls can exert a grip strength of 28 pounds, enough to crush their prey's spine.",
-    "annotationCount": 1
+    "funFact": "",
+    "primaryImageUrl": "https://images.unsplash.com/photo-1557401751-376608588678?w=800",
+    "annotationCount": 0
   },
   {
     "id": "sp-006",
     "scientificName": "Melanerpes carolinus",
-    "englishName": "Red-bellied Woodpecker",
     "spanishName": "Carpintero de Carolina",
+    "englishName": "Red-bellied Woodpecker",
     "orderName": "Piciformes",
     "familyName": "Picidae",
     "genus": "Melanerpes",
-    "habitats": ["forest", "woodland", "parks"],
     "sizeCategory": "medium",
-    "primaryColors": ["red", "black", "white"],
+    "primaryColors": [
+      "red",
+      "black",
+      "white"
+    ],
+    "habitats": [
+      "forest",
+      "woodland",
+      "parks"
+    ],
     "conservationStatus": "LC",
-    "primaryImageUrl": "https://images.unsplash.com/photo-1516641406285-966e15b09bb8?w=800",
-    "descriptionSpanish": "Carpintero de tamaño mediano con patrón de barras en la espalda y gorro rojo.",
+    "descriptionSpanish": "Medium-sized woodpecker with barred back pattern and red cap.",
     "descriptionEnglish": "Medium-sized woodpecker with barred back pattern and red cap.",
-    "funFact": "Woodpeckers can peck 20 times per second without getting a headache.",
-    "annotationCount": 1
+    "funFact": "",
+    "primaryImageUrl": "https://images.unsplash.com/photo-1516641406285-966e15b09bb8?w=800",
+    "annotationCount": 0
   },
   {
     "id": "sp-007",
     "scientificName": "Haliaeetus leucocephalus",
-    "englishName": "Bald Eagle",
     "spanishName": "Águila Calva",
+    "englishName": "Bald Eagle",
     "orderName": "Accipitriformes",
     "familyName": "Accipitridae",
     "genus": "Haliaeetus",
-    "habitats": ["coastal", "rivers", "lakes"],
     "sizeCategory": "very-large",
-    "primaryColors": ["brown", "white", "yellow"],
+    "primaryColors": [
+      "brown",
+      "white",
+      "yellow"
+    ],
+    "habitats": [
+      "coastal",
+      "rivers",
+      "lakes"
+    ],
     "conservationStatus": "LC",
-    "primaryImageUrl": "https://images.unsplash.com/photo-1611686669479-aeaa2577f31d?w=800",
-    "descriptionSpanish": "Rapaz majestuosa con cabeza blanca distintiva y pico amarillo poderoso.",
+    "descriptionSpanish": "Majestic raptor with distinctive white head and powerful yellow beak.",
     "descriptionEnglish": "Majestic raptor with distinctive white head and powerful yellow beak.",
-    "funFact": "Bald Eagles can see fish from up to a mile away.",
-    "annotationCount": 1
+    "funFact": "",
+    "primaryImageUrl": "https://images.unsplash.com/photo-1611686669479-aeaa2577f31d?w=800",
+    "annotationCount": 0
   },
   {
     "id": "sp-008",
     "scientificName": "Pavo cristatus",
-    "englishName": "Indian Peafowl",
     "spanishName": "Pavo Real",
+    "englishName": "Indian Peafowl",
     "orderName": "Galliformes",
     "familyName": "Phasianidae",
     "genus": "Pavo",
-    "habitats": ["forest", "grassland", "cultivated"],
     "sizeCategory": "large",
-    "primaryColors": ["blue", "green", "bronze"],
+    "primaryColors": [
+      "blue",
+      "green",
+      "bronze"
+    ],
+    "habitats": [
+      "forest",
+      "grassland",
+      "cultivated"
+    ],
     "conservationStatus": "LC",
-    "primaryImageUrl": "https://images.unsplash.com/photo-1512990641230-7e91cc31d0dc?w=800",
-    "descriptionSpanish": "Ave espectacular conocida por sus plumas de cola iridiscentes y exhibición de cortejo.",
+    "descriptionSpanish": "Spectacular bird known for its iridescent tail feathers and courtship display.",
     "descriptionEnglish": "Spectacular bird known for its iridescent tail feathers and courtship display.",
-    "funFact": "A peacock's train can be over 6 feet long and contain over 200 feathers.",
-    "annotationCount": 1
+    "funFact": "",
+    "primaryImageUrl": "https://images.unsplash.com/photo-1512990641230-7e91cc31d0dc?w=800",
+    "annotationCount": 0
   },
   {
     "id": "sp-009",
     "scientificName": "Phoenicopterus ruber",
-    "englishName": "American Flamingo",
     "spanishName": "Flamenco Americano",
+    "englishName": "American Flamingo",
     "orderName": "Phoenicopteriformes",
     "familyName": "Phoenicopteridae",
     "genus": "Phoenicopterus",
-    "habitats": ["wetlands", "lagoons", "coastal"],
     "sizeCategory": "large",
-    "primaryColors": ["pink", "red", "white"],
+    "primaryColors": [
+      "pink",
+      "red",
+      "white"
+    ],
+    "habitats": [
+      "wetlands",
+      "lagoons",
+      "coastal"
+    ],
     "conservationStatus": "LC",
-    "primaryImageUrl": "https://images.unsplash.com/photo-1497206365907-f5e630693df0?w=800",
-    "descriptionSpanish": "Ave zancuda alta con plumaje rosa distintivo de dieta rica en carotenoides.",
+    "descriptionSpanish": "Tall wading bird with distinctive pink plumage from carotenoid-rich diet.",
     "descriptionEnglish": "Tall wading bird with distinctive pink plumage from carotenoid-rich diet.",
-    "funFact": "Flamingos are pink because of the carotenoids in the algae and crustaceans they eat.",
+    "funFact": "",
+    "primaryImageUrl": "https://images.unsplash.com/photo-1497206365907-f5e630693df0?w=800",
     "annotationCount": 0
   },
   {
     "id": "sp-010",
     "scientificName": "Falco peregrinus",
-    "englishName": "Peregrine Falcon",
     "spanishName": "Halcón Peregrino",
+    "englishName": "Peregrine Falcon",
     "orderName": "Falconiformes",
     "familyName": "Falconidae",
     "genus": "Falco",
-    "habitats": ["cliffs", "urban", "coastal"],
     "sizeCategory": "medium",
-    "primaryColors": ["gray", "white", "black"],
+    "primaryColors": [
+      "gray",
+      "white",
+      "black"
+    ],
+    "habitats": [
+      "cliffs",
+      "urban",
+      "coastal"
+    ],
     "conservationStatus": "LC",
-    "primaryImageUrl": "https://images.unsplash.com/photo-1604165094602-24433c4baf3f?w=800",
-    "descriptionSpanish": "Animal más rápido de la Tierra, capaz de zambullirse a velocidades superiores a 240 mph.",
+    "descriptionSpanish": "Fastest animal on Earth, capable of diving at speeds over 240 mph.",
     "descriptionEnglish": "Fastest animal on Earth, capable of diving at speeds over 240 mph.",
-    "funFact": "Peregrine Falcons have been clocked diving at speeds of 242 mph.",
+    "funFact": "",
+    "primaryImageUrl": "https://images.unsplash.com/photo-1604165094602-24433c4baf3f?w=800",
     "annotationCount": 0
   }
 ]

@@ -280,14 +280,12 @@ export const MLAnalyticsDashboard: React.FC = () => {
             <CardBody>
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {vocabulary.topGaps.map((gap, idx) => (
-                  <Tooltip key={idx} content={`Feature "${gap}" needs more annotations to improve ML detection accuracy`} position="left">
-                    <div className="flex items-center justify-between py-2 px-3 bg-yellow-50 border border-yellow-200 rounded hover:bg-yellow-100 transition-colors cursor-help">
-                      <span className="text-sm font-medium text-gray-700">{gap}</span>
-                      <Badge variant="warning" size="sm">
-                        Missing
-                      </Badge>
-                    </div>
-                  </Tooltip>
+                  <div key={idx} className="flex items-center justify-between py-2 px-3 bg-yellow-50 border border-yellow-200 rounded hover:bg-yellow-100 transition-colors">
+                    <span className="text-sm font-medium text-gray-700">{gap}</span>
+                    <Badge variant="warning" size="sm">
+                      Needs more
+                    </Badge>
+                  </div>
                 ))}
               </div>
               <p className="text-xs text-gray-600 mt-3">
@@ -401,34 +399,22 @@ export const MLAnalyticsDashboard: React.FC = () => {
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-semibold text-gray-900">{insight.species}</span>
                     <div className="flex gap-2">
-                      <Tooltip content={`Total annotations collected for ${insight.species}`} position="left">
-                        <div className="cursor-help">
-                          <Badge variant="info" size="sm">
-                            {insight.annotations} annotations
-                          </Badge>
-                        </div>
-                      </Tooltip>
-                      <Tooltip content={`Number of different features annotated for ${insight.species}`} position="left">
-                        <div className="cursor-help">
-                          <Badge variant="default" size="sm">
-                            {insight.features} features
-                          </Badge>
-                        </div>
-                      </Tooltip>
+                      <Badge variant="info" size="sm">
+                        {insight.annotations} annotations
+                      </Badge>
+                      <Badge variant="default" size="sm">
+                        {insight.features} features
+                      </Badge>
                     </div>
                   </div>
                   {insight.recommendedFeatures.length > 0 && (
                     <div className="mt-2">
-                      <Tooltip content="These features are underrepresented for this species and should be prioritized in future annotations" position="right">
-                        <p className="text-xs text-gray-600 mb-1 cursor-help border-b border-dotted border-gray-400 inline-block">Recommended features:</p>
-                      </Tooltip>
+                      <p className="text-xs text-gray-600 mb-1">Recommended features to prioritize:</p>
                       <div className="flex flex-wrap gap-1">
                         {insight.recommendedFeatures.map((feature, fIdx) => (
-                          <Tooltip key={fIdx} content={`Priority feature to annotate for ${insight.species}`} position="top">
-                            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full cursor-help">
-                              {feature}
-                            </span>
-                          </Tooltip>
+                          <span key={fIdx} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                            {feature}
+                          </span>
                         ))}
                       </div>
                     </div>
