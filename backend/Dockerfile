@@ -1,34 +1,23 @@
-# Build stage
-FROM node:18-alpine AS builder
+# Production stage using tsx runtime
+FROM node:18-alpine
 
 WORKDIR /app
+
+# Install build dependencies for native modules
+RUN apk add --no-cache python3 make g++
 
 # Copy package files
 COPY package*.json ./
 COPY tsconfig.json ./
 
-# Install dependencies
-RUN npm ci
+# Install all dependencies (tsx and others needed at runtime)
+RUN npm install
 
 # Copy source code
 COPY src ./src
 
-# Build TypeScript
-RUN npm run build
-
-# Production stage
-FROM node:18-alpine
-
-WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install production dependencies only
-RUN npm ci --only=production
-
-# Copy built code from builder
-COPY --from=builder /app/dist ./dist
+# Create data directory for vector databases
+RUN mkdir -p /app/data
 
 # Expose port
 EXPOSE 3001
@@ -36,5 +25,5 @@ EXPOSE 3001
 # Set environment to production
 ENV NODE_ENV=production
 
-# Start the server
+# Start the server using tsx
 CMD ["npm", "start"]
