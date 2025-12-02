@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '../../../test/test-utils';
 import { userEvent } from '@testing-library/user-event';
 import { AnnotationBatchActions } from '../../../components/admin/AnnotationBatchActions';
+import * as useAIAnnotationsModule from '../../../hooks/useAIAnnotations';
 
 // Mock hooks
 vi.mock('../../../hooks/useAIAnnotations', () => ({
@@ -32,6 +33,43 @@ describe('AnnotationBatchActions Component', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset mock implementations
+    vi.mocked(useAIAnnotationsModule.useBatchApprove).mockReturnValue({
+      mutateAsync: vi.fn().mockResolvedValue(undefined),
+      isPending: false,
+      isSuccess: false,
+      isError: false,
+      mutate: vi.fn(),
+      data: undefined,
+      error: null,
+      reset: vi.fn(),
+      status: 'idle',
+      isIdle: true,
+      variables: undefined,
+      context: undefined,
+      failureCount: 0,
+      failureReason: null,
+      isPaused: false,
+      submittedAt: 0,
+    } as any);
+    vi.mocked(useAIAnnotationsModule.useBatchReject).mockReturnValue({
+      mutateAsync: vi.fn().mockResolvedValue(undefined),
+      isPending: false,
+      isSuccess: false,
+      isError: false,
+      mutate: vi.fn(),
+      data: undefined,
+      error: null,
+      reset: vi.fn(),
+      status: 'idle',
+      isIdle: true,
+      variables: undefined,
+      context: undefined,
+      failureCount: 0,
+      failureReason: null,
+      isPaused: false,
+      submittedAt: 0,
+    } as any);
   });
 
   describe('Rendering', () => {
@@ -222,14 +260,25 @@ describe('AnnotationBatchActions Component', () => {
   describe('Batch Approve', () => {
     it('should call batch approve mutation', async () => {
       const user = userEvent.setup();
-      const { useBatchApprove } = require('../../../hooks/useAIAnnotations');
       const mutateAsync = vi.fn().mockResolvedValue(undefined);
-      useBatchApprove.mockReturnValue({
+      vi.mocked(useAIAnnotationsModule.useBatchApprove).mockReturnValue({
         mutateAsync,
         isPending: false,
         isSuccess: false,
         isError: false,
-      });
+        mutate: vi.fn(),
+        data: undefined,
+        error: null,
+        reset: vi.fn(),
+        status: 'idle',
+        isIdle: true,
+        variables: undefined,
+        context: undefined,
+        failureCount: 0,
+        failureReason: null,
+        isPaused: false,
+        submittedAt: 0,
+      } as any);
 
       render(
         <AnnotationBatchActions
@@ -248,14 +297,25 @@ describe('AnnotationBatchActions Component', () => {
 
     it('should call onClearSelection after successful approve', async () => {
       const user = userEvent.setup();
-      const { useBatchApprove } = require('../../../hooks/useAIAnnotations');
       const mutateAsync = vi.fn().mockResolvedValue(undefined);
-      useBatchApprove.mockReturnValue({
+      vi.mocked(useAIAnnotationsModule.useBatchApprove).mockReturnValue({
         mutateAsync,
         isPending: false,
         isSuccess: false,
         isError: false,
-      });
+        mutate: vi.fn(),
+        data: undefined,
+        error: null,
+        reset: vi.fn(),
+        status: 'idle',
+        isIdle: true,
+        variables: undefined,
+        context: undefined,
+        failureCount: 0,
+        failureReason: null,
+        isPaused: false,
+        submittedAt: 0,
+      } as any);
 
       render(
         <AnnotationBatchActions
@@ -276,14 +336,25 @@ describe('AnnotationBatchActions Component', () => {
 
     it('should call onBatchComplete after successful approve', async () => {
       const user = userEvent.setup();
-      const { useBatchApprove } = require('../../../hooks/useAIAnnotations');
       const mutateAsync = vi.fn().mockResolvedValue(undefined);
-      useBatchApprove.mockReturnValue({
+      vi.mocked(useAIAnnotationsModule.useBatchApprove).mockReturnValue({
         mutateAsync,
         isPending: false,
         isSuccess: false,
         isError: false,
-      });
+        mutate: vi.fn(),
+        data: undefined,
+        error: null,
+        reset: vi.fn(),
+        status: 'idle',
+        isIdle: true,
+        variables: undefined,
+        context: undefined,
+        failureCount: 0,
+        failureReason: null,
+        isPaused: false,
+        submittedAt: 0,
+      } as any);
 
       render(
         <AnnotationBatchActions
@@ -318,13 +389,24 @@ describe('AnnotationBatchActions Component', () => {
     });
 
     it('should show loading state during approve', () => {
-      const { useBatchApprove } = require('../../../hooks/useAIAnnotations');
-      useBatchApprove.mockReturnValue({
+      vi.mocked(useAIAnnotationsModule.useBatchApprove).mockReturnValue({
         mutateAsync: vi.fn(),
         isPending: true,
         isSuccess: false,
         isError: false,
-      });
+        mutate: vi.fn(),
+        data: undefined,
+        error: null,
+        reset: vi.fn(),
+        status: 'pending',
+        isIdle: false,
+        variables: undefined,
+        context: undefined,
+        failureCount: 0,
+        failureReason: null,
+        isPaused: false,
+        submittedAt: 0,
+      } as any);
 
       render(
         <AnnotationBatchActions
@@ -340,13 +422,24 @@ describe('AnnotationBatchActions Component', () => {
     });
 
     it('should show error message on approve failure', () => {
-      const { useBatchApprove } = require('../../../hooks/useAIAnnotations');
-      useBatchApprove.mockReturnValue({
+      vi.mocked(useAIAnnotationsModule.useBatchApprove).mockReturnValue({
         mutateAsync: vi.fn(),
         isPending: false,
         isSuccess: false,
         isError: true,
-      });
+        mutate: vi.fn(),
+        data: undefined,
+        error: new Error('Failed'),
+        reset: vi.fn(),
+        status: 'error',
+        isIdle: false,
+        variables: undefined,
+        context: undefined,
+        failureCount: 1,
+        failureReason: new Error('Failed'),
+        isPaused: false,
+        submittedAt: 0,
+      } as any);
 
       render(
         <AnnotationBatchActions
@@ -385,14 +478,25 @@ describe('AnnotationBatchActions Component', () => {
 
     it('should call batch reject mutation when confirmed', async () => {
       const user = userEvent.setup();
-      const { useBatchReject } = require('../../../hooks/useAIAnnotations');
       const mutateAsync = vi.fn().mockResolvedValue(undefined);
-      useBatchReject.mockReturnValue({
+      vi.mocked(useAIAnnotationsModule.useBatchReject).mockReturnValue({
         mutateAsync,
         isPending: false,
         isSuccess: false,
         isError: false,
-      });
+        mutate: vi.fn(),
+        data: undefined,
+        error: null,
+        reset: vi.fn(),
+        status: 'idle',
+        isIdle: true,
+        variables: undefined,
+        context: undefined,
+        failureCount: 0,
+        failureReason: null,
+        isPaused: false,
+        submittedAt: 0,
+      } as any);
 
       render(
         <AnnotationBatchActions
@@ -412,14 +516,25 @@ describe('AnnotationBatchActions Component', () => {
     it('should not call mutation when cancelled', async () => {
       const user = userEvent.setup();
       global.confirm = vi.fn(() => false);
-      const { useBatchReject } = require('../../../hooks/useAIAnnotations');
       const mutateAsync = vi.fn().mockResolvedValue(undefined);
-      useBatchReject.mockReturnValue({
+      vi.mocked(useAIAnnotationsModule.useBatchReject).mockReturnValue({
         mutateAsync,
         isPending: false,
         isSuccess: false,
         isError: false,
-      });
+        mutate: vi.fn(),
+        data: undefined,
+        error: null,
+        reset: vi.fn(),
+        status: 'idle',
+        isIdle: true,
+        variables: undefined,
+        context: undefined,
+        failureCount: 0,
+        failureReason: null,
+        isPaused: false,
+        submittedAt: 0,
+      } as any);
 
       render(
         <AnnotationBatchActions
@@ -452,13 +567,24 @@ describe('AnnotationBatchActions Component', () => {
     });
 
     it('should show error message on reject failure', () => {
-      const { useBatchReject } = require('../../../hooks/useAIAnnotations');
-      useBatchReject.mockReturnValue({
+      vi.mocked(useAIAnnotationsModule.useBatchReject).mockReturnValue({
         mutateAsync: vi.fn(),
         isPending: false,
         isSuccess: false,
         isError: true,
-      });
+        mutate: vi.fn(),
+        data: undefined,
+        error: new Error('Failed'),
+        reset: vi.fn(),
+        status: 'error',
+        isIdle: false,
+        variables: undefined,
+        context: undefined,
+        failureCount: 1,
+        failureReason: new Error('Failed'),
+        isPaused: false,
+        submittedAt: 0,
+      } as any);
 
       render(
         <AnnotationBatchActions
@@ -475,13 +601,24 @@ describe('AnnotationBatchActions Component', () => {
 
   describe('Progress Indicator', () => {
     it('should show progress during approve', () => {
-      const { useBatchApprove } = require('../../../hooks/useAIAnnotations');
-      useBatchApprove.mockReturnValue({
+      vi.mocked(useAIAnnotationsModule.useBatchApprove).mockReturnValue({
         mutateAsync: vi.fn(),
         isPending: true,
         isSuccess: false,
         isError: false,
-      });
+        mutate: vi.fn(),
+        data: undefined,
+        error: null,
+        reset: vi.fn(),
+        status: 'pending',
+        isIdle: false,
+        variables: undefined,
+        context: undefined,
+        failureCount: 0,
+        failureReason: null,
+        isPaused: false,
+        submittedAt: 0,
+      } as any);
 
       const { rerender } = render(
         <AnnotationBatchActions
@@ -513,14 +650,25 @@ describe('AnnotationBatchActions Component', () => {
       vi.useFakeTimers();
       const user = userEvent.setup({ delay: null });
 
-      const { useBatchApprove } = require('../../../hooks/useAIAnnotations');
       const mutateAsync = vi.fn().mockResolvedValue(undefined);
-      useBatchApprove.mockReturnValue({
+      vi.mocked(useAIAnnotationsModule.useBatchApprove).mockReturnValue({
         mutateAsync,
         isPending: false,
         isSuccess: false,
         isError: false,
-      });
+        mutate: vi.fn(),
+        data: undefined,
+        error: null,
+        reset: vi.fn(),
+        status: 'idle',
+        isIdle: true,
+        variables: undefined,
+        context: undefined,
+        failureCount: 0,
+        failureReason: null,
+        isPaused: false,
+        submittedAt: 0,
+      } as any);
 
       render(
         <AnnotationBatchActions
@@ -559,14 +707,25 @@ describe('AnnotationBatchActions Component', () => {
 
     it('should not trigger approve with empty selection', async () => {
       const user = userEvent.setup();
-      const { useBatchApprove } = require('../../../hooks/useAIAnnotations');
       const mutateAsync = vi.fn();
-      useBatchApprove.mockReturnValue({
+      vi.mocked(useAIAnnotationsModule.useBatchApprove).mockReturnValue({
         mutateAsync,
         isPending: false,
         isSuccess: false,
         isError: false,
-      });
+        mutate: vi.fn(),
+        data: undefined,
+        error: null,
+        reset: vi.fn(),
+        status: 'idle',
+        isIdle: true,
+        variables: undefined,
+        context: undefined,
+        failureCount: 0,
+        failureReason: null,
+        isPaused: false,
+        submittedAt: 0,
+      } as any);
 
       render(
         <AnnotationBatchActions
