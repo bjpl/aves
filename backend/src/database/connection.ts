@@ -12,7 +12,8 @@ import { createRailwayConnection } from './railway-connection';
  * - Environment-based configuration for different deployment scenarios
  */
 
-// Use DATABASE_URL if available (Railway/Heroku style), otherwise use individual vars
+// SECURITY: Use DATABASE_URL exclusively - no hardcoded credentials
+// All connection details must come from environment variables
 const connectionConfig = process.env.DATABASE_URL
   ? {
       connectionString: process.env.DATABASE_URL,
@@ -22,19 +23,13 @@ const connectionConfig = process.env.DATABASE_URL
         : process.env.DB_SSL_ENABLED !== 'false'
           ? { rejectUnauthorized: false }
           : false,
-      // Force IPv4 resolution to avoid IPv6 connectivity issues
-      host: 'aws-0-us-west-1.pooler.supabase.com',
-      port: 6543,
-      database: 'postgres',
-      user: 'postgres',
-      password: `${process.env.DB_PASSWORD}.ubqnfiwxghkxltluyczd`
     }
   : {
       host: process.env.DB_HOST || 'localhost',
       port: parseInt(process.env.DB_PORT || '5432'),
       database: process.env.DB_NAME || 'aves',
       user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD || 'postgres',
+      password: process.env.DB_PASSWORD,
       // SSL Configuration
       ssl: process.env.DB_SSL_ENABLED === 'true'
         ? {
@@ -43,6 +38,13 @@ const connectionConfig = process.env.DATABASE_URL
           }
         : false,
     };
+
+// Validate required credentials in production
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.DATABASE_URL && !process.env.DB_PASSWORD) {
+    throw new Error('FATAL: DATABASE_URL or DB_PASSWORD required in production');
+  }
+}
 
 // Initialize pool with default config (may be replaced by Railway connection)
 export let pool = new Pool({

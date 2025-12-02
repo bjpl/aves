@@ -22,7 +22,53 @@ const CreateAnnotationSchema = z.object({
   difficultyLevel: z.number().int().min(1).max(5)
 });
 
-// GET /api/annotations - Get all annotations (optionally filtered by imageId query param)
+/**
+ * @openapi
+ * /api/annotations:
+ *   get:
+ *     tags:
+ *       - Annotations
+ *     summary: List all annotations
+ *     description: Retrieve all visible annotations, optionally filtered by image ID
+ *     parameters:
+ *       - name: imageId
+ *         in: query
+ *         required: false
+ *         description: Filter annotations by image ID
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Annotations retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Annotation'
+ *             example:
+ *               data:
+ *                 - id: 550e8400-e29b-41d4-a716-446655440000
+ *                   imageId: 650e8400-e29b-41d4-a716-446655440001
+ *                   boundingBox:
+ *                     x: 0.25
+ *                     y: 0.3
+ *                     width: 0.4
+ *                     height: 0.35
+ *                   type: anatomical
+ *                   spanishTerm: pico
+ *                   englishTerm: beak
+ *                   pronunciation: PEE-koh
+ *                   difficultyLevel: 1
+ *                   isVisible: true
+ *                   createdAt: 2025-01-15T10:30:00Z
+ *       500:
+ *         description: Server error
+ */
 router.get('/annotations', async (req: Request, res: Response) => {
   try {
     const { imageId } = req.query;
@@ -73,7 +119,37 @@ router.get('/annotations', async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/annotations/:imageId
+/**
+ * @openapi
+ * /api/annotations/{imageId}:
+ *   get:
+ *     tags:
+ *       - Annotations
+ *     summary: Get annotations for a specific image
+ *     description: Retrieve all visible annotations associated with a specific image
+ *     parameters:
+ *       - name: imageId
+ *         in: path
+ *         required: true
+ *         description: Image ID
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Image annotations retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 annotations:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Annotation'
+ *       500:
+ *         description: Server error
+ */
 router.get('/annotations/:imageId', async (req: Request, res: Response) => {
   try {
     const { imageId } = req.params;
@@ -110,7 +186,124 @@ router.get('/annotations/:imageId', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/annotations
+/**
+ * @openapi
+ * /api/annotations:
+ *   post:
+ *     tags:
+ *       - Annotations
+ *     summary: Create a new annotation
+ *     description: Add a new annotation to an image with bounding box, terms, and metadata
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - imageId
+ *               - boundingBox
+ *               - type
+ *               - spanishTerm
+ *               - englishTerm
+ *               - difficultyLevel
+ *             properties:
+ *               imageId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: ID of the image to annotate
+ *               boundingBox:
+ *                 type: object
+ *                 required:
+ *                   - x
+ *                   - y
+ *                   - width
+ *                   - height
+ *                 properties:
+ *                   x:
+ *                     type: number
+ *                     minimum: 0
+ *                     maximum: 1
+ *                     description: Normalized X coordinate (0-1)
+ *                   y:
+ *                     type: number
+ *                     minimum: 0
+ *                     maximum: 1
+ *                     description: Normalized Y coordinate (0-1)
+ *                   width:
+ *                     type: number
+ *                     minimum: 0
+ *                     maximum: 1
+ *                     description: Normalized width (0-1)
+ *                   height:
+ *                     type: number
+ *                     minimum: 0
+ *                     maximum: 1
+ *                     description: Normalized height (0-1)
+ *               type:
+ *                 type: string
+ *                 enum: [anatomical, behavioral, color, pattern]
+ *                 description: Type of annotation
+ *               spanishTerm:
+ *                 type: string
+ *                 minLength: 1
+ *                 maxLength: 200
+ *                 description: Spanish vocabulary term
+ *               englishTerm:
+ *                 type: string
+ *                 minLength: 1
+ *                 maxLength: 200
+ *                 description: English vocabulary term
+ *               pronunciation:
+ *                 type: string
+ *                 description: Pronunciation guide (optional)
+ *               difficultyLevel:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 5
+ *                 description: Difficulty level (1=beginner, 5=advanced)
+ *             example:
+ *               imageId: 650e8400-e29b-41d4-a716-446655440001
+ *               boundingBox:
+ *                 x: 0.25
+ *                 y: 0.3
+ *                 width: 0.4
+ *                 height: 0.35
+ *               type: anatomical
+ *               spanishTerm: pico
+ *               englishTerm: beak
+ *               pronunciation: PEE-koh
+ *               difficultyLevel: 1
+ *     responses:
+ *       201:
+ *         description: Annotation created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 annotation:
+ *                   $ref: '#/components/schemas/Annotation'
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                 details:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
 router.post('/annotations', async (req: Request, res: Response) => {
   try {
     const validatedData = CreateAnnotationSchema.parse(req.body);
@@ -166,7 +359,80 @@ router.post('/annotations', async (req: Request, res: Response) => {
   }
 });
 
-// PUT /api/annotations/:id
+/**
+ * @openapi
+ * /api/annotations/{id}:
+ *   put:
+ *     tags:
+ *       - Annotations
+ *     summary: Update an annotation
+ *     description: Update an existing annotation's properties (partial updates supported)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Annotation ID
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               boundingBox:
+ *                 type: object
+ *                 properties:
+ *                   x:
+ *                     type: number
+ *                   y:
+ *                     type: number
+ *                   width:
+ *                     type: number
+ *                   height:
+ *                     type: number
+ *               annotationType:
+ *                 type: string
+ *                 enum: [anatomical, behavioral, color, pattern]
+ *               spanishTerm:
+ *                 type: string
+ *               englishTerm:
+ *                 type: string
+ *               pronunciation:
+ *                 type: string
+ *               difficultyLevel:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 5
+ *               isVisible:
+ *                 type: boolean
+ *             example:
+ *               spanishTerm: plumaje
+ *               englishTerm: plumage
+ *               difficultyLevel: 2
+ *     responses:
+ *       200:
+ *         description: Annotation updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 annotation:
+ *                   $ref: '#/components/schemas/Annotation'
+ *       400:
+ *         description: No valid fields to update
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Annotation not found
+ *       500:
+ *         description: Server error
+ */
 router.put('/annotations/:id', async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
@@ -239,7 +505,45 @@ router.put('/annotations/:id', async (req: Request, res: Response): Promise<void
   }
 });
 
-// DELETE /api/annotations/:id
+/**
+ * @openapi
+ * /api/annotations/{id}:
+ *   delete:
+ *     tags:
+ *       - Annotations
+ *     summary: Delete an annotation
+ *     description: Permanently delete an annotation from the database
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Annotation ID
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Annotation deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Annotation deleted successfully
+ *                 id:
+ *                   type: string
+ *                   format: uuid
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Annotation not found
+ *       500:
+ *         description: Server error
+ */
 router.delete('/annotations/:id', async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
@@ -259,7 +563,70 @@ router.delete('/annotations/:id', async (req: Request, res: Response): Promise<v
   }
 });
 
-// POST /api/annotations/:id/interaction
+/**
+ * @openapi
+ * /api/annotations/{id}/interaction:
+ *   post:
+ *     tags:
+ *       - Annotations
+ *     summary: Record an annotation interaction
+ *     description: Track user interactions with annotations for analytics (hover, click, reveal)
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Annotation ID
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - interactionType
+ *               - revealed
+ *             properties:
+ *               interactionType:
+ *                 type: string
+ *                 enum: [hover, click, reveal]
+ *                 description: Type of interaction
+ *               revealed:
+ *                 type: boolean
+ *                 description: Whether the annotation was revealed to the user
+ *               userId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: User ID (optional, for tracking authenticated users)
+ *             example:
+ *               interactionType: click
+ *               revealed: true
+ *               userId: 550e8400-e29b-41d4-a716-446655440000
+ *     responses:
+ *       201:
+ *         description: Interaction recorded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 interactionId:
+ *                   type: string
+ *                   format: uuid
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *             example:
+ *               message: Interaction recorded
+ *               interactionId: 750e8400-e29b-41d4-a716-446655440002
+ *               timestamp: 2025-01-15T10:35:00Z
+ *       500:
+ *         description: Server error
+ */
 router.post('/annotations/:id/interaction', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

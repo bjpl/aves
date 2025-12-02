@@ -145,8 +145,13 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, Postman, or curl)
-    if (!origin) return callback(null, true);
+    // Only allow requests with no origin for health check endpoint
+    // All other requests must have a valid origin from the allowedOrigins list
+    if (!origin) {
+      // Block requests without origin by default (security hardening)
+      console.warn('CORS blocked request without origin (non-health check)');
+      return callback(new Error('Not allowed by CORS'));
+    }
 
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
@@ -201,7 +206,8 @@ if (process.env.NODE_ENV === 'development' && process.env.DEV_AUTH_BYPASS === 't
 let dbConnectionStatus: 'pending' | 'connected' | 'failed' = 'pending';
 
 // Health check - responds immediately even before DB connects
-app.get('/health', (_req, res) => {
+// Special CORS handling: Allow requests without origin for health checks only
+app.get('/health', cors({ origin: true }), (_req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),

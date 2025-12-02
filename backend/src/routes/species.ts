@@ -83,7 +83,33 @@ router.get('/species', async (_req: Request, res: Response) => {
   }
 });
 
-// GET /api/species/:id/image - Get primary image for a species
+/**
+ * @openapi
+ * /api/species/{id}/image:
+ *   get:
+ *     tags:
+ *       - Species
+ *     summary: Get primary image for a species
+ *     description: Retrieve the primary image URL for a specific bird species (highest annotation count)
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Species ID
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       302:
+ *         description: Redirect to image URL
+ *       404:
+ *         description: No image found for species
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ */
 router.get('/species/:id/image', async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
@@ -121,7 +147,50 @@ router.get('/species/:id/image', async (req: Request, res: Response): Promise<vo
   }
 });
 
-// GET /api/species/:id
+/**
+ * @openapi
+ * /api/species/{id}:
+ *   get:
+ *     tags:
+ *       - Species
+ *     summary: Get species details by ID
+ *     description: Retrieve detailed information about a specific bird species including images and annotations
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Species ID
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Species details retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Species'
+ *                 - type: object
+ *                   properties:
+ *                     images:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             format: uuid
+ *                           url:
+ *                             type: string
+ *                           thumbnailUrl:
+ *                             type: string
+ *                           annotationCount:
+ *                             type: integer
+ *       404:
+ *         description: Species not found
+ *       500:
+ *         description: Server error
+ */
 router.get('/species/:id', async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
@@ -178,7 +247,45 @@ router.get('/species/:id', async (req: Request, res: Response): Promise<void> =>
   }
 });
 
-// GET /api/species/search
+/**
+ * @openapi
+ * /api/species/search:
+ *   get:
+ *     tags:
+ *       - Species
+ *     summary: Search for bird species
+ *     description: Search species by Spanish name, English name, or scientific name (case-insensitive, partial match)
+ *     parameters:
+ *       - name: q
+ *         in: query
+ *         required: true
+ *         description: Search query string
+ *         schema:
+ *           type: string
+ *         example: mallard
+ *     responses:
+ *       200:
+ *         description: Search results (limited to 20 results)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 results:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Species'
+ *             example:
+ *               results:
+ *                 - id: 1
+ *                   scientificName: Anas platyrhynchos
+ *                   spanishName: Ánade Real
+ *                   englishName: Mallard
+ *                   orderName: Anseriformes
+ *                   familyName: Anatidae
+ *       500:
+ *         description: Server error
+ */
 router.get('/species/search', async (req: Request, res: Response): Promise<void> => {
   try {
     const { q } = req.query;
@@ -225,7 +332,63 @@ router.get('/species/search', async (req: Request, res: Response): Promise<void>
   }
 });
 
-// GET /api/species/stats
+/**
+ * @openapi
+ * /api/species/stats:
+ *   get:
+ *     tags:
+ *       - Species
+ *     summary: Get species statistics
+ *     description: Retrieve aggregated statistics about species, including totals and breakdowns by order, habitat, and size
+ *     responses:
+ *       200:
+ *         description: Statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalSpecies:
+ *                   type: integer
+ *                   description: Total number of species in database
+ *                 totalImages:
+ *                   type: integer
+ *                   description: Total number of images
+ *                 totalAnnotations:
+ *                   type: integer
+ *                   description: Total number of annotations
+ *                 byOrder:
+ *                   type: object
+ *                   description: Species count grouped by taxonomic order
+ *                   additionalProperties:
+ *                     type: integer
+ *                 byHabitat:
+ *                   type: object
+ *                   description: Species count grouped by habitat type
+ *                   additionalProperties:
+ *                     type: integer
+ *                 bySize:
+ *                   type: object
+ *                   description: Species count grouped by size category
+ *                   additionalProperties:
+ *                     type: integer
+ *             example:
+ *               totalSpecies: 150
+ *               totalImages: 450
+ *               totalAnnotations: 1200
+ *               byOrder:
+ *                 Anseriformes: 12
+ *                 Passeriformes: 45
+ *               byHabitat:
+ *                 wetland: 30
+ *                 forest: 55
+ *               bySize:
+ *                 small: 60
+ *                 medium: 50
+ *                 large: 40
+ *       500:
+ *         description: Server error
+ */
 router.get('/species/stats', async (_req: Request, res: Response) => {
   try {
     const statsQuery = `
@@ -288,7 +451,84 @@ router.get('/species/stats', async (_req: Request, res: Response) => {
   }
 });
 
-// POST /api/species
+/**
+ * @openapi
+ * /api/species:
+ *   post:
+ *     tags:
+ *       - Species
+ *     summary: Create a new bird species
+ *     description: Add a new bird species to the database (admin only)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - scientificName
+ *               - spanishName
+ *               - englishName
+ *               - orderName
+ *               - familyName
+ *             properties:
+ *               scientificName:
+ *                 type: string
+ *                 example: Anas platyrhynchos
+ *               spanishName:
+ *                 type: string
+ *                 example: Ánade Real
+ *               englishName:
+ *                 type: string
+ *                 example: Mallard
+ *               orderName:
+ *                 type: string
+ *                 example: Anseriformes
+ *               familyName:
+ *                 type: string
+ *                 example: Anatidae
+ *               genus:
+ *                 type: string
+ *                 example: Anas
+ *               sizeCategory:
+ *                 type: string
+ *                 enum: [small, medium, large]
+ *               primaryColors:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               habitats:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               conservationStatus:
+ *                 type: string
+ *                 enum: [LC, NT, VU, EN, CR, EW, EX]
+ *               descriptionSpanish:
+ *                 type: string
+ *               descriptionEnglish:
+ *                 type: string
+ *               funFact:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Species created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 species:
+ *                   $ref: '#/components/schemas/Species'
+ *       400:
+ *         description: Invalid input data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
 router.post('/species', async (req: Request, res: Response) => {
   try {
     const {

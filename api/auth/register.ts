@@ -7,7 +7,11 @@ import { z } from 'zod';
 // WHY: Serverless architecture for scalability
 // CONCEPT: Stateless authentication endpoints
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+// SECURITY: JWT_SECRET is required - no fallback allowed
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET environment variable is required. Cannot start without secure secret.');
+}
 const DATABASE_URL = process.env.DATABASE_URL;
 
 // Input validation schema

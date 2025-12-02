@@ -5,7 +5,11 @@ import jwt from 'jsonwebtoken';
 // WHY: Validate JWT tokens for protected routes
 // CONCEPT: Stateless authentication verification
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+// SECURITY: JWT_SECRET is required - no fallback allowed
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET environment variable is required. Cannot start without secure secret.');
+}
 
 export default async function handler(
   req: VercelRequest,

@@ -7,12 +7,35 @@ import { Router, Request, Response } from 'express';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { z } from 'zod';
+import rateLimit from 'express-rate-limit';
 import { pool } from '../database/connection';
 import { authenticateToken } from '../middleware/auth';
 import { CreateUserInput, LoginInput, AuthResponse } from '../models/User';
 import { error as logError } from '../utils/logger';
 
 const router = Router();
+
+// Auth-specific rate limiter: 5 attempts per 15 minutes per IP
+// Prevents brute force attacks on authentication endpoints
+const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts per window per IP
+  message: { error: 'Too many authentication attempts. Please try again in 15 minutes.' },
+  standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
+  legacyHeaders: false, // Disable `X-RateLimit-*` headers
+  // Use IP address for rate limiting (works with trust proxy setting)
+  keyGenerator: (req) => {
+    // Get real IP from proxy headers (Railway, etc.)
+    const forwarded = req.headers['x-forwarded-for'];
+    if (forwarded) {
+      return typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : forwarded[0];
+    }
+    return req.ip || 'unknown';
+  },
+  // Skip successful authentications from counting against the limit
+  skipSuccessfulRequests: false, // Count all attempts
+  skipFailedRequests: false // Count failed attempts
+});
 
 const JWT_SECRET = process.env.JWT_SECRET || 'development-secret-change-in-production';
 const SALT_ROUNDS = 10;
@@ -89,7 +112,7 @@ const loginSchema = z.object({
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/auth/register', async (req: Request, res: Response) => {
+router.post('/auth/register', authRateLimiter, async (req: Request, res: Response) => {
   try {
     // Validate input
     const validationResult = registerSchema.safeParse(req.body);
@@ -198,7 +221,7 @@ router.post('/auth/register', async (req: Request, res: Response) => {
  *       500:
  *         description: Server error
  */
-router.post('/auth/login', async (req: Request, res: Response) => {
+router.post('/auth/login', authRateLimiter, async (req: Request, res: Response) => {
   try {
     // Validate input
     const validationResult = loginSchema.safeParse(req.body);
@@ -259,8 +282,40 @@ router.post('/auth/login', async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/auth/verify
- * Verify JWT token and return user session
+ * @openapi
+ * /api/auth/verify:
+ *   get:
+ *     tags:
+ *       - Authentication
+ *     summary: Verify JWT token
+ *     description: Verify the JWT token and return current user session information
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Token is valid, user session returned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *             example:
+ *               user:
+ *                 id: 550e8400-e29b-41d4-a716-446655440000
+ *                 email: user@example.com
+ *                 created_at: 2025-01-15T10:30:00Z
+ *       401:
+ *         description: Invalid or missing token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
  */
 router.get('/auth/verify', authenticateToken, async (req: Request, res: Response) => {
   try {

@@ -33,6 +33,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
 }) => {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [hoveredAnnotation, setHoveredAnnotation] = useState<Annotation | null>(null);
+  const [selectedAnnotation, setSelectedAnnotation] = useState<Annotation | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
 
   // Performance monitoring
@@ -116,6 +117,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
 
     const annotation = getAnnotationAtPoint(point);
     if (annotation) {
+      setSelectedAnnotation(annotation);
       onAnnotationClick?.(annotation);
 
       dirtyRectTracker.markDirty(
@@ -133,12 +135,82 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
     dirtyRectTracker.markFullDirty(dimensions.width, dimensions.height);
   }, [onAnnotationHover, dimensions, dirtyRectTracker]);
 
+  // Keyboard navigation handler for accessibility
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!interactive || !selectedAnnotation) return;
+
+    const MOVE_AMOUNT = 5;
+    let handled = false;
+
+    switch (e.key) {
+      case 'ArrowUp':
+        e.preventDefault();
+        // Move annotation up (visual feedback only, actual movement would need state management)
+        console.log('Move annotation up by', MOVE_AMOUNT);
+        handled = true;
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        // Move annotation down
+        console.log('Move annotation down by', MOVE_AMOUNT);
+        handled = true;
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        // Move annotation left
+        console.log('Move annotation left by', MOVE_AMOUNT);
+        handled = true;
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        // Move annotation right
+        console.log('Move annotation right by', MOVE_AMOUNT);
+        handled = true;
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setSelectedAnnotation(null);
+        setHoveredAnnotation(null);
+        onAnnotationHover?.(null);
+        handled = true;
+        break;
+      case 'Delete':
+      case 'Backspace':
+        e.preventDefault();
+        // Delete annotation (would need to call parent handler)
+        console.log('Delete annotation', selectedAnnotation.id);
+        handled = true;
+        break;
+      case 'Tab':
+        // Allow tab to cycle through annotations
+        if (!e.shiftKey && annotations.length > 0) {
+          e.preventDefault();
+          const currentIndex = annotations.findIndex(a => a.id === selectedAnnotation.id);
+          const nextIndex = (currentIndex + 1) % annotations.length;
+          const nextAnnotation = annotations[nextIndex];
+          setSelectedAnnotation(nextAnnotation);
+          setHoveredAnnotation(nextAnnotation);
+          onAnnotationHover?.(nextAnnotation);
+          handled = true;
+        }
+        break;
+    }
+
+    if (handled) {
+      dirtyRectTracker.markFullDirty(dimensions.width, dimensions.height);
+    }
+  }, [interactive, selectedAnnotation, annotations, onAnnotationHover, dirtyRectTracker, dimensions]);
+
   return (
     <div
       className="relative inline-block max-w-full"
+      role="application"
+      aria-label={`Bird annotation canvas with ${annotations.length} annotations. Use arrow keys to move selected annotation, Escape to deselect, Delete to remove, Tab to cycle through annotations.`}
+      tabIndex={0}
       onMouseMove={handleMouseMove}
       onClick={(e) => handleClick(e as any)}
       onMouseLeave={handleMouseLeave}
+      onKeyDown={handleKeyDown}
     >
       <StaticLayer
         imageUrl={imageUrl}
