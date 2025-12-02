@@ -114,6 +114,10 @@ backend/src/scripts/test-auth.ts
 # Railway environment update instructions (contains credentials)
 backend/docs/railway-env-update-instructions.md
 
+
+# Removed Windows wrapper files per user request
+hive-mind-prompt-*.txt
+
 # Claude Flow generated files
 .claude/settings.local.json
 .mcp.json
