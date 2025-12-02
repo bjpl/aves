@@ -5,29 +5,39 @@ import { userEvent } from '@testing-library/user-event';
 import { ExerciseContainer } from '../../../components/exercises/ExerciseContainer';
 import type { Annotation } from '../../../../../shared/types/annotation.types';
 
-// Mock EnhancedExerciseGenerator
+// Mock EnhancedExerciseGenerator with static methods
+const mockGenerateAdaptiveExercise = vi.fn(() => ({
+  id: 'test-exercise-1',
+  type: 'visual_discrimination',
+  prompt: 'Which bird is a flamingo?',
+  instructions: 'Select the correct image',
+  targetTerm: 'flamingo',
+  options: [
+    { id: 'opt-1', imageUrl: '/img1.jpg', species: 'flamingo' },
+    { id: 'opt-2', imageUrl: '/img2.jpg', species: 'eagle' },
+  ],
+  correctOptionId: 'opt-1',
+  pedagogicalLevel: 'beginner',
+  learningObjective: 'Identify basic bird species',
+}));
+
+const mockUpdateLevel = vi.fn();
+const mockCheckAnswer = vi.fn((exercise, answer) => answer === exercise.correctOptionId);
+const mockGenerateFeedback = vi.fn((isCorrect) =>
+  isCorrect ? '¡Correcto! Well done!' : 'Try again!'
+);
+
+// Create a mock class with static methods
+class MockEnhancedExerciseGenerator {
+  generateAdaptiveExercise = mockGenerateAdaptiveExercise;
+  updateLevel = mockUpdateLevel;
+
+  static checkAnswer = mockCheckAnswer;
+  static generateFeedback = mockGenerateFeedback;
+}
+
 vi.mock('../../../services/enhancedExerciseGenerator', () => ({
-  EnhancedExerciseGenerator: vi.fn().mockImplementation(() => ({
-    generateAdaptiveExercise: vi.fn(() => ({
-      id: 'test-exercise-1',
-      type: 'visual_discrimination',
-      prompt: 'Which bird is a flamingo?',
-      instructions: 'Select the correct image',
-      targetTerm: 'flamingo',
-      options: [
-        { id: 'opt-1', imageUrl: '/img1.jpg', species: 'flamingo' },
-        { id: 'opt-2', imageUrl: '/img2.jpg', species: 'eagle' },
-      ],
-      correctOptionId: 'opt-1',
-      pedagogicalLevel: 'beginner',
-      learningObjective: 'Identify basic bird species',
-    })),
-    updateLevel: vi.fn(),
-  })),
-  checkAnswer: vi.fn((exercise, answer) => answer === exercise.correctOptionId),
-  generateFeedback: vi.fn((isCorrect) =>
-    isCorrect ? '¡Correcto! Well done!' : 'Try again!'
-  ),
+  EnhancedExerciseGenerator: MockEnhancedExerciseGenerator,
 }));
 
 describe('ExerciseContainer', () => {
