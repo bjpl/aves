@@ -16,7 +16,7 @@ describe('InteractiveBirdImage', () => {
       pronunciation: 'PEE-koh',
       x: 50,
       y: 30,
-      description: 'The hard part of a bird's mouth',
+      description: "The hard part of a bird's mouth",
     },
     {
       id: 'ann-2',
