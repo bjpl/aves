@@ -5,7 +5,7 @@ import { userEvent } from '@testing-library/user-event';
 import { AnnotationReviewCard } from '../../../components/admin/AnnotationReviewCard';
 import type { AIAnnotation } from '../../../hooks/useAIAnnotations';
 
-// Mock hooks
+// Mock hooks - include all hooks used by AnnotationReviewCard
 vi.mock('../../../hooks/useAIAnnotations', () => ({
   useApproveAnnotation: vi.fn(() => ({
     mutateAsync: vi.fn().mockResolvedValue(undefined),
@@ -20,6 +20,12 @@ vi.mock('../../../hooks/useAIAnnotations', () => ({
     isError: false,
   })),
   useEditAnnotation: vi.fn(() => ({
+    mutateAsync: vi.fn().mockResolvedValue(undefined),
+    isPending: false,
+    isSuccess: false,
+    isError: false,
+  })),
+  useUpdateAnnotation: vi.fn(() => ({
     mutateAsync: vi.fn().mockResolvedValue(undefined),
     isPending: false,
     isSuccess: false,

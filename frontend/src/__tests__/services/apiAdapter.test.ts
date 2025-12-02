@@ -13,7 +13,11 @@ import type {
   VocabularyInteraction
 } from '../../types';
 import type { ExerciseResult } from '../../types/api.types';
-import { NetworkError } from '../../types/error.types';
+
+// Helper to check if error is a NetworkError (works with dynamic imports)
+const isNetworkError = (error: unknown): boolean => {
+  return error instanceof Error && error.name === 'NetworkError';
+};
 
 // Mock dependencies
 vi.mock('axios');
@@ -192,7 +196,7 @@ describe('ApiAdapter - Backend Mode', () => {
         message: 'Server error'
       });
 
-      await expect(apiAdapter.createAnnotation(newAnnotation)).rejects.toThrow(NetworkError);
+      await expect(apiAdapter.createAnnotation(newAnnotation)).rejects.toSatisfy(isNetworkError);
     });
   });
 
@@ -339,7 +343,7 @@ describe('ApiAdapter - Backend Mode', () => {
         message: 'Bad request'
       });
 
-      await expect(apiAdapter.submitExerciseAnswer('1', 'answer')).rejects.toThrow(NetworkError);
+      await expect(apiAdapter.submitExerciseAnswer('1', 'answer')).rejects.toSatisfy(isNetworkError);
     });
 
     it('should fallback to client storage on exercise fetch error', async () => {
@@ -440,7 +444,7 @@ describe('ApiAdapter - Backend Mode', () => {
         message: 'Server error'
       });
 
-      await expect(apiAdapter.saveProgress(mockProgress)).rejects.toThrow(NetworkError);
+      await expect(apiAdapter.saveProgress(mockProgress)).rejects.toSatisfy(isNetworkError);
     });
 
     it('should fallback to client storage on getProgress error', async () => {
@@ -612,7 +616,7 @@ describe('ApiAdapter - Backend Mode', () => {
 
       await expect(
         apiAdapter.createAnnotation({} as any)
-      ).rejects.toThrow(NetworkError);
+      ).rejects.toSatisfy(isNetworkError);
     });
 
     it('should handle errors without response', async () => {
@@ -624,7 +628,7 @@ describe('ApiAdapter - Backend Mode', () => {
 
       await expect(
         apiAdapter.createAnnotation({} as any)
-      ).rejects.toThrow(NetworkError);
+      ).rejects.toSatisfy(isNetworkError);
     });
 
     it('should handle non-axios errors', async () => {
@@ -684,7 +688,7 @@ describe('ApiAdapter - Client Mode', () => {
 
     await expect(
       apiAdapter.createAnnotation({} as any)
-    ).rejects.toThrow(NetworkError);
+    ).rejects.toSatisfy(isNetworkError);
     await expect(
       apiAdapter.createAnnotation({} as any)
     ).rejects.toThrow('Cannot create annotations in static mode');
