@@ -62,6 +62,7 @@ describe('ErrorBoundary Component', () => {
       );
 
       expect(screen.getByText(/oops! something went wrong/i)).toBeInTheDocument();
+      // When error is thrown, the child component content should not be visible
       expect(screen.queryByText('Normal content')).not.toBeInTheDocument();
     });
 
@@ -120,8 +121,8 @@ describe('ErrorBoundary Component', () => {
         </ErrorBoundary>
       );
 
-      expect(screen.getByText(/error details/i)).toBeInTheDocument();
-      expect(screen.getByText(/test error message/i)).toBeInTheDocument();
+      expect(screen.getByText(/error details \(development only\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/error: test error message/i)).toBeInTheDocument();
     });
 
     it('should show component stack in development', () => {
@@ -132,7 +133,7 @@ describe('ErrorBoundary Component', () => {
       );
 
       // Click to expand details
-      const details = screen.getByText(/error details/i);
+      const details = screen.getByText(/error details \(development only\)/i);
       expect(details).toBeInTheDocument();
     });
   });
@@ -155,8 +156,8 @@ describe('ErrorBoundary Component', () => {
         </ErrorBoundary>
       );
 
-      expect(screen.queryByText(/error details/i)).not.toBeInTheDocument();
-      expect(screen.queryByText(/test error message/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/error details \(development only\)/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/error: test error message/i)).not.toBeInTheDocument();
     });
   });
 
@@ -173,23 +174,34 @@ describe('ErrorBoundary Component', () => {
 
     it('should reset error state when Try Again is clicked', async () => {
       const user = userEvent.setup();
+      let shouldThrow = true;
+
+      const DynamicComponent = () => {
+        if (shouldThrow) {
+          throw new Error('Test error message');
+        }
+        return <div>Normal content</div>;
+      };
 
       const { rerender } = render(
         <ErrorBoundary>
-          <ThrowError shouldThrow />
+          <DynamicComponent />
         </ErrorBoundary>
       );
 
       // Error should be shown
       expect(screen.getByText(/oops! something went wrong/i)).toBeInTheDocument();
 
-      // Click Try Again
+      // Click Try Again - this resets the error boundary
       await user.click(screen.getByRole('button', { name: /try again/i }));
+
+      // Update the component to not throw
+      shouldThrow = false;
 
       // Rerender with no error
       rerender(
         <ErrorBoundary>
-          <ThrowError shouldThrow={false} />
+          <DynamicComponent />
         </ErrorBoundary>
       );
 
@@ -312,7 +324,7 @@ describe('ErrorBoundary Component', () => {
     it('should track error state', () => {
       const { rerender } = render(
         <ErrorBoundary>
-          <ThrowError shouldThrow={false} />
+          <div>Normal content</div>
         </ErrorBoundary>
       );
 
@@ -328,17 +340,17 @@ describe('ErrorBoundary Component', () => {
     });
 
     it('should store error information', () => {
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'development';
+
       render(
         <ErrorBoundary>
           <ThrowError shouldThrow />
         </ErrorBoundary>
       );
 
-      // In development mode, error message should be visible
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'development';
-
-      expect(screen.getByText(/test error message/i)).toBeInTheDocument();
+      // In development mode, error message should be visible (with "Error:" prefix from toString())
+      expect(screen.getByText(/error: test error message/i)).toBeInTheDocument();
 
       process.env.NODE_ENV = originalEnv;
     });

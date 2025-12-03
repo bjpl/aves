@@ -19,8 +19,6 @@ import {
   type AIAnnotation,
 } from '../../hooks/useAIAnnotations';
 
-vi.mock('axios');
-
 const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -56,7 +54,12 @@ const mockAIAnnotation = (overrides: Partial<AIAnnotation> = {}): AIAnnotation =
 });
 
 describe('useAIAnnotations', () => {
-  const mockAxios = axios as any;
+  // Use vi.mocked() to get properly typed mock functions from the global axios mock
+  const mockAxios = {
+    get: vi.mocked(axios.get),
+    post: vi.mocked(axios.post),
+    patch: vi.mocked(axios.patch),
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();

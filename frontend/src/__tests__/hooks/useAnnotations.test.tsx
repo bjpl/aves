@@ -38,10 +38,12 @@ describe('useAnnotations', () => {
         wrapper: createWrapper(),
       });
 
+      // Wait for query to complete
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
+      // Verify the fetched data has the expected length
       expect(result.current.data).toHaveLength(5);
       expect(api.annotations.list).toHaveBeenCalledWith(undefined);
     });

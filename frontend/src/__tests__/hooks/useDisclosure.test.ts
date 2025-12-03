@@ -129,7 +129,9 @@ describe('useDisclosure', () => {
         expect(result.current.disclosure.level).toBe(3);
         expect(result.current.disclosure.etymology).toBeTruthy();
         expect(result.current.disclosure.mnemonic).toBeTruthy();
-        expect(result.current.disclosure.relatedTerms).toHaveLength(3);
+        // Verify relatedTerms array has expected length from mock
+        expect(result.current.disclosure.relatedTerms).toBeDefined();
+        expect(result.current.disclosure.relatedTerms?.length).toBe(3);
       });
 
       expect(vocabularyAPI.getEnrichment).toHaveBeenCalledWith('pico');

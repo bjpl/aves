@@ -5,36 +5,52 @@ import { userEvent } from '@testing-library/user-event';
 import { ExerciseContainer } from '../../../components/exercises/ExerciseContainer';
 import type { Annotation } from '../../../../../shared/types/annotation.types';
 
-// Mock EnhancedExerciseGenerator with static methods
-const mockGenerateAdaptiveExercise = vi.fn(() => ({
-  id: 'test-exercise-1',
-  type: 'visual_discrimination',
-  prompt: 'Which bird is a flamingo?',
-  instructions: 'Select the correct image',
-  targetTerm: 'flamingo',
-  options: [
-    { id: 'opt-1', imageUrl: '/img1.jpg', species: 'flamingo' },
-    { id: 'opt-2', imageUrl: '/img2.jpg', species: 'eagle' },
-  ],
-  correctOptionId: 'opt-1',
-  pedagogicalLevel: 'beginner',
-  learningObjective: 'Identify basic bird species',
-}));
+// Use vi.hoisted() to ensure these are available when vi.mock() is hoisted
+const {
+  mockGenerateAdaptiveExercise,
+  mockUpdateLevel,
+  mockCheckAnswer,
+  mockGenerateFeedback,
+  MockEnhancedExerciseGenerator
+} = vi.hoisted(() => {
+  const mockGenerateAdaptiveExercise = vi.fn(() => ({
+    id: 'test-exercise-1',
+    type: 'visual_discrimination',
+    prompt: 'Which bird is a flamingo?',
+    instructions: 'Select the correct image',
+    targetTerm: 'flamingo',
+    options: [
+      { id: 'opt-1', imageUrl: '/img1.jpg', species: 'flamingo' },
+      { id: 'opt-2', imageUrl: '/img2.jpg', species: 'eagle' },
+    ],
+    correctOptionId: 'opt-1',
+    pedagogicalLevel: 'beginner',
+    learningObjective: 'Identify basic bird species',
+  }));
 
-const mockUpdateLevel = vi.fn();
-const mockCheckAnswer = vi.fn((exercise, answer) => answer === exercise.correctOptionId);
-const mockGenerateFeedback = vi.fn((isCorrect) =>
-  isCorrect ? '¡Correcto! Well done!' : 'Try again!'
-);
+  const mockUpdateLevel = vi.fn();
+  const mockCheckAnswer = vi.fn((exercise, answer) => answer === exercise.correctOptionId);
+  const mockGenerateFeedback = vi.fn((isCorrect) =>
+    isCorrect ? '¡Correcto! Well done!' : 'Try again!'
+  );
 
-// Create a mock class with static methods
-class MockEnhancedExerciseGenerator {
-  generateAdaptiveExercise = mockGenerateAdaptiveExercise;
-  updateLevel = mockUpdateLevel;
+  // Create a mock class with static methods
+  class MockEnhancedExerciseGenerator {
+    generateAdaptiveExercise = mockGenerateAdaptiveExercise;
+    updateLevel = mockUpdateLevel;
 
-  static checkAnswer = mockCheckAnswer;
-  static generateFeedback = mockGenerateFeedback;
-}
+    static checkAnswer = mockCheckAnswer;
+    static generateFeedback = mockGenerateFeedback;
+  }
+
+  return {
+    mockGenerateAdaptiveExercise,
+    mockUpdateLevel,
+    mockCheckAnswer,
+    mockGenerateFeedback,
+    MockEnhancedExerciseGenerator
+  };
+});
 
 vi.mock('../../../services/enhancedExerciseGenerator', () => ({
   EnhancedExerciseGenerator: MockEnhancedExerciseGenerator,

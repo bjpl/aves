@@ -5,7 +5,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from 'react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   useBirds,
   useBird,
@@ -27,7 +27,7 @@ vi.mock('../../services/cms.service');
 const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
-      queries: { retry: false, cacheTime: 0, staleTime: 0 },
+      queries: { retry: false, gcTime: 0, staleTime: 0 },
       mutations: { retry: false },
     },
   });

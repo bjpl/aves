@@ -325,7 +325,8 @@ describe('useAIExercise Hooks', () => {
 
   describe('useAIExerciseAvailability', () => {
     it('should return available when backend is connected', () => {
-      vi.mocked(aiExerciseService.aiExerciseService.isAvailable).mockReturnValueOnce(true);
+      // Mock MUST be set before renderHook to affect the hook's execution
+      vi.mocked(aiExerciseService.aiExerciseService.isAvailable).mockReturnValue(true);
 
       const { result } = renderHook(() => useAIExerciseAvailability());
 
@@ -334,7 +335,8 @@ describe('useAIExercise Hooks', () => {
     });
 
     it('should return unavailable in static mode', () => {
-      vi.mocked(aiExerciseService.aiExerciseService.isAvailable).mockReturnValueOnce(false);
+      // Mock MUST be set before renderHook to affect the hook's execution
+      vi.mocked(aiExerciseService.aiExerciseService.isAvailable).mockReturnValue(false);
 
       const { result } = renderHook(() => useAIExerciseAvailability());
 
