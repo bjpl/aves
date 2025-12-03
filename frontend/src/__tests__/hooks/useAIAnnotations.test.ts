@@ -6,7 +6,6 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import axios from 'axios';
 import {
   useAIAnnotations,
   useAIAnnotationsPending,
@@ -18,6 +17,19 @@ import {
   useBatchReject,
   type AIAnnotation,
 } from '../../hooks/useAIAnnotations';
+
+// Mock the api instance from config/axios (the hook imports 'api' not default axios)
+const mockApi = {
+  get: vi.fn(),
+  post: vi.fn(),
+  patch: vi.fn(),
+  delete: vi.fn(),
+};
+
+vi.mock('../../config/axios', () => ({
+  api: mockApi,
+  default: mockApi,
+}));
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -54,13 +66,6 @@ const mockAIAnnotation = (overrides: Partial<AIAnnotation> = {}): AIAnnotation =
 });
 
 describe('useAIAnnotations', () => {
-  // Use vi.mocked() to get properly typed mock functions from the global axios mock
-  const mockAxios = {
-    get: vi.mocked(axios.get),
-    post: vi.mocked(axios.post),
-    patch: vi.mocked(axios.patch),
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -72,7 +77,7 @@ describe('useAIAnnotations', () => {
         mockAIAnnotation({ id: 'ann-2' }),
       ];
 
-      mockAxios.get.mockResolvedValueOnce({
+      mockApi.get.mockResolvedValueOnce({
         data: { data: mockAnnotations },
       });
 
@@ -85,7 +90,7 @@ describe('useAIAnnotations', () => {
       });
 
       expect(result.current.data).toEqual(mockAnnotations);
-      expect(mockAxios.get).toHaveBeenCalledWith('/api/ai/annotations', {
+      expect(mockApi.get).toHaveBeenCalledWith('/api/ai/annotations', {
         params: undefined,
       });
     });
@@ -96,7 +101,7 @@ describe('useAIAnnotations', () => {
         minConfidence: 0.8,
       };
 
-      mockAxios.get.mockResolvedValueOnce({
+      mockApi.get.mockResolvedValueOnce({
         data: { data: [] },
       });
 
@@ -108,13 +113,13 @@ describe('useAIAnnotations', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockAxios.get).toHaveBeenCalledWith('/api/ai/annotations', {
+      expect(mockApi.get).toHaveBeenCalledWith('/api/ai/annotations', {
         params: filters,
       });
     });
 
     it('should return empty array on API error', async () => {
-      mockAxios.get.mockRejectedValueOnce(new Error('Network error'));
+      mockApi.get.mockRejectedValueOnce(new Error('Network error'));
 
       const { result } = renderHook(() => useAIAnnotations(), {
         wrapper: createWrapper(),
@@ -128,7 +133,7 @@ describe('useAIAnnotations', () => {
     });
 
     it('should use placeholder data', () => {
-      mockAxios.get.mockImplementation(() => new Promise(() => {})); // Never resolves
+      mockApi.get.mockImplementation(() => new Promise(() => {})); // Never resolves
 
       const { result } = renderHook(() => useAIAnnotations(), {
         wrapper: createWrapper(),
@@ -140,7 +145,7 @@ describe('useAIAnnotations', () => {
 
   describe('useAIAnnotationsPending', () => {
     it('should fetch only pending annotations', async () => {
-      mockAxios.get.mockResolvedValueOnce({
+      mockApi.get.mockResolvedValueOnce({
         data: { data: [] },
       });
 
@@ -152,7 +157,7 @@ describe('useAIAnnotations', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockAxios.get).toHaveBeenCalledWith('/api/ai/annotations', {
+      expect(mockApi.get).toHaveBeenCalledWith('/api/ai/annotations', {
         params: { status: 'pending' },
       });
     });
@@ -168,7 +173,7 @@ describe('useAIAnnotations', () => {
         avgConfidence: 0.87,
       };
 
-      mockAxios.get.mockResolvedValueOnce({
+      mockApi.get.mockResolvedValueOnce({
         data: { data: mockStats },
       });
 
@@ -181,11 +186,11 @@ describe('useAIAnnotations', () => {
       });
 
       expect(result.current.data).toEqual(mockStats);
-      expect(mockAxios.get).toHaveBeenCalledWith('/api/ai/annotations/stats');
+      expect(mockApi.get).toHaveBeenCalledWith('/api/ai/annotations/stats');
     });
 
     it('should return default stats on error', async () => {
-      mockAxios.get.mockRejectedValueOnce(new Error('API error'));
+      mockApi.get.mockRejectedValueOnce(new Error('API error'));
 
       const { result } = renderHook(() => useAIAnnotationStats(), {
         wrapper: createWrapper(),
@@ -213,7 +218,7 @@ describe('useAIAnnotations', () => {
         reviewedAt: new Date(),
       });
 
-      mockAxios.post.mockResolvedValueOnce({
+      mockApi.post.mockResolvedValueOnce({
         data: { data: approvedAnnotation },
       });
 
@@ -227,11 +232,11 @@ describe('useAIAnnotations', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockAxios.post).toHaveBeenCalledWith('/api/ai/annotations/ann-1/approve');
+      expect(mockApi.post).toHaveBeenCalledWith('/api/ai/annotations/ann-1/approve');
     });
 
     it('should handle approval error', async () => {
-      mockAxios.post.mockRejectedValueOnce(new Error('API error'));
+      mockApi.post.mockRejectedValueOnce(new Error('API error'));
 
       const { result } = renderHook(() => useApproveAnnotation(), {
         wrapper: createWrapper(),
@@ -262,7 +267,7 @@ describe('useAIAnnotations', () => {
 
       queryClient.setQueryData(['ai-annotations', 'pending'], pendingAnnotations);
 
-      mockAxios.post.mockResolvedValueOnce({
+      mockApi.post.mockResolvedValueOnce({
         data: { data: mockAIAnnotation({ id: 'ann-1', status: 'approved' }) },
       });
 
@@ -292,7 +297,7 @@ describe('useAIAnnotations', () => {
         rejectionReason: 'Incorrect term',
       });
 
-      mockAxios.post.mockResolvedValueOnce({
+      mockApi.post.mockResolvedValueOnce({
         data: { data: rejectedAnnotation },
       });
 
@@ -309,7 +314,7 @@ describe('useAIAnnotations', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockAxios.post).toHaveBeenCalledWith('/api/ai/annotations/ann-1/reject', {
+      expect(mockApi.post).toHaveBeenCalledWith('/api/ai/annotations/ann-1/reject', {
         category: undefined,
         notes: undefined,
         reason: 'Incorrect term',
@@ -317,7 +322,7 @@ describe('useAIAnnotations', () => {
     });
 
     it('should reject without reason', async () => {
-      mockAxios.post.mockResolvedValueOnce({
+      mockApi.post.mockResolvedValueOnce({
         data: { data: mockAIAnnotation({ status: 'rejected' }) },
       });
 
@@ -331,7 +336,7 @@ describe('useAIAnnotations', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockAxios.post).toHaveBeenCalledWith('/api/ai/annotations/ann-1/reject', {
+      expect(mockApi.post).toHaveBeenCalledWith('/api/ai/annotations/ann-1/reject', {
         category: undefined,
         notes: undefined,
         reason: undefined,
@@ -346,7 +351,7 @@ describe('useAIAnnotations', () => {
         englishTerm: 'wing',
       });
 
-      mockAxios.patch.mockResolvedValueOnce({
+      mockApi.patch.mockResolvedValueOnce({
         data: { data: updatedAnnotation },
       });
 
@@ -366,7 +371,7 @@ describe('useAIAnnotations', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockAxios.post).toHaveBeenCalledWith('/api/ai/annotations/ann-1/edit', {
+      expect(mockApi.post).toHaveBeenCalledWith('/api/ai/annotations/ann-1/edit', {
         spanishTerm: 'ala',
         englishTerm: 'wing',
       });
@@ -375,7 +380,7 @@ describe('useAIAnnotations', () => {
 
   describe('useBatchApprove - Mutation', () => {
     it('should batch approve multiple annotations', async () => {
-      mockAxios.post.mockResolvedValueOnce({
+      mockApi.post.mockResolvedValueOnce({
         data: { data: { approved: 3 } },
       });
 
@@ -391,13 +396,13 @@ describe('useAIAnnotations', () => {
       });
 
       expect(result.current.data).toEqual({ approved: 3 });
-      expect(mockAxios.post).toHaveBeenCalledWith('/api/ai/annotations/batch/approve', {
+      expect(mockApi.post).toHaveBeenCalledWith('/api/ai/annotations/batch/approve', {
         annotationIds,
       });
     });
 
     it('should handle batch approve errors', async () => {
-      mockAxios.post.mockRejectedValueOnce(new Error('Batch error'));
+      mockApi.post.mockRejectedValueOnce(new Error('Batch error'));
 
       const { result } = renderHook(() => useBatchApprove(), {
         wrapper: createWrapper(),
@@ -413,7 +418,7 @@ describe('useAIAnnotations', () => {
 
   describe('useBatchReject - Mutation', () => {
     it('should batch reject multiple annotations', async () => {
-      mockAxios.post.mockResolvedValueOnce({
+      mockApi.post.mockResolvedValueOnce({
         data: { data: { rejected: 2 } },
       });
 
@@ -431,7 +436,7 @@ describe('useAIAnnotations', () => {
       });
 
       expect(result.current.data).toEqual({ rejected: 2 });
-      expect(mockAxios.post).toHaveBeenCalledWith('/api/ai/annotations/batch/reject', {
+      expect(mockApi.post).toHaveBeenCalledWith('/api/ai/annotations/batch/reject', {
         annotationIds: ['ann-1', 'ann-2'],
         reason: 'Low confidence',
       });
@@ -449,7 +454,7 @@ describe('useAIAnnotations', () => {
 
       const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
-      mockAxios.post.mockResolvedValueOnce({
+      mockApi.post.mockResolvedValueOnce({
         data: { data: mockAIAnnotation({ status: 'approved' }) },
       });
 
