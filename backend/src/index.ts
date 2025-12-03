@@ -107,6 +107,19 @@ const PORT = process.env.PORT || 3001;
 // Railway and other cloud platforms use reverse proxies
 app.set('trust proxy', true);
 
+// Track database connection status for health checks
+let dbConnectionStatus: 'pending' | 'connected' | 'failed' = 'pending';
+
+// Health check endpoint - MUST be before CORS middleware
+// Railway/infrastructure health checks don't send Origin headers
+app.get('/health', (_req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    database: dbConnectionStatus
+  });
+});
+
 // Security middleware with enhanced CSP
 app.use(
   helmet({
@@ -201,19 +214,6 @@ if (process.env.NODE_ENV === 'development' && process.env.DEV_AUTH_BYPASS === 't
   info('⚠️  DEV AUTH BYPASS ENABLED - DO NOT USE IN PRODUCTION!');
   app.use('/api', devAuthBypass);
 }
-
-// Track database connection status for health checks
-let dbConnectionStatus: 'pending' | 'connected' | 'failed' = 'pending';
-
-// Health check - responds immediately even before DB connects
-// Special CORS handling: Allow requests without origin for health checks only
-app.get('/health', cors({ origin: true }), (_req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    database: dbConnectionStatus
-  });
-});
 
 // Environment diagnostic endpoint (remove in production)
 app.get('/api/env-check', (_req, res) => {
