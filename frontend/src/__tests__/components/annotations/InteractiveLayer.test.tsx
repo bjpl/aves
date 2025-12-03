@@ -49,6 +49,10 @@ describe('InteractiveLayer Component', () => {
   let mockPerformanceMonitor: CanvasPerformanceMonitor;
 
   beforeEach(() => {
+    // InteractiveLayer uses normalized coordinates (0-1) with x, y format
+    // For 800x600 canvas:
+    // ann-1: x=100px => 0.125, y=100px => 0.1667, width=50px => 0.0625, height=50px => 0.0833
+    // ann-2: x=200px => 0.25, y=150px => 0.25, width=80px => 0.1, height=60px => 0.1
     mockAnnotations = [
       {
         id: 'ann-1',
@@ -59,9 +63,10 @@ describe('InteractiveLayer Component', () => {
         type: 'anatomical',
         isVisible: true,
         boundingBox: {
-          topLeft: { x: 100, y: 100 },
-          width: 50,
-          height: 50,
+          x: 0.125,  // 100/800
+          y: 0.1667, // 100/600
+          width: 0.0625, // 50/800
+          height: 0.0833, // 50/600
         },
         difficultyLevel: 'beginner',
         createdAt: new Date(),
@@ -76,9 +81,10 @@ describe('InteractiveLayer Component', () => {
         type: 'anatomical',
         isVisible: true,
         boundingBox: {
-          topLeft: { x: 200, y: 150 },
-          width: 80,
-          height: 60,
+          x: 0.25,  // 200/800
+          y: 0.25,  // 150/600
+          width: 0.1, // 80/800
+          height: 0.1, // 60/600
         },
         difficultyLevel: 'beginner',
         createdAt: new Date(),
@@ -239,8 +245,10 @@ describe('InteractiveLayer Component', () => {
       );
 
       await waitFor(() => {
-        expect(mockContext.fillText).toHaveBeenCalledWith('el pico', 105, 88);
-        expect(mockContext.fillText).toHaveBeenCalledWith('el ala', 205, 138);
+        // x + 5, y - labelHeight/2 = 100 + 5 = 105, 100 - 12.5 = 87.5
+        expect(mockContext.fillText).toHaveBeenCalledWith('el pico', expect.closeTo(105, 1), expect.closeTo(87.5, 1));
+        // 200 + 5 = 205, 150 - 12.5 = 137.5
+        expect(mockContext.fillText).toHaveBeenCalledWith('el ala', expect.closeTo(205, 1), expect.closeTo(137.5, 1));
       });
     });
 
@@ -474,8 +482,11 @@ describe('InteractiveLayer Component', () => {
       );
 
       await waitFor(() => {
-        expect(mockContext.fillRect).toHaveBeenCalledWith(100, 75, 50, 25);
-        expect(mockContext.fillRect).toHaveBeenCalledWith(200, 125, 80, 25);
+        // x, y - 25, max(width, 100), 25
+        // ann-1: 100, 100-25=75, max(50,100)=100, 25
+        expect(mockContext.fillRect).toHaveBeenCalledWith(expect.closeTo(100, 1), expect.closeTo(75, 1), 100, 25);
+        // ann-2: 200, 150-25=125, max(80,100)=100, 25
+        expect(mockContext.fillRect).toHaveBeenCalledWith(expect.closeTo(200, 1), expect.closeTo(125, 1), 100, 25);
       });
     });
 

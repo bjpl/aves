@@ -54,6 +54,8 @@ describe('HoverLayer Component', () => {
   let mockPerformanceMonitor: CanvasPerformanceMonitor;
 
   beforeEach(() => {
+    // HoverLayer uses normalized coordinates (0-1) with x, y format
+    // For 800x600 canvas: x=0.125 => 100px, y=0.1667 => 100px, width=0.0625 => 50px, height=0.0833 => 50px
     mockAnnotation = {
       id: 'ann-1',
       imageId: 'img-1',
@@ -63,9 +65,10 @@ describe('HoverLayer Component', () => {
       type: 'anatomical',
       isVisible: true,
       boundingBox: {
-        topLeft: { x: 100, y: 100 },
-        width: 50,
-        height: 50,
+        x: 0.125,  // 100/800 = 0.125
+        y: 0.1667, // 100/600 = 0.1667
+        width: 0.0625, // 50/800 = 0.0625
+        height: 0.0833, // 50/600 = 0.0833
       },
       difficultyLevel: 'beginner',
       createdAt: new Date(),
@@ -170,7 +173,13 @@ describe('HoverLayer Component', () => {
       );
 
       await waitFor(() => {
-        expect(mockContext.strokeRect).toHaveBeenCalledWith(100, 100, 50, 50);
+        // 0.125*800=100, 0.1667*600≈100, 0.0625*800=50, 0.0833*600≈50
+        expect(mockContext.strokeRect).toHaveBeenCalledWith(
+          expect.closeTo(100, 1),
+          expect.closeTo(100, 1),
+          expect.closeTo(50, 1),
+          expect.closeTo(50, 1)
+        );
       });
     });
 
@@ -185,9 +194,10 @@ describe('HoverLayer Component', () => {
       );
 
       await waitFor(() => {
+        // Label is drawn at y-30 (above the box)
         expect(mockContext.fillRect).toHaveBeenCalledWith(
-          100,
-          70,
+          expect.closeTo(100, 1),
+          expect.closeTo(70, 1), // 100 - 30 = 70
           expect.any(Number),
           30
         );
@@ -205,10 +215,11 @@ describe('HoverLayer Component', () => {
       );
 
       await waitFor(() => {
+        // fillText is called at x+8, y-labelHeight/2 = 100+8=108, 100-15=85
         expect(mockContext.fillText).toHaveBeenCalledWith(
           'el pico',
-          108,
-          85
+          expect.closeTo(108, 1),
+          expect.closeTo(85, 1)
         );
       });
     });
@@ -502,12 +513,14 @@ describe('HoverLayer Component', () => {
 
   describe('Label Sizing', () => {
     it('should ensure minimum label width', async () => {
+      // Small annotation (30x30 px) => normalized: 30/800=0.0375 width, 30/600=0.05 height
       const smallAnnotation = {
         ...mockAnnotation,
         boundingBox: {
-          topLeft: { x: 100, y: 100 },
-          width: 30,
-          height: 30,
+          x: 0.125, // 100px
+          y: 0.1667, // 100px
+          width: 0.0375, // 30px - smaller than minimum 150
+          height: 0.05, // 30px
         },
       };
 
@@ -521,9 +534,10 @@ describe('HoverLayer Component', () => {
       );
 
       await waitFor(() => {
+        // Label width should be max(annotationWidth=30, 150) = 150
         expect(mockContext.fillRect).toHaveBeenCalledWith(
-          100,
-          70,
+          expect.closeTo(100, 1),
+          expect.closeTo(70, 1), // y - labelHeight = 100 - 30 = 70
           150, // Minimum width
           30
         );
@@ -531,12 +545,14 @@ describe('HoverLayer Component', () => {
     });
 
     it('should use annotation width if larger than minimum', async () => {
+      // Large annotation (200x50 px) => normalized: 200/800=0.25 width, 50/600=0.0833 height
       const largeAnnotation = {
         ...mockAnnotation,
         boundingBox: {
-          topLeft: { x: 100, y: 100 },
-          width: 200,
-          height: 50,
+          x: 0.125, // 100px
+          y: 0.1667, // 100px
+          width: 0.25, // 200px - larger than minimum 150
+          height: 0.0833, // 50px
         },
       };
 
@@ -550,9 +566,10 @@ describe('HoverLayer Component', () => {
       );
 
       await waitFor(() => {
+        // Label width should be max(annotationWidth=200, 150) = 200
         expect(mockContext.fillRect).toHaveBeenCalledWith(
-          100,
-          70,
+          expect.closeTo(100, 1),
+          expect.closeTo(70, 1),
           200, // Use annotation width
           30
         );
