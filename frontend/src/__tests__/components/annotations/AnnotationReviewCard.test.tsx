@@ -159,9 +159,10 @@ describe('AnnotationReviewCard Component', () => {
           imageUrl={mockImageUrl}
         />
       );
-      expect(screen.getByText('el pico')).toBeInTheDocument();
-      expect(screen.getByText('the beak')).toBeInTheDocument();
-      expect(screen.getByText('[ˈpiko]')).toBeInTheDocument();
+      // Use getAllByText since annotation term may appear multiple times (in preview and data section)
+      expect(screen.getAllByText('el pico').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('the beak').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('[ˈpiko]').length).toBeGreaterThan(0);
     });
 
     it('should display bounding box info', () => {
@@ -513,7 +514,8 @@ describe('AnnotationReviewCard Component', () => {
       await user.click(cancelButton);
 
       expect(screen.queryByText(/Edit Annotation Data/i)).not.toBeInTheDocument();
-      expect(screen.getByText('el pico')).toBeInTheDocument();
+      // Use getAllByText since term may appear multiple places
+      expect(screen.getAllByText('el pico').length).toBeGreaterThan(0);
     });
 
     it('should show success message after edit', () => {
@@ -564,8 +566,9 @@ describe('AnnotationReviewCard Component', () => {
           imageUrl={mockImageUrl}
         />
       );
-      expect(screen.getByText('el pico')).toBeInTheDocument();
-      expect(screen.getByText('the beak')).toBeInTheDocument();
+      // Use getAllByText since term may appear multiple places
+      expect(screen.getAllByText('el pico').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('the beak').length).toBeGreaterThan(0);
     });
 
     it('should handle missing confidence score', () => {

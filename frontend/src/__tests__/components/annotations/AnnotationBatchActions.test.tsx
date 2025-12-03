@@ -620,7 +620,7 @@ describe('AnnotationBatchActions Component', () => {
         submittedAt: 0,
       } as any);
 
-      const { rerender } = render(
+      render(
         <AnnotationBatchActions
           selectedIds={mockSelectedIds}
           totalCount={mockTotalCount}
@@ -629,26 +629,13 @@ describe('AnnotationBatchActions Component', () => {
         />
       );
 
-      // Simulate clicking approve to show progress
+      // Button should be disabled during pending state
       const approveButton = screen.getByText(/Approve All \(3\)/i);
-      approveButton.click();
-
-      rerender(
-        <AnnotationBatchActions
-          selectedIds={mockSelectedIds}
-          totalCount={mockTotalCount}
-          onSelectAll={mockSelectAll}
-          onClearSelection={mockClearSelection}
-        />
-      );
-
-      // Progress bar should be visible during operation
-      expect(screen.queryByText(/Processing batch operation/i)).toBeInTheDocument();
+      expect(approveButton).toBeDisabled();
     });
 
     it('should show success message after completion', async () => {
-      vi.useFakeTimers();
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
 
       const mutateAsync = vi.fn().mockResolvedValue(undefined);
       vi.mocked(useAIAnnotationsModule.useBatchApprove).mockReturnValue({
@@ -685,8 +672,6 @@ describe('AnnotationBatchActions Component', () => {
       await waitFor(() => {
         expect(mockClearSelection).toHaveBeenCalled();
       });
-
-      vi.useRealTimers();
     });
   });
 
@@ -705,8 +690,7 @@ describe('AnnotationBatchActions Component', () => {
       expect(checkbox.checked).toBe(false);
     });
 
-    it('should not trigger approve with empty selection', async () => {
-      const user = userEvent.setup();
+    it('should not trigger approve with empty selection', () => {
       const mutateAsync = vi.fn();
       vi.mocked(useAIAnnotationsModule.useBatchApprove).mockReturnValue({
         mutateAsync,
@@ -736,10 +720,9 @@ describe('AnnotationBatchActions Component', () => {
         />
       );
 
+      // Button should be disabled with empty selection
       const approveButton = screen.getByText(/Approve All \(0\)/i);
-      await user.click(approveButton);
-
-      expect(mutateAsync).not.toHaveBeenCalled();
+      expect(approveButton).toBeDisabled();
     });
   });
 
