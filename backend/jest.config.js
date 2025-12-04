@@ -1,6 +1,13 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  // Disable TypeScript diagnostics in tests (type errors are caught by tsc in CI separately)
+  globals: {
+    'ts-jest': {
+      diagnostics: false,
+      isolatedModules: true,
+    },
+  },
   roots: ['<rootDir>/src'],
   testMatch: ['**/__tests__/**/*.test.ts'],
   collectCoverageFrom: [
