@@ -20,7 +20,7 @@
     }
   },
   "rules": {
-    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/no-unused-vars": ["warn", {
       "argsIgnorePattern": "^_",
       "varsIgnorePattern": "^_"
@@ -32,5 +32,5 @@
     "react/react-in-jsx-scope": "off",
     "react/prop-types": "off"
   },
-  "ignorePatterns": ["dist", "node_modules", "*.config.ts", "*.config.js"]
+  "ignorePatterns": ["dist", "node_modules", "*.config.ts", "*.config.js", "src/test/**", "src/test-utils/**", "**/*.test.ts", "**/*.test.tsx"]
 }

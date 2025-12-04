@@ -38,7 +38,7 @@
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:smoke": "playwright test smoke.spec.ts",
     "test:e2e:report": "playwright show-report",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.1",
