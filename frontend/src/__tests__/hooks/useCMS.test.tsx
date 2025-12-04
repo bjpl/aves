@@ -139,7 +139,7 @@ describe('useCMS Hooks', () => {
   describe('useBird', () => {
     it('should fetch a bird by ID', async () => {
       const mockBird = { id: 1, commonName: 'Robin', scientificName: 'Turdus migratorius' };
-      mockGetBirdById).mockResolvedValueOnce(mockBird);
+      mockGetBirdById.mockResolvedValueOnce(mockBird);
 
       const { result } = renderHook(() => useBird(1), {
         wrapper: createWrapper(),
@@ -150,7 +150,7 @@ describe('useCMS Hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockBird);
-      expect(mockgetBirdById).toHaveBeenCalledWith(1);
+      expect(mockGetBirdById).toHaveBeenCalledWith(1);
     });
 
     it('should not fetch when ID is falsy', () => {
@@ -159,14 +159,14 @@ describe('useCMS Hooks', () => {
       });
 
       expect(result.current.fetchStatus).toBe('idle');
-      expect(mockgetBirdById).not.toHaveBeenCalled();
+      expect(mockGetBirdById).not.toHaveBeenCalled();
     });
   });
 
   describe('useBirdByName', () => {
     it('should fetch a bird by Spanish name', async () => {
       const mockBird = { id: 1, spanishName: 'Petirrojo', commonName: 'Robin' };
-      mockGetBirdBySpanishName).mockResolvedValueOnce(mockBird);
+      mockGetBirdBySpanishName.mockResolvedValueOnce(mockBird);
 
       const { result } = renderHook(() => useBirdByName('Petirrojo'), {
         wrapper: createWrapper(),
@@ -177,7 +177,7 @@ describe('useCMS Hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockBird);
-      expect(mockgetBirdBySpanishName).toHaveBeenCalledWith('Petirrojo');
+      expect(mockGetBirdBySpanishName).toHaveBeenCalledWith('Petirrojo');
     });
 
     it('should not fetch when name is empty', () => {
@@ -196,7 +196,7 @@ describe('useCMS Hooks', () => {
         { id: 2, title: 'Lesson 2', difficulty: 'intermediate' },
       ];
 
-      mockGetLessons).mockResolvedValueOnce(mockLessons);
+      mockGetLessons.mockResolvedValueOnce(mockLessons);
 
       const { result } = renderHook(() => useLessons(), {
         wrapper: createWrapper(),
@@ -213,7 +213,7 @@ describe('useCMS Hooks', () => {
   describe('useLesson', () => {
     it('should fetch a lesson by ID', async () => {
       const mockLesson = { id: 1, title: 'Lesson 1', content: 'Content' };
-      mockGetLessonById).mockResolvedValueOnce(mockLesson);
+      mockGetLessonById.mockResolvedValueOnce(mockLesson);
 
       const { result } = renderHook(() => useLesson(1), {
         wrapper: createWrapper(),
@@ -252,7 +252,7 @@ describe('useCMS Hooks', () => {
         { id: 2, question: 'Question 2', lessonId: 1 },
       ];
 
-      mockGetQuizzesByLessonId).mockResolvedValueOnce(mockQuizzes);
+      mockGetQuizzesByLessonId.mockResolvedValueOnce(mockQuizzes);
 
       const { result } = renderHook(() => useQuizzesByLesson(1), {
         wrapper: createWrapper(),
@@ -277,7 +277,7 @@ describe('useCMS Hooks', () => {
   describe('useQuizSubmission', () => {
     it('should submit a quiz answer', async () => {
       const mockResponse = { correct: true, score: 100 };
-      mockSubmitQuizAnswer).mockResolvedValueOnce(mockResponse);
+      mockSubmitQuizAnswer.mockResolvedValueOnce(mockResponse);
 
       const { result } = renderHook(() => useQuizSubmission(), {
         wrapper: createWrapper(),
@@ -292,14 +292,14 @@ describe('useCMS Hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mocksubmitQuizAnswer).toHaveBeenCalledWith(1, 'Option A');
+      expect(mockSubmitQuizAnswer).toHaveBeenCalledWith(1, 'Option A');
     });
 
     it('should invalidate userProgress on success', async () => {
       const queryClient = new QueryClient();
       const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
-      mockSubmitQuizAnswer).mockResolvedValueOnce({ correct: true });
+      mockSubmitQuizAnswer.mockResolvedValueOnce({ correct: true });
 
       const Wrapper = ({ children }: { children: React.ReactNode }) => (
         <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
@@ -320,7 +320,7 @@ describe('useCMS Hooks', () => {
   describe('useBirdSearch', () => {
     it('should search birds with term', async () => {
       const mockResults = [{ id: 1, commonName: 'Robin' }];
-      mockSearchBirds).mockResolvedValueOnce(mockResults);
+      mockSearchBirds.mockResolvedValueOnce(mockResults);
 
       const { result } = renderHook(() => useBirdSearch('robin'), {
         wrapper: createWrapper(),
@@ -331,7 +331,7 @@ describe('useCMS Hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockResults);
-      expect(mocksearchBirds).toHaveBeenCalledWith('robin');
+      expect(mockSearchBirds).toHaveBeenCalledWith('robin');
     });
 
     it('should not search with short term', () => {
@@ -353,7 +353,7 @@ describe('useCMS Hooks', () => {
 
   describe('useProgressTracking', () => {
     it('should track user progress', async () => {
-      mockTrackProgress).mockResolvedValueOnce();
+      mockTrackProgress.mockResolvedValueOnce(undefined);
 
       const { result } = renderHook(() => useProgressTracking(), {
         wrapper: createWrapper(),
@@ -369,14 +369,14 @@ describe('useCMS Hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mocktrackProgress).toHaveBeenCalledWith('user-1', 1, 75);
+      expect(mockTrackProgress).toHaveBeenCalledWith('user-1', 1, 75);
     });
 
     it('should invalidate userProgress on success', async () => {
       const queryClient = new QueryClient();
       const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
-      mockTrackProgress).mockResolvedValueOnce();
+      mockTrackProgress.mockResolvedValueOnce(undefined);
 
       const Wrapper = ({ children }: { children: React.ReactNode }) => (
         <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>

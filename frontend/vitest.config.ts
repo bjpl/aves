@@ -1,7 +1,10 @@
 /// <reference types="vitest" />
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
-import path from 'path';
+import { resolve } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
@@ -10,6 +13,16 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: true,
+    // Performance and timeout settings
+    testTimeout: 30000, // 30 seconds for regular tests
+    hookTimeout: 10000, // 10 seconds for beforeAll/afterAll hooks
+    pool: 'forks', // Use forks for better WSL2 compatibility
+    poolOptions: {
+      forks: {
+        singleFork: true, // Single process for debugging
+        isolate: true,
+      },
+    },
     exclude: [
       'node_modules/**',
       '**/e2e/**',
@@ -31,7 +44,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': resolve(__dirname, './src'),
     },
   },
 });

@@ -1,0 +1,432 @@
+{
+  "skillId": "test-timeout-fix",
+  "name": "Test Timeout Fix Pattern",
+  "version": "1.0.0",
+  "category": "testing",
+  "tags": ["vitest", "jest", "timeout", "async", "debugging", "mocking"],
+  "description": "Comprehensive pattern for diagnosing and fixing test timeout issues in Vitest/Jest test suites",
+  "author": "Research Agent",
+  "createdAt": "2025-12-03",
+  "
+": {
+    "testFrameworks": ["Vitest", "Jest"],
+    "languages": ["TypeScript", "JavaScript"],
+    "async": true,
+    "mocking": true
+  },
+
+  "triggerConditions": [
+    "Tests timing out after default timeout period",
+    "Tests hanging indefinitely",
+    "Tests running slowly (>5 seconds per test)",
+    "Unhandled promise rejections",
+    "afterEach/afterAll hooks not completing",
+    "Mock functions not being called as expected"
+  ],
+
+  "commonCauses": [
+    {
+      "issue": "Unresolved Promises",
+      "description": "Async operations without proper await or promise handling",
+      "symptoms": ["Test hangs", "Timeout after 30s", "Test never completes"],
+      "examples": [
+        "Missing await on async function calls",
+        "Promise chains without catch handlers",
+        "Async callbacks in event handlers not awaited"
+      ]
+    },
+    {
+      "issue": "Real API Calls",
+      "description": "Tests making actual network requests instead of using mocks",
+      "symptoms": ["Slow tests", "Intermittent failures", "Network errors"],
+      "examples": [
+        "Unmocked axios/fetch calls",
+        "External API dependencies not stubbed",
+        "Service functions calling real endpoints"
+      ]
+    },
+    {
+      "issue": "Missing Cleanup",
+      "description": "Resources not cleaned up after tests (timers, subscriptions, listeners)",
+      "symptoms": ["Memory leaks", "Tests affect each other", "Cleanup warnings"],
+      "examples": [
+        "setInterval/setTimeout not cleared",
+        "Event listeners not removed",
+        "React Query cache not cleared between tests"
+      ]
+    },
+    {
+      "issue": "Incorrect Mock Configuration",
+      "description": "Mocks not properly hoisted or configured",
+      "symptoms": ["Mock functions undefined", "Wrong module imported", "Hoisting errors"],
+      "examples": [
+        "vi.mock() not hoisted",
+        "Mock functions not defined before use",
+        "Factory functions not returning correct shape"
+      ]
+    },
+    {
+      "issue": "Missing waitFor/Act",
+      "description": "State updates or async operations not properly awaited",
+      "symptoms": ["Act warnings", "State not updated", "Assertions fail"],
+      "examples": [
+        "React state updates not wrapped in waitFor",
+        "Async rendering not awaited",
+        "Query mutations not waited for"
+      ]
+    }
+  ],
+
+  "diagnosticSteps": [
+    {
+      "step": 1,
+      "action": "Identify the hanging test",
+      "commands": [
+        "npm test -- --reporter=verbose",
+        "npm test -- --no-coverage",
+        "npm test -- path/to/test.test.ts"
+      ],
+      "lookFor": [
+        "Which test is timing out",
+        "How long before timeout",
+        "Any error messages before timeout"
+      ]
+    },
+    {
+      "step": 2,
+      "action": "Check for unresolved promises",
+      "commands": [
+        "grep -n 'async' test-file.test.ts",
+        "grep -n '\\.then(' test-file.test.ts",
+        "grep -n 'await' test-file.test.ts"
+      ],
+      "lookFor": [
+        "Async functions without await",
+        "Promise chains without catch",
+        "Callbacks that should be awaited"
+      ]
+    },
+    {
+      "step": 3,
+      "action": "Verify mock configuration",
+      "checkpoints": [
+        "Are all external modules properly mocked?",
+        "Are mock functions hoisted using vi.hoisted()?",
+        "Do mocks return proper data structures?",
+        "Are mocks cleared in beforeEach/afterEach?"
+      ]
+    },
+    {
+      "step": 4,
+      "action": "Inspect cleanup patterns",
+      "checkpoints": [
+        "Is cleanup() called in afterEach?",
+        "Are timers cleared?",
+        "Are listeners removed?",
+        "Is test isolation maintained?"
+      ]
+    },
+    {
+      "step": 5,
+      "action": "Check test configuration",
+      "files": [
+        "vitest.config.ts",
+        "jest.config.js",
+        "src/test/setup.ts"
+      ],
+      "lookFor": [
+        "testTimeout setting",
+        "hookTimeout setting",
+        "Proper test isolation (pool: 'threads', isolate: true)"
+      ]
+    }
+  ],
+
+  "fixPatterns": [
+    {
+      "pattern": "Add Explicit Timeouts",
+      "when": "Tests need more time for legitimate async operations",
+      "implementation": {
+        "vitest": {
+          "config": {
+            "file": "vitest.config.ts",
+            "setting": "testTimeout: 30000  // 30 seconds"
+          },
+          "perTest": "it('slow test', { timeout: 60000 }, async () => { ... })"
+        },
+        "jest": {
+          "config": {
+            "file": "jest.config.js",
+            "setting": "testTimeout: 30000"
+          },
+          "perTest": "it('slow test', async () => { ... }, 60000)"
+        }
+      },
+      "example": "// vitest.config.ts\nexport default defineConfig({\n  test: {\n    testTimeout: 30000, // 30s for regular tests\n    hookTimeout: 10000, // 10s for hooks\n  }\n})"
+    },
+    {
+      "pattern": "Properly Await Async Operations",
+      "when": "Tests have unresolved promises",
+      "fixes": [
+        {
+          "before": "result.current.mutate(params);",
+          "after": "await waitFor(() => {\n  expect(result.current.isSuccess).toBe(true);\n});"
+        },
+        {
+          "before": "component.update();",
+          "after": "await waitFor(() => {\n  expect(screen.getByText('Updated')).toBeInTheDocument();\n});"
+        },
+        {
+          "before": "mockFunction().then(data => { ... });",
+          "after": "const data = await mockFunction();\n// ... use data"
+        }
+      ],
+      "example": "// Before: Unresolved promise\nit('fetches data', () => {\n  result.current.refetch(); // No await!\n  expect(result.current.data).toBeDefined();\n});\n\n// After: Properly awaited\nit('fetches data', async () => {\n  result.current.refetch();\n  await waitFor(() => {\n    expect(result.current.isSuccess).toBe(true);\n  });\n  expect(result.current.data).toBeDefined();\n});"
+    },
+    {
+      "pattern": "Mock External Dependencies",
+      "when": "Tests are making real API calls",
+      "implementation": {
+        "vitest": {
+          "hoist": "const { mockFunction } = vi.hoisted(() => ({\n  mockFunction: vi.fn()\n}));\n\nvi.mock('../module', () => ({\n  functionName: mockFunction\n}));",
+          "service": "vi.mock('axios', () => ({\n  default: {\n    create: vi.fn(() => ({\n      get: vi.fn(),\n      post: vi.fn()\n    }))\n  }\n}));"
+        }
+      },
+      "example": "// Mock API service\nconst { mockGenerateExercise } = vi.hoisted(() => ({\n  mockGenerateExercise: vi.fn()\n}));\n\nvi.mock('../../services/aiExerciseService', () => ({\n  aiExerciseService: {\n    generateExercise: mockGenerateExercise\n  }\n}));\n\nbeforeEach(() => {\n  mockGenerateExercise.mockResolvedValue({\n    exercise: mockData\n  });\n});"
+    },
+    {
+      "pattern": "Add Proper Cleanup",
+      "when": "Tests leave resources hanging",
+      "implementation": {
+        "afterEach": "afterEach(() => {\n  cleanup(); // React Testing Library\n  vi.clearAllMocks();\n  vi.clearAllTimers();\n});",
+        "beforeEach": "beforeEach(() => {\n  vi.useFakeTimers();\n  vi.clearAllMocks();\n});",
+        "queryClient": "const createWrapper = () => {\n  const queryClient = new QueryClient({\n    defaultOptions: {\n      queries: { \n        retry: false, \n        gcTime: 0,  // No caching between tests\n        staleTime: 0 \n      }\n    }\n  });\n  return ({ children }) => (\n    <QueryClientProvider client={queryClient}>\n      {children}\n    </QueryClientProvider>\n  );\n};"
+      },
+      "example": "describe('MyComponent', () => {\n  let queryClient;\n\n  beforeEach(() => {\n    queryClient = new QueryClient({\n      defaultOptions: {\n        queries: { retry: false, gcTime: 0 }\n      }\n    });\n  });\n\n  afterEach(() => {\n    cleanup();\n    queryClient.clear();\n    vi.clearAllMocks();\n  });\n});"
+    },
+    {
+      "pattern": "Use Fake Timers",
+      "when": "Tests involve setTimeout/setInterval",
+      "implementation": {
+        "setup": "beforeEach(() => {\n  vi.useFakeTimers();\n});\n\nafterEach(() => {\n  vi.runOnlyPendingTimers();\n  vi.useRealTimers();\n});",
+        "usage": "it('handles delayed action', () => {\n  const callback = vi.fn();\n  setTimeout(callback, 1000);\n  \n  vi.advanceTimersByTime(1000);\n  expect(callback).toHaveBeenCalled();\n});"
+      },
+      "example": "describe('Polling tests', () => {\n  beforeEach(() => {\n    vi.useFakeTimers();\n  });\n\n  afterEach(() => {\n    vi.runOnlyPendingTimers();\n    vi.useRealTimers();\n  });\n\n  it('polls every 5 seconds', () => {\n    const mockPoll = vi.fn();\n    startPolling(mockPoll, 5000);\n    \n    vi.advanceTimersByTime(5000);\n    expect(mockPoll).toHaveBeenCalledTimes(1);\n    \n    vi.advanceTimersByTime(5000);\n    expect(mockPoll).toHaveBeenCalledTimes(2);\n  });\n});"
+    },
+    {
+      "pattern": "Isolate Test Environment",
+      "when": "Tests interfere with each other",
+      "implementation": {
+        "config": "// vitest.config.ts\nexport default defineConfig({\n  test: {\n    pool: 'threads',\n    poolOptions: {\n      threads: {\n        singleThread: false,\n        isolate: true  // Each test gets fresh context\n      }\n    }\n  }\n});",
+        "beforeEach": "beforeEach(() => {\n  // Reset all module state\n  vi.resetModules();\n  // Clear all mocks\n  vi.clearAllMocks();\n  // Reset DOM\n  document.body.innerHTML = '';\n});"
+      }
+    },
+    {
+      "pattern": "Add Error Boundaries",
+      "when": "Tests fail silently or hang on errors",
+      "implementation": {
+        "catchErrors": "it('handles errors', async () => {\n  mockFunction.mockRejectedValueOnce(new Error('API Error'));\n  \n  await expect(async () => {\n    await result.current.mutate(params);\n  }).rejects.toThrow('API Error');\n});",
+        "errorState": "it('shows error state', async () => {\n  mockFunction.mockRejectedValueOnce(new Error('Failed'));\n  \n  result.current.mutate(params);\n  \n  await waitFor(() => {\n    expect(result.current.isError).toBe(true);\n    expect(result.current.error).toBeDefined();\n  });\n});"
+      }
+    }
+  ],
+
+  "bestPractices": [
+    {
+      "practice": "Always await async operations",
+      "rationale": "Prevents tests from completing before async work finishes",
+      "examples": [
+        "Use await waitFor() for React Testing Library",
+        "Use await act() for React state updates",
+        "Always await mutation/query operations"
+      ]
+    },
+    {
+      "practice": "Mock all external dependencies",
+      "rationale": "Tests should be fast, deterministic, and not depend on external services",
+      "examples": [
+        "Mock HTTP clients (axios, fetch)",
+        "Mock external services",
+        "Mock file system operations",
+        "Mock timers for time-dependent code"
+      ]
+    },
+    {
+      "practice": "Clean up after every test",
+      "rationale": "Prevents test pollution and ensures test isolation",
+      "checklist": [
+        "Call cleanup() from @testing-library/react",
+        "Clear all mocks with vi.clearAllMocks()",
+        "Clear timers with vi.clearAllTimers()",
+        "Reset QueryClient cache",
+        "Remove event listeners",
+        "Clear localStorage/sessionStorage"
+      ]
+    },
+    {
+      "practice": "Use explicit timeouts judiciously",
+      "rationale": "Timeouts mask underlying issues; fix the root cause instead",
+      "guidelines": [
+        "30s timeout is reasonable for integration tests",
+        "10s timeout is reasonable for unit tests",
+        "1s timeout for pure synchronous tests",
+        "If you need >60s, you probably have a real issue to fix"
+      ]
+    },
+    {
+      "practice": "Prefer fake timers over real timers",
+      "rationale": "Tests run faster and more reliably",
+      "usage": [
+        "Use vi.useFakeTimers() for any time-dependent code",
+        "Advance time explicitly with vi.advanceTimersByTime()",
+        "Clean up with vi.useRealTimers() in afterEach"
+      ]
+    },
+    {
+      "practice": "Test one thing at a time",
+      "rationale": "Easier to debug when tests fail, faster execution",
+      "guidelines": [
+        "Each test should verify one behavior",
+        "Keep tests focused and small",
+        "Use describe blocks to group related tests",
+        "Don't share state between tests"
+      ]
+    }
+  ],
+
+  "troubleshootingChecklist": [
+    {
+      "checkpoint": "Are all async functions properly awaited?",
+      "commands": ["grep -n 'async.*=>\\|async function' test.ts"],
+      "fix": "Add await to all async function calls and wrap in waitFor()"
+    },
+    {
+      "checkpoint": "Are external modules properly mocked?",
+      "commands": ["grep -n 'import.*from' test.ts"],
+      "fix": "Add vi.mock() for each external dependency"
+    },
+    {
+      "checkpoint": "Is cleanup being called?",
+      "commands": ["grep -n 'afterEach\\|cleanup' test.ts"],
+      "fix": "Add afterEach(() => cleanup())"
+    },
+    {
+      "checkpoint": "Are mocks returning correct data types?",
+      "commands": ["Check mock function return values"],
+      "fix": "Ensure mocks return Promises for async operations"
+    },
+    {
+      "checkpoint": "Are timers being cleared?",
+      "commands": ["grep -n 'setTimeout\\|setInterval' test.ts"],
+      "fix": "Use fake timers or clear timers in afterEach"
+    },
+    {
+      "checkpoint": "Is test isolation configured?",
+      "commands": ["Check vitest.config.ts for pool settings"],
+      "fix": "Set pool: 'threads' and isolate: true"
+    },
+    {
+      "checkpoint": "Are promises being rejected properly?",
+      "commands": ["grep -n '\\.mockRejected' test.ts"],
+      "fix": "Wrap in expect().rejects.toThrow() or use try/catch"
+    }
+  ],
+
+  "successCriteria": {
+    "performance": {
+      "unitTests": "<1 second per test",
+      "integrationTests": "<5 seconds per test",
+      "totalSuite": "<30 seconds for 100 tests"
+    },
+    "reliability": {
+      "passRate": ">99% consistent pass rate",
+      "flakiness": "Zero flaky tests",
+      "isolation": "Tests pass in any order"
+    },
+    "quality": {
+      "coverage": ">80% code coverage",
+      "maintainability": "Easy to debug when tests fail",
+      "documentation": "Clear test descriptions and comments"
+    }
+  },
+
+  "exampleFixes": [
+    {
+      "scenario": "React Query hook test timing out",
+      "before": "it('generates exercise', () => {\n  const { result } = renderHook(() => useGenerateAIExercise());\n  result.current.mutate(params);\n  expect(result.current.data).toBeDefined();\n});",
+      "after": "it('generates exercise', async () => {\n  const { result } = renderHook(() => useGenerateAIExercise(), {\n    wrapper: createWrapper()\n  });\n  \n  result.current.mutate(params);\n  \n  await waitFor(() => {\n    expect(result.current.isSuccess).toBe(true);\n  });\n  \n  expect(result.current.data).toBeDefined();\n});",
+      "explanation": "Added await waitFor() to wait for mutation to complete before asserting"
+    },
+    {
+      "scenario": "Missing mock causing real API call",
+      "before": "it('fetches data', async () => {\n  const { result } = renderHook(() => useData());\n  // Hangs here - real API call\n});",
+      "after": "const { mockGet } = vi.hoisted(() => ({\n  mockGet: vi.fn()\n}));\n\nvi.mock('axios', () => ({\n  default: { get: mockGet }\n}));\n\nit('fetches data', async () => {\n  mockGet.mockResolvedValue({ data: mockData });\n  const { result } = renderHook(() => useData());\n  await waitFor(() => {\n    expect(result.current.isSuccess).toBe(true);\n  });\n});",
+      "explanation": "Added proper mock for axios to prevent real network calls"
+    },
+    {
+      "scenario": "Timer not cleaned up between tests",
+      "before": "it('polls data', () => {\n  const poller = startPolling(callback, 1000);\n  expect(callback).toHaveBeenCalled();\n});",
+      "after": "beforeEach(() => {\n  vi.useFakeTimers();\n});\n\nafterEach(() => {\n  vi.runOnlyPendingTimers();\n  vi.useRealTimers();\n});\n\nit('polls data', () => {\n  const callback = vi.fn();\n  startPolling(callback, 1000);\n  \n  vi.advanceTimersByTime(1000);\n  expect(callback).toHaveBeenCalledTimes(1);\n});",
+      "explanation": "Used fake timers to control time progression and ensure cleanup"
+    }
+  ],
+
+  "references": [
+    {
+      "title": "Vitest API Reference",
+      "url": "https://vitest.dev/api/",
+      "topics": ["async testing", "mocking", "timers"]
+    },
+    {
+      "title": "React Testing Library - Async Methods",
+      "url": "https://testing-library.com/docs/dom-testing-library/api-async/",
+      "topics": ["waitFor", "findBy queries", "act"]
+    },
+    {
+      "title": "TanStack Query Testing",
+      "url": "https://tanstack.com/query/latest/docs/react/guides/testing",
+      "topics": ["QueryClient setup", "mock data", "mutations"]
+    }
+  ],
+
+  "implementationGuide": {
+    "step1": {
+      "title": "Configure test timeouts",
+      "action": "Update vitest.config.ts or jest.config.js",
+      "code": "export default defineConfig({\n  test: {\n    testTimeout: 30000,\n    hookTimeout: 10000,\n    pool: 'threads',\n    poolOptions: {\n      threads: { isolate: true }\n    }\n  }\n})"
+    },
+    "step2": {
+      "title": "Setup test file structure",
+      "action": "Add proper beforeEach/afterEach hooks",
+      "code": "beforeEach(() => {\n  vi.clearAllMocks();\n  vi.useFakeTimers();\n});\n\nafterEach(() => {\n  cleanup();\n  vi.clearAllTimers();\n  vi.useRealTimers();\n});"
+    },
+    "step3": {
+      "title": "Mock external dependencies",
+      "action": "Hoist and configure all mocks",
+      "code": "const { mockFn } = vi.hoisted(() => ({\n  mockFn: vi.fn()\n}));\n\nvi.mock('../module', () => ({\n  exportedFunction: mockFn\n}));"
+    },
+    "step4": {
+      "title": "Await all async operations",
+      "action": "Use waitFor for state changes",
+      "code": "await waitFor(() => {\n  expect(result.current.isSuccess).toBe(true);\n});"
+    },
+    "step5": {
+      "title": "Verify test isolation",
+      "action": "Run tests in random order",
+      "code": "npm test -- --sequence.shuffle"
+    }
+  },
+
+  "integration": {
+    "agentdb": {
+      "storage": "Store in skills collection",
+      "retrieval": "Query by tags: ['timeout', 'async', 'vitest']",
+      "update": "Version incrementally based on new patterns"
+    },
+    "usage": {
+      "trigger": "When test timeout errors detected",
+      "apply": "Follow diagnostic steps then apply relevant fix patterns",
+      "validate": "Verify all success criteria met"
+    }
+  }
+}
