@@ -21,6 +21,10 @@ import {
 } from './setup';
 import { withTimeout, cleanupAsyncTests } from '../utils/asyncTestUtils';
 
+// Skip integration tests if SUPABASE_URL is not configured (CI environment)
+const skipIntegrationTests = !process.env.SUPABASE_URL && !process.env.TEST_DB_HOST;
+const describeOrSkip = skipIntegrationTests ? describe.skip : describe;
+
 // Create test app
 const app = express();
 app.use(express.json());
@@ -29,7 +33,7 @@ app.use('/api', batchRouter);
 app.use('/api', aiAnnotationsRouter);
 app.use('/api', aiExercisesRouter);
 
-describe('Integration: Admin Dashboard Flow', () => {
+describeOrSkip('Integration: Admin Dashboard Flow', () => {
   let adminToken: string;
   let adminId: string;
   let userToken: string;

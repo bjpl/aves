@@ -142,8 +142,10 @@ describe('AnnotationMasteryService', () => {
       };
 
       mockClient.query
-        .mockResolvedValueOnce({ rows: [mockMasteryRow], rowCount: 1 })
-        .mockResolvedValueOnce({ rows: [{ next_review_at: new Date() }], rowCount: 1 });
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [mockMasteryRow], rowCount: 1 }) // Upsert
+        .mockResolvedValueOnce({ rows: [{ next_review_at: new Date() }], rowCount: 1 }) // Review date
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // COMMIT
 
       const result = await service.updateMastery(
         'user-456',
@@ -176,8 +178,10 @@ describe('AnnotationMasteryService', () => {
       };
 
       mockClient.query
-        .mockResolvedValueOnce({ rows: [mockMasteryRow], rowCount: 1 })
-        .mockResolvedValueOnce({ rows: [{ next_review_at: new Date() }], rowCount: 1 });
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [mockMasteryRow], rowCount: 1 }) // Upsert
+        .mockResolvedValueOnce({ rows: [{ next_review_at: new Date() }], rowCount: 1 }) // Review date
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // COMMIT
 
       const result = await service.updateMastery(
         'user-456',
@@ -648,8 +652,10 @@ describe('AnnotationMasteryService', () => {
       };
 
       mockClient.query
-        .mockResolvedValueOnce({ rows: [mockMasteryRow], rowCount: 1 })
-        .mockResolvedValueOnce({ rows: [{ next_review_at: new Date() }], rowCount: 1 });
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [mockMasteryRow], rowCount: 1 }) // Upsert
+        .mockResolvedValueOnce({ rows: [{ next_review_at: new Date() }], rowCount: 1 }) // Review date
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // COMMIT
 
       const result = await service.updateMastery('user-456', 'ann-789', true, 500);
 
@@ -677,8 +683,10 @@ describe('AnnotationMasteryService', () => {
       };
 
       mockClient.query
-        .mockResolvedValueOnce({ rows: [mockMasteryRow], rowCount: 1 })
-        .mockResolvedValueOnce({ rows: [{ next_review_at: new Date() }], rowCount: 1 });
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [mockMasteryRow], rowCount: 1 }) // Upsert
+        .mockResolvedValueOnce({ rows: [{ next_review_at: new Date() }], rowCount: 1 }) // Review date
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // COMMIT
 
       const result = await service.updateMastery('user-456', 'ann-789', false, 60000);
 

@@ -19,6 +19,10 @@ import {
   delay,
 } from './setup';
 
+// Skip integration tests if SUPABASE_URL is not configured (CI environment)
+const skipIntegrationTests = !process.env.SUPABASE_URL && !process.env.TEST_DB_HOST;
+const describeOrSkip = skipIntegrationTests ? describe.skip : describe;
+
 // Create test app
 const app = express();
 app.use(express.json());
@@ -52,7 +56,7 @@ jest.mock('../../services/VisionAIService', () => ({
   },
 }));
 
-describe('Integration: Annotation Workflow', () => {
+describeOrSkip('Integration: Annotation Workflow', () => {
   let userToken: string;
   let adminToken: string;
   let testSpecies: any;

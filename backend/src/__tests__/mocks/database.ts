@@ -3,10 +3,13 @@
  * Prevents actual database connections during testing
  */
 
+// Default mock query response with proper structure
+const defaultQueryResponse = { rows: [], rowCount: 0 };
+
 export const mockPool = {
-  query: jest.fn(),
+  query: jest.fn().mockResolvedValue(defaultQueryResponse),
   connect: jest.fn().mockResolvedValue({
-    query: jest.fn(),
+    query: jest.fn().mockResolvedValue(defaultQueryResponse),
     release: jest.fn(),
   }),
   end: jest.fn().mockResolvedValue(undefined),
@@ -17,9 +20,9 @@ export const mockPool = {
 };
 
 export const mockTestPool = {
-  query: jest.fn(),
+  query: jest.fn().mockResolvedValue(defaultQueryResponse),
   connect: jest.fn().mockResolvedValue({
-    query: jest.fn(),
+    query: jest.fn().mockResolvedValue(defaultQueryResponse),
     release: jest.fn(),
   }),
   end: jest.fn().mockResolvedValue(undefined),
@@ -34,8 +37,8 @@ jest.mock('../../database/connection', () => ({
   pool: mockPool,
   testPool: mockTestPool,
   getPool: jest.fn(() => mockPool),
-  executeQuery: jest.fn(),
-  executeTransaction: jest.fn(),
+  executeQuery: jest.fn().mockResolvedValue(defaultQueryResponse),
+  executeTransaction: jest.fn().mockResolvedValue(defaultQueryResponse),
 }));
 
 // Mock pg module entirely
