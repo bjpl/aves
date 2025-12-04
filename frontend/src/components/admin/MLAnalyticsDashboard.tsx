@@ -307,13 +307,53 @@ export const MLAnalyticsDashboard: React.FC = () => {
             <CardBody>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Current Quality</span>
+                  <Tooltip
+                    content={
+                      <div className="space-y-2">
+                        <p className="font-semibold">Current Quality Score</p>
+                        <p>This shows the average confidence level of AI-generated annotations from the most recent week.</p>
+                        <p className="text-xs opacity-90">
+                          • <strong>85-100%</strong>: Excellent - AI is highly confident<br/>
+                          • <strong>70-84%</strong>: Good - AI is reliable<br/>
+                          • <strong>Below 70%</strong>: Needs improvement
+                        </p>
+                        <p className="text-xs opacity-75 italic">
+                          Based on confidence scores from approved annotations
+                        </p>
+                      </div>
+                    }
+                    position="bottom"
+                  >
+                    <span className="text-sm font-medium text-gray-700 cursor-help border-b border-dotted border-gray-400">
+                      Current Quality
+                    </span>
+                  </Tooltip>
                   <span className="text-2xl font-bold text-blue-600">
                     {((trends.summary.currentQuality || 0) * 100).toFixed(1)}%
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Improvement</span>
+                  <Tooltip
+                    content={
+                      <div className="space-y-2">
+                        <p className="font-semibold">Quality Improvement Trend</p>
+                        <p>Compares the first week vs. the most recent week of annotation data to show learning progress.</p>
+                        <p className="text-xs opacity-90">
+                          • <strong>Positive (+)</strong>: AI is improving over time ✓<br/>
+                          • <strong>Negative (-)</strong>: Quality has decreased<br/>
+                          • <strong>0%</strong>: No change or insufficient data
+                        </p>
+                        <p className="text-xs opacity-75 italic">
+                          Calculation: ((Most Recent - Earliest) ÷ Earliest) × 100
+                        </p>
+                      </div>
+                    }
+                    position="bottom"
+                  >
+                    <span className="text-sm font-medium text-gray-700 cursor-help border-b border-dotted border-gray-400">
+                      Improvement
+                    </span>
+                  </Tooltip>
                   <span className={`text-xl font-bold ${Number(trends.summary.improvement || 0) > 0 ? 'text-green-600' : 'text-gray-600'}`}>
                     {Number(trends.summary.improvement || 0) > 0 ? '+' : ''}{trends.summary.improvement || 0}%
                   </span>
