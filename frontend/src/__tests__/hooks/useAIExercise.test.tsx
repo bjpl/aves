@@ -17,7 +17,30 @@ import {
 } from '../../hooks/useAIExercise';
 import * as aiExerciseService from '../../services/aiExerciseService';
 
-vi.mock('../../services/aiExerciseService');
+// Hoist mock functions for aiExerciseService
+const {
+  mockGenerateExercise,
+  mockGetStats,
+  mockIsAvailable,
+  mockPrefetchExercises,
+  mockClearCache,
+} = vi.hoisted(() => ({
+  mockGenerateExercise: vi.fn(),
+  mockGetStats: vi.fn(),
+  mockIsAvailable: vi.fn(() => true), // Default to available
+  mockPrefetchExercises: vi.fn(),
+  mockClearCache: vi.fn(),
+}));
+
+vi.mock('../../services/aiExerciseService', () => ({
+  aiExerciseService: {
+    generateExercise: mockGenerateExercise,
+    getStats: mockGetStats,
+    isAvailable: mockIsAvailable,
+    prefetchExercises: mockPrefetchExercises,
+    clearCache: mockClearCache,
+  },
+}));
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -75,7 +98,7 @@ describe('useAIExercise Hooks', () => {
         },
       };
 
-      vi.mocked(aiExerciseService.aiExerciseService.generateExercise).mockResolvedValueOnce(
+      mockGenerateExercise.mockResolvedValueOnce(
         mockResponse
       );
 
@@ -95,7 +118,7 @@ describe('useAIExercise Hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockResponse);
-      expect(aiExerciseService.aiExerciseService.generateExercise).toHaveBeenCalledWith(params);
+      expect(mockGenerateExercise).toHaveBeenCalledWith(params);
     });
 
     it('should track analytics on successful generation', async () => {
@@ -116,7 +139,7 @@ describe('useAIExercise Hooks', () => {
         },
       };
 
-      vi.mocked(aiExerciseService.aiExerciseService.generateExercise).mockResolvedValueOnce(
+      mockGenerateExercise.mockResolvedValueOnce(
         mockResponse
       );
 
@@ -145,7 +168,7 @@ describe('useAIExercise Hooks', () => {
     });
 
     it('should handle generation errors', async () => {
-      vi.mocked(aiExerciseService.aiExerciseService.generateExercise).mockRejectedValueOnce(
+      mockGenerateExercise.mockRejectedValueOnce(
         new Error('Generation failed')
       );
 
@@ -181,8 +204,8 @@ describe('useAIExercise Hooks', () => {
         },
       };
 
-      vi.mocked(aiExerciseService.aiExerciseService.getStats).mockResolvedValueOnce(mockStats);
-      vi.mocked(aiExerciseService.aiExerciseService.isAvailable).mockReturnValueOnce(true);
+      mockGetStats.mockResolvedValueOnce(mockStats);
+      mockIsAvailable.mockReturnValueOnce(true);
 
       const { result } = renderHook(() => useAIExerciseStats(), {
         wrapper: createWrapper(),
@@ -196,7 +219,7 @@ describe('useAIExercise Hooks', () => {
     });
 
     it('should not fetch stats when backend unavailable', () => {
-      vi.mocked(aiExerciseService.aiExerciseService.isAvailable).mockReturnValueOnce(false);
+      mockIsAvailable.mockReturnValueOnce(false);
 
       const { result } = renderHook(() => useAIExerciseStats(), {
         wrapper: createWrapper(),
@@ -206,10 +229,10 @@ describe('useAIExercise Hooks', () => {
     });
 
     it('should handle stats fetch errors', async () => {
-      vi.mocked(aiExerciseService.aiExerciseService.getStats).mockRejectedValueOnce(
+      mockGetStats.mockRejectedValueOnce(
         new Error('Stats unavailable')
       );
-      vi.mocked(aiExerciseService.aiExerciseService.isAvailable).mockReturnValueOnce(true);
+      mockIsAvailable.mockReturnValueOnce(true);
 
       const { result } = renderHook(() => useAIExerciseStats(), {
         wrapper: createWrapper(),
@@ -229,7 +252,7 @@ describe('useAIExercise Hooks', () => {
         totalCost: 0.015,
       };
 
-      vi.mocked(aiExerciseService.aiExerciseService.prefetchExercises).mockResolvedValueOnce(
+      mockPrefetchExercises.mockResolvedValueOnce(
         mockPrefetchResponse
       );
 
@@ -247,7 +270,7 @@ describe('useAIExercise Hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockPrefetchResponse);
-      expect(aiExerciseService.aiExerciseService.prefetchExercises).toHaveBeenCalledWith(
+      expect(mockPrefetchExercises).toHaveBeenCalledWith(
         'user-1',
         5
       );
@@ -260,7 +283,7 @@ describe('useAIExercise Hooks', () => {
         totalCost: 0.009,
       };
 
-      vi.mocked(aiExerciseService.aiExerciseService.prefetchExercises).mockResolvedValueOnce(
+      mockPrefetchExercises.mockResolvedValueOnce(
         mockPrefetchResponse
       );
 
@@ -289,7 +312,7 @@ describe('useAIExercise Hooks', () => {
 
   describe('useClearExerciseCache', () => {
     it('should clear exercise cache', async () => {
-      vi.mocked(aiExerciseService.aiExerciseService.clearCache).mockResolvedValueOnce();
+      mockClearCache.mockResolvedValueOnce();
 
       const { result } = renderHook(() => useClearExerciseCache(), {
         wrapper: createWrapper(),
@@ -301,11 +324,11 @@ describe('useAIExercise Hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(aiExerciseService.aiExerciseService.clearCache).toHaveBeenCalledWith('user-1');
+      expect(mockClearCache).toHaveBeenCalledWith('user-1');
     });
 
     it('should track cache clear analytics', async () => {
-      vi.mocked(aiExerciseService.aiExerciseService.clearCache).mockResolvedValueOnce();
+      mockClearCache.mockResolvedValueOnce();
 
       const { result } = renderHook(() => useClearExerciseCache(), {
         wrapper: createWrapper(),
@@ -325,8 +348,9 @@ describe('useAIExercise Hooks', () => {
 
   describe('useAIExerciseAvailability', () => {
     it('should return available when backend is connected', () => {
-      // Mock MUST be set before renderHook to affect the hook's execution
-      vi.mocked(aiExerciseService.aiExerciseService.isAvailable).mockReturnValue(true);
+      // Reset and set mock before renderHook
+      mockIsAvailable.mockClear();
+      mockIsAvailable.mockReturnValue(true);
 
       const { result } = renderHook(() => useAIExerciseAvailability());
 
@@ -335,8 +359,9 @@ describe('useAIExercise Hooks', () => {
     });
 
     it('should return unavailable in static mode', () => {
-      // Mock MUST be set before renderHook to affect the hook's execution
-      vi.mocked(aiExerciseService.aiExerciseService.isAvailable).mockReturnValue(false);
+      // Reset and set mock before renderHook
+      mockIsAvailable.mockClear();
+      mockIsAvailable.mockReturnValue(false);
 
       const { result } = renderHook(() => useAIExerciseAvailability());
 
@@ -364,7 +389,7 @@ describe('useAIExercise Hooks', () => {
         },
       };
 
-      vi.mocked(aiExerciseService.aiExerciseService.generateExercise).mockResolvedValueOnce(
+      mockGenerateExercise.mockResolvedValueOnce(
         mockResponse
       );
 
@@ -383,7 +408,7 @@ describe('useAIExercise Hooks', () => {
     });
 
     it('should revert optimistic update on error', async () => {
-      vi.mocked(aiExerciseService.aiExerciseService.generateExercise).mockRejectedValueOnce(
+      mockGenerateExercise.mockRejectedValueOnce(
         new Error('Generation failed')
       );
 
@@ -412,7 +437,7 @@ describe('useAIExercise Hooks', () => {
         },
       ];
 
-      vi.mocked(aiExerciseService.aiExerciseService.generateExercise)
+      mockGenerateExercise
         .mockResolvedValueOnce(mockExercises[0])
         .mockResolvedValueOnce(mockExercises[1]);
 
@@ -430,11 +455,11 @@ describe('useAIExercise Hooks', () => {
       });
 
       expect(result.current.data).toHaveLength(2);
-      expect(aiExerciseService.aiExerciseService.generateExercise).toHaveBeenCalledTimes(2);
+      expect(mockGenerateExercise).toHaveBeenCalledTimes(2);
     });
 
     it('should continue generating even if one fails', async () => {
-      vi.mocked(aiExerciseService.aiExerciseService.generateExercise)
+      mockGenerateExercise
         .mockRejectedValueOnce(new Error('Failed'))
         .mockResolvedValueOnce({
           exercise: { id: 'ex-2', type: 'adaptive' as const, instructions: 'Test', difficultyLevel: 1, createdAt: new Date() },
@@ -463,7 +488,7 @@ describe('useAIExercise Hooks', () => {
         metadata: { generated: true, cached: false, cost: 0.002, generationTime: 1000, difficulty: 'easy' as const },
       };
 
-      vi.mocked(aiExerciseService.aiExerciseService.generateExercise).mockResolvedValue(
+      mockGenerateExercise.mockResolvedValue(
         mockExercise
       );
 

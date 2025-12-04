@@ -19,7 +19,7 @@ describe('useDisclosure', () => {
     (vocabularyAPI.getEnrichment as any) = vi.fn().mockResolvedValue({
       etymology: 'From Latin piccus',
       mnemonic: 'Think of a woodpecker pecking',
-      relatedTerms: ['picotazo', 'picar'],
+      relatedTerms: ['picotazo', 'picar', 'picadura'],
     });
     (vocabularyAPI.getExamples as any) = vi.fn().mockResolvedValue({
       usageExamples: ['El pico es amarillo', 'Tiene un pico largo'],

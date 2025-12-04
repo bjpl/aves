@@ -11,7 +11,18 @@ import { api } from '../../services/apiAdapter';
 import { createMockAnnotations } from '../../test/mocks/annotations';
 import { ReactNode } from 'react';
 
-vi.mock('../../services/apiAdapter');
+// Hoist mock functions for apiAdapter
+const { mockAnnotationsList } = vi.hoisted(() => ({
+  mockAnnotationsList: vi.fn(),
+}));
+
+vi.mock('../../services/apiAdapter', () => ({
+  api: {
+    annotations: {
+      list: mockAnnotationsList,
+    },
+  },
+}));
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -29,7 +40,7 @@ describe('useAnnotations', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (api.annotations.list as any).mockResolvedValue(mockAnnotations);
+    mockAnnotationsList.mockResolvedValue(mockAnnotations);
   });
 
   describe('useAnnotations', () => {
@@ -45,7 +56,7 @@ describe('useAnnotations', () => {
 
       // Verify the fetched data has the expected length
       expect(result.current.data).toHaveLength(5);
-      expect(api.annotations.list).toHaveBeenCalledWith(undefined);
+      expect(mockAnnotationsList).toHaveBeenCalledWith(undefined);
     });
 
     it('should fetch annotations for specific image', async () => {
@@ -57,11 +68,11 @@ describe('useAnnotations', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(api.annotations.list).toHaveBeenCalledWith('img-1');
+      expect(mockAnnotationsList).toHaveBeenCalledWith('img-1');
     });
 
     it('should return empty array on error', async () => {
-      (api.annotations.list as any).mockRejectedValueOnce(new Error('API error'));
+      mockAnnotationsList.mockRejectedValueOnce(new Error('API error'));
 
       const { result } = renderHook(() => useAnnotations(), {
         wrapper: createWrapper(),
@@ -85,7 +96,7 @@ describe('useAnnotations', () => {
 
   describe('useAnnotationsByTerm', () => {
     it('should filter annotations by Spanish term', async () => {
-      (api.annotations.list as any).mockResolvedValue(mockAnnotations);
+      mockAnnotationsList.mockResolvedValue(mockAnnotations);
 
       const { result } = renderHook(() => useAnnotationsByTerm('pico'), {
         wrapper: createWrapper(),
@@ -101,7 +112,7 @@ describe('useAnnotations', () => {
     });
 
     it('should filter annotations by English term', async () => {
-      (api.annotations.list as any).mockResolvedValue(mockAnnotations);
+      mockAnnotationsList.mockResolvedValue(mockAnnotations);
 
       const { result } = renderHook(() => useAnnotationsByTerm('beak'), {
         wrapper: createWrapper(),
@@ -127,7 +138,7 @@ describe('useAnnotations', () => {
 
   describe('useAnnotationsByDifficulty', () => {
     it('should filter annotations by difficulty level', async () => {
-      (api.annotations.list as any).mockResolvedValue(mockAnnotations);
+      mockAnnotationsList.mockResolvedValue(mockAnnotations);
 
       const { result } = renderHook(() => useAnnotationsByDifficulty(2), {
         wrapper: createWrapper(),
@@ -148,7 +159,7 @@ describe('useAnnotations', () => {
         ...mockAnnotations,
         ...mockAnnotations.map(a => ({ ...a, id: `${a.id}-dup` })),
       ];
-      (api.annotations.list as any).mockResolvedValue(duplicateAnnotations);
+      mockAnnotationsList.mockResolvedValue(duplicateAnnotations);
 
       const { result } = renderHook(() => useUniqueTerms(), {
         wrapper: createWrapper(),
