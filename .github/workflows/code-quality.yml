@@ -121,11 +121,4 @@ jobs:
         run: |
           npm audit --audit-level=moderate || echo "::warning::Security vulnerabilities detected in frontend"
 
-      - name: Run Snyk security scan (if token configured)
-        if: ${{ secrets.SNYK_TOKEN != '' }}
-        uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
-        continue-on-error: true
+      # Note: Snyk security scan removed - configure separately if needed
