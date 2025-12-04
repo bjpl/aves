@@ -46,16 +46,14 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
-        cache-dependency-path: backend/package-lock.json
+        cache-dependency-path: package-lock.json
 
-    - name: Install dependencies
-      run: |
-        cd backend
-        npm ci
+    - name: Install all dependencies
+      run: npm ci
 
     - name: Create .env.test file
       run: |

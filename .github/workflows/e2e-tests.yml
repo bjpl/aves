@@ -27,18 +27,16 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
+          cache-dependency-path: package-lock.json
 
-      - name: Install dependencies
-        run: |
-          cd frontend
-          npm ci
+      - name: Install all dependencies
+        run: npm ci
 
       - name: Install Playwright Browsers
-        run: |
-          cd frontend
-          npx playwright install --with-deps ${{ matrix.browser }}
+        working-directory: ./frontend
+        run: npx playwright install --with-deps ${{ matrix.browser }}
 
       - name: Build frontend
         run: |
@@ -90,18 +88,16 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
+          cache-dependency-path: package-lock.json
 
-      - name: Install dependencies
-        run: |
-          cd frontend
-          npm ci
+      - name: Install all dependencies
+        run: npm ci
 
       - name: Install Playwright Browsers (Chromium only)
-        run: |
-          cd frontend
-          npx playwright install --with-deps chromium
+        working-directory: ./frontend
+        run: npx playwright install --with-deps chromium
 
       - name: Build frontend
         run: |
@@ -137,23 +133,20 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
+          cache-dependency-path: package-lock.json
 
-      - name: Install dependencies
-        run: |
-          cd frontend
-          npm ci
+      - name: Install all dependencies
+        run: npm ci
 
       - name: Install Playwright Browsers
-        run: |
-          cd frontend
-          npx playwright install --with-deps chromium
+        working-directory: ./frontend
+        run: npx playwright install --with-deps chromium
 
       - name: Build frontend
-        run: |
-          cd frontend
-          npm run build
+        working-directory: ./frontend
+        run: npm run build
         env:
           NODE_ENV: production
 
