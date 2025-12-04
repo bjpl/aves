@@ -43,7 +43,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Setup Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
@@ -136,7 +136,7 @@ jobs:
 
     - name: Upload coverage reports
       if: matrix.node-version == '20.x'  # Only upload once
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         directory: ./backend/coverage
         flags: unittests
@@ -145,7 +145,7 @@ jobs:
 
     - name: Archive test results
       if: failure()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: test-results-${{ matrix.node-version }}
         path: |
