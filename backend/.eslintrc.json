@@ -21,7 +21,8 @@
     "@typescript-eslint/no-var-requires": "off",
     "@typescript-eslint/ban-types": "off",
     "prefer-const": "warn",
-    "no-console": "warn"
+    "no-console": "warn",
+    "no-control-regex": "off"
   },
   "ignorePatterns": [
     "dist/**",
