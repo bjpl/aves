@@ -1,12 +1,11 @@
 name: E2E Tests
 
 on:
-  # Temporarily disabled automatic triggers to prevent email spam
-  # Fix needed: Check if E2E tests are configured correctly
-  # push:
-  #   branches: [main, develop]
-  # pull_request:
-  #   branches: [main, develop]
+  # E2E tests enabled for main branch and workflow dispatch
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main, develop]
   workflow_dispatch:
 
 jobs:

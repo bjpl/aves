@@ -857,7 +857,7 @@ Note: Use these as reference points, not strict requirements`;
   /**
    * Store data in Claude-Flow memory
    */
-  private async storeInMemory(key: string, value: any): Promise<void> {
+  private async storeInMemory(key: string, value: unknown): Promise<void> {
     try {
       const fullKey = `${this.memoryNamespace}/${key}`;
       const valueJson = JSON.stringify(value).replace(/'/g, "'\\''");
@@ -871,7 +871,7 @@ Note: Use these as reference points, not strict requirements`;
   /**
    * Retrieve data from Claude-Flow memory
    */
-  private async retrieveFromMemory(key: string): Promise<any> {
+  private async retrieveFromMemory(key: string): Promise<unknown> {
     try {
       const fullKey = `${this.memoryNamespace}/${key}`;
       const command = `npx claude-flow@alpha memory query "${fullKey}" --namespace pattern-learning`;

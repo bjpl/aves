@@ -1,3 +1,4 @@
+import logger from '../utils/logger';
 /**
  * ML Analytics Production Endpoint Testing Script
  * Tests all ML analytics endpoints for response time, data accuracy, and error handling
@@ -304,7 +305,7 @@ class MLAnalyticsProductionTester {
    */
   async testOverview(): Promise<void> {
     const endpoint = '/api/ml/analytics/overview';
-    console.log(`\n🧪 Testing ${endpoint}...`);
+    logger.info(`\n🧪 Testing ${endpoint}...`);
 
     for (let i = 0; i < TEST_ITERATIONS; i++) {
       try {
@@ -327,11 +328,11 @@ class MLAnalyticsProductionTester {
         });
 
         if (i === 0) {
-          console.log(`  ✓ Status: ${statusCode}`);
-          console.log(`  ✓ Response time: ${responseTime.toFixed(2)}ms`);
-          console.log(`  ✓ Schema valid: ${validation.valid}`);
+          logger.info(`  ✓ Status: ${statusCode}`);
+          logger.info(`  ✓ Response time: ${responseTime.toFixed(2)}ms`);
+          logger.info(`  ✓ Schema valid: ${validation.valid}`);
           if (validation.issues.length > 0) {
-            console.log(`  ⚠ Issues: ${validation.issues.join(', ')}`);
+            logger.info(`  ⚠ Issues: ${validation.issues.join(', ')}`);
           }
         }
       } catch (error: any) {
@@ -342,7 +343,7 @@ class MLAnalyticsProductionTester {
           responseTime: error.responseTime || 0,
           error: error.error || 'Unknown error',
         });
-        console.log(`  ✗ Error: ${error.error}`);
+        logger.info(`  ✗ Error: ${error.error}`);
       }
     }
   }
@@ -352,7 +353,7 @@ class MLAnalyticsProductionTester {
    */
   async testVocabularyBalance(): Promise<void> {
     const endpoint = '/api/ml/analytics/vocabulary-balance';
-    console.log(`\n🧪 Testing ${endpoint}...`);
+    logger.info(`\n🧪 Testing ${endpoint}...`);
 
     for (let i = 0; i < TEST_ITERATIONS; i++) {
       try {
@@ -375,11 +376,11 @@ class MLAnalyticsProductionTester {
         });
 
         if (i === 0) {
-          console.log(`  ✓ Status: ${statusCode}`);
-          console.log(`  ✓ Response time: ${responseTime.toFixed(2)}ms`);
-          console.log(`  ✓ Schema valid: ${validation.valid}`);
+          logger.info(`  ✓ Status: ${statusCode}`);
+          logger.info(`  ✓ Response time: ${responseTime.toFixed(2)}ms`);
+          logger.info(`  ✓ Schema valid: ${validation.valid}`);
           if (validation.issues.length > 0) {
-            console.log(`  ⚠ Issues: ${validation.issues.join(', ')}`);
+            logger.info(`  ⚠ Issues: ${validation.issues.join(', ')}`);
           }
         }
       } catch (error: any) {
@@ -390,7 +391,7 @@ class MLAnalyticsProductionTester {
           responseTime: error.responseTime || 0,
           error: error.error || 'Unknown error',
         });
-        console.log(`  ✗ Error: ${error.error}`);
+        logger.info(`  ✗ Error: ${error.error}`);
       }
     }
   }
@@ -400,7 +401,7 @@ class MLAnalyticsProductionTester {
    */
   async testPatternLearning(): Promise<void> {
     const endpoint = '/api/ml/analytics/pattern-learning';
-    console.log(`\n🧪 Testing ${endpoint}...`);
+    logger.info(`\n🧪 Testing ${endpoint}...`);
 
     for (let i = 0; i < TEST_ITERATIONS; i++) {
       try {
@@ -423,11 +424,11 @@ class MLAnalyticsProductionTester {
         });
 
         if (i === 0) {
-          console.log(`  ✓ Status: ${statusCode}`);
-          console.log(`  ✓ Response time: ${responseTime.toFixed(2)}ms`);
-          console.log(`  ✓ Schema valid: ${validation.valid}`);
+          logger.info(`  ✓ Status: ${statusCode}`);
+          logger.info(`  ✓ Response time: ${responseTime.toFixed(2)}ms`);
+          logger.info(`  ✓ Schema valid: ${validation.valid}`);
           if (validation.issues.length > 0) {
-            console.log(`  ⚠ Issues: ${validation.issues.join(', ')}`);
+            logger.info(`  ⚠ Issues: ${validation.issues.join(', ')}`);
           }
         }
       } catch (error: any) {
@@ -438,7 +439,7 @@ class MLAnalyticsProductionTester {
           responseTime: error.responseTime || 0,
           error: error.error || 'Unknown error',
         });
-        console.log(`  ✗ Error: ${error.error}`);
+        logger.info(`  ✗ Error: ${error.error}`);
       }
     }
   }
@@ -448,7 +449,7 @@ class MLAnalyticsProductionTester {
    */
   async testQualityTrends(): Promise<void> {
     const endpoint = '/api/ml/analytics/quality-trends';
-    console.log(`\n🧪 Testing ${endpoint}...`);
+    logger.info(`\n🧪 Testing ${endpoint}...`);
 
     for (let i = 0; i < TEST_ITERATIONS; i++) {
       try {
@@ -471,11 +472,11 @@ class MLAnalyticsProductionTester {
         });
 
         if (i === 0) {
-          console.log(`  ✓ Status: ${statusCode}`);
-          console.log(`  ✓ Response time: ${responseTime.toFixed(2)}ms`);
-          console.log(`  ✓ Schema valid: ${validation.valid}`);
+          logger.info(`  ✓ Status: ${statusCode}`);
+          logger.info(`  ✓ Response time: ${responseTime.toFixed(2)}ms`);
+          logger.info(`  ✓ Schema valid: ${validation.valid}`);
           if (validation.issues.length > 0) {
-            console.log(`  ⚠ Issues: ${validation.issues.join(', ')}`);
+            logger.info(`  ⚠ Issues: ${validation.issues.join(', ')}`);
           }
         }
       } catch (error: any) {
@@ -486,7 +487,7 @@ class MLAnalyticsProductionTester {
           responseTime: error.responseTime || 0,
           error: error.error || 'Unknown error',
         });
-        console.log(`  ✗ Error: ${error.error}`);
+        logger.info(`  ✗ Error: ${error.error}`);
       }
     }
   }
@@ -496,7 +497,7 @@ class MLAnalyticsProductionTester {
    */
   async testPerformanceMetrics(): Promise<void> {
     const endpoint = '/api/ml/analytics/performance-metrics';
-    console.log(`\n🧪 Testing ${endpoint}...`);
+    logger.info(`\n🧪 Testing ${endpoint}...`);
 
     for (let i = 0; i < TEST_ITERATIONS; i++) {
       try {
@@ -519,11 +520,11 @@ class MLAnalyticsProductionTester {
         });
 
         if (i === 0) {
-          console.log(`  ✓ Status: ${statusCode}`);
-          console.log(`  ✓ Response time: ${responseTime.toFixed(2)}ms`);
-          console.log(`  ✓ Schema valid: ${validation.valid}`);
+          logger.info(`  ✓ Status: ${statusCode}`);
+          logger.info(`  ✓ Response time: ${responseTime.toFixed(2)}ms`);
+          logger.info(`  ✓ Schema valid: ${validation.valid}`);
           if (validation.issues.length > 0) {
-            console.log(`  ⚠ Issues: ${validation.issues.join(', ')}`);
+            logger.info(`  ⚠ Issues: ${validation.issues.join(', ')}`);
           }
         }
       } catch (error: any) {
@@ -534,7 +535,7 @@ class MLAnalyticsProductionTester {
           responseTime: error.responseTime || 0,
           error: error.error || 'Unknown error',
         });
-        console.log(`  ✗ Error: ${error.error}`);
+        logger.info(`  ✗ Error: ${error.error}`);
       }
     }
   }
@@ -544,7 +545,7 @@ class MLAnalyticsProductionTester {
    */
   async testTestEndpoint(): Promise<void> {
     const endpoint = '/api/ml/analytics/test';
-    console.log(`\n🧪 Testing ${endpoint}...`);
+    logger.info(`\n🧪 Testing ${endpoint}...`);
 
     for (let i = 0; i < TEST_ITERATIONS; i++) {
       try {
@@ -564,9 +565,9 @@ class MLAnalyticsProductionTester {
         });
 
         if (i === 0) {
-          console.log(`  ✓ Status: ${statusCode}`);
-          console.log(`  ✓ Response time: ${responseTime.toFixed(2)}ms`);
-          console.log(`  ✓ Data: ${JSON.stringify(data)}`);
+          logger.info(`  ✓ Status: ${statusCode}`);
+          logger.info(`  ✓ Response time: ${responseTime.toFixed(2)}ms`);
+          logger.info(`  ✓ Data: ${JSON.stringify(data)}`);
         }
       } catch (error: any) {
         this.results.push({
@@ -576,7 +577,7 @@ class MLAnalyticsProductionTester {
           responseTime: error.responseTime || 0,
           error: error.error || 'Unknown error',
         });
-        console.log(`  ✗ Error: ${error.error}`);
+        logger.info(`  ✗ Error: ${error.error}`);
       }
     }
   }
@@ -585,7 +586,7 @@ class MLAnalyticsProductionTester {
    * Test error handling
    */
   async testErrorHandling(): Promise<void> {
-    console.log('\n🧪 Testing Error Handling...');
+    logger.info('\n🧪 Testing Error Handling...');
 
     // Test 404
     try {
@@ -597,9 +598,9 @@ class MLAnalyticsProductionTester {
         responseTime,
         statusCode,
       });
-      console.log(`  ✓ 404 handling: ${statusCode === 404 ? 'PASS' : 'FAIL'}`);
+      logger.info(`  ✓ 404 handling: ${statusCode === 404 ? 'PASS' : 'FAIL'}`);
     } catch (error: any) {
-      console.log(`  ✓ 404 handling: Error correctly thrown`);
+      logger.info(`  ✓ 404 handling: Error correctly thrown`);
     }
 
     // Test invalid method
@@ -614,9 +615,9 @@ class MLAnalyticsProductionTester {
         responseTime,
         statusCode,
       });
-      console.log(`  ✓ Invalid method: ${statusCode}`);
+      logger.info(`  ✓ Invalid method: ${statusCode}`);
     } catch (error: any) {
-      console.log(`  ✓ Invalid method: Error thrown`);
+      logger.info(`  ✓ Invalid method: Error thrown`);
     }
   }
 
@@ -624,27 +625,27 @@ class MLAnalyticsProductionTester {
    * Generate performance report
    */
   generatePerformanceReport(): void {
-    console.log('\n\n📊 PERFORMANCE METRICS');
-    console.log('═'.repeat(80));
+    logger.info('\n\n📊 PERFORMANCE METRICS');
+    logger.info('═'.repeat(80));
 
     const endpoints = Array.from(this.performanceData.keys());
     for (const endpoint of endpoints) {
       const metrics = this.getPerformanceMetrics(endpoint);
       if (!metrics) continue;
 
-      console.log(`\n${endpoint}`);
-      console.log(`  Min:     ${metrics.min.toFixed(2)}ms`);
-      console.log(`  Average: ${metrics.avg.toFixed(2)}ms`);
-      console.log(`  P50:     ${metrics.p50.toFixed(2)}ms`);
-      console.log(`  P95:     ${metrics.p95.toFixed(2)}ms`);
-      console.log(`  P99:     ${metrics.p99.toFixed(2)}ms`);
-      console.log(`  Max:     ${metrics.max.toFixed(2)}ms`);
+      logger.info(`\n${endpoint}`);
+      logger.info(`  Min:     ${metrics.min.toFixed(2)}ms`);
+      logger.info(`  Average: ${metrics.avg.toFixed(2)}ms`);
+      logger.info(`  P50:     ${metrics.p50.toFixed(2)}ms`);
+      logger.info(`  P95:     ${metrics.p95.toFixed(2)}ms`);
+      logger.info(`  P99:     ${metrics.p99.toFixed(2)}ms`);
+      logger.info(`  Max:     ${metrics.max.toFixed(2)}ms`);
 
       // Performance assessment
       if (metrics.p95 < 2000) {
-        console.log(`  ✓ P95 < 2s: PASS`);
+        logger.info(`  ✓ P95 < 2s: PASS`);
       } else {
-        console.log(`  ✗ P95 > 2s: FAIL`);
+        logger.info(`  ✗ P95 > 2s: FAIL`);
       }
     }
   }
@@ -653,36 +654,36 @@ class MLAnalyticsProductionTester {
    * Generate summary report
    */
   generateSummaryReport(): void {
-    console.log('\n\n📋 TEST SUMMARY');
-    console.log('═'.repeat(80));
+    logger.info('\n\n📋 TEST SUMMARY');
+    logger.info('═'.repeat(80));
 
     const totalTests = this.results.length;
     const passed = this.results.filter(r => r.status === 'PASS').length;
     const failed = this.results.filter(r => r.status === 'FAIL').length;
     const warnings = this.results.filter(r => r.status === 'WARN').length;
 
-    console.log(`\nTotal Tests: ${totalTests}`);
-    console.log(`✓ Passed:    ${passed} (${((passed / totalTests) * 100).toFixed(1)}%)`);
-    console.log(`✗ Failed:    ${failed} (${((failed / totalTests) * 100).toFixed(1)}%)`);
-    console.log(`⚠ Warnings:  ${warnings} (${((warnings / totalTests) * 100).toFixed(1)}%)`);
+    logger.info(`\nTotal Tests: ${totalTests}`);
+    logger.info(`✓ Passed:    ${passed} (${((passed / totalTests) * 100).toFixed(1)}%)`);
+    logger.info(`✗ Failed:    ${failed} (${((failed / totalTests) * 100).toFixed(1)}%)`);
+    logger.info(`⚠ Warnings:  ${warnings} (${((warnings / totalTests) * 100).toFixed(1)}%)`);
 
     // Show failures
     const failures = this.results.filter(r => r.status === 'FAIL');
     if (failures.length > 0) {
-      console.log('\n❌ FAILURES:');
+      logger.info('\n❌ FAILURES:');
       failures.forEach(f => {
-        console.log(`  ${f.endpoint} (${f.method}): ${f.error || 'Validation failed'}`);
+        logger.info(`  ${f.endpoint} (${f.method}): ${f.error || 'Validation failed'}`);
         if (f.dataValidation?.issues) {
           f.dataValidation.issues.forEach(issue => {
-            console.log(`    - ${issue}`);
+            logger.info(`    - ${issue}`);
           });
         }
       });
     }
 
     // Production readiness assessment
-    console.log('\n\n🚀 PRODUCTION READINESS ASSESSMENT');
-    console.log('═'.repeat(80));
+    logger.info('\n\n🚀 PRODUCTION READINESS ASSESSMENT');
+    logger.info('═'.repeat(80));
 
     const passRate = (passed / totalTests) * 100;
     const allP95UnderThreshold = Array.from(this.performanceData.keys()).every(endpoint => {
@@ -690,14 +691,14 @@ class MLAnalyticsProductionTester {
       return metrics ? metrics.p95 < 2000 : false;
     });
 
-    console.log(`\n✓ Pass Rate:         ${passRate.toFixed(1)}%`);
-    console.log(`✓ Performance (P95): ${allP95UnderThreshold ? '< 2s' : '> 2s'}`);
-    console.log(`✓ Data Integrity:    ${failures.length === 0 ? 'PASS' : 'FAIL'}`);
+    logger.info(`\n✓ Pass Rate:         ${passRate.toFixed(1)}%`);
+    logger.info(`✓ Performance (P95): ${allP95UnderThreshold ? '< 2s' : '> 2s'}`);
+    logger.info(`✓ Data Integrity:    ${failures.length === 0 ? 'PASS' : 'FAIL'}`);
 
     if (passRate >= 95 && allP95UnderThreshold && failures.length === 0) {
-      console.log('\n✅ PRODUCTION READY');
+      logger.info('\n✅ PRODUCTION READY');
     } else {
-      console.log('\n⚠️  NOT PRODUCTION READY - Issues detected');
+      logger.info('\n⚠️  NOT PRODUCTION READY - Issues detected');
     }
   }
 
@@ -705,10 +706,10 @@ class MLAnalyticsProductionTester {
    * Run all tests
    */
   async runAllTests(): Promise<void> {
-    console.log('🚀 Starting ML Analytics Production Tests');
-    console.log(`📍 Base URL: ${BASE_URL}`);
-    console.log(`🔄 Iterations per endpoint: ${TEST_ITERATIONS}`);
-    console.log('═'.repeat(80));
+    logger.info('🚀 Starting ML Analytics Production Tests');
+    logger.info(`📍 Base URL: ${BASE_URL}`);
+    logger.info(`🔄 Iterations per endpoint: ${TEST_ITERATIONS}`);
+    logger.info('═'.repeat(80));
 
     await this.testTestEndpoint();
     await this.testOverview();
@@ -725,4 +726,7 @@ class MLAnalyticsProductionTester {
 
 // Run tests
 const tester = new MLAnalyticsProductionTester();
-tester.runAllTests().catch(console.error);
+tester.runAllTests().catch((error) => {
+  logger.error({ err: error }, 'Test execution failed');
+  process.exit(1);
+});

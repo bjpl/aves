@@ -368,34 +368,45 @@ IMPORTANT: Return ONLY the JSON array, nothing else. No explanatory text.
   /**
    * Validate a single annotation object
    */
-  private validateAnnotation(item: any, index: number): void {
+  private validateAnnotation(item: unknown, index: number): asserts item is Record<string, unknown> {
+    if (typeof item !== 'object' || item === null) {
+      throw new Error(`Annotation ${index}: must be an object`);
+    }
+
+    const obj = item as Record<string, unknown>;
     const requiredFields = ['spanishTerm', 'englishTerm', 'boundingBox', 'type', 'difficultyLevel'];
 
     for (const field of requiredFields) {
-      if (!item[field]) {
+      if (!obj[field]) {
         throw new Error(`Annotation ${index}: missing required field '${field}'`);
       }
     }
 
     // Validate bounding box
-    const bbox = item.boundingBox;
+    const bbox = obj.boundingBox as Record<string, unknown>;
+    if (!bbox || typeof bbox !== 'object') {
+      throw new Error(`Annotation ${index}: invalid bounding box structure`);
+    }
     if (!bbox.x || !bbox.y || !bbox.width || !bbox.height) {
       throw new Error(`Annotation ${index}: invalid bounding box structure`);
     }
 
     // Validate coordinates are in 0-1 range
-    if (bbox.x < 0 || bbox.x > 1 || bbox.y < 0 || bbox.y > 1) {
+    const x = bbox.x as number;
+    const y = bbox.y as number;
+    if (x < 0 || x > 1 || y < 0 || y > 1) {
       throw new Error(`Annotation ${index}: bounding box coordinates must be 0-1`);
     }
 
     // Validate type
     const validTypes = ['anatomical', 'behavioral', 'color', 'pattern'];
-    if (!validTypes.includes(item.type)) {
-      throw new Error(`Annotation ${index}: invalid type '${item.type}'`);
+    if (!validTypes.includes(obj.type as string)) {
+      throw new Error(`Annotation ${index}: invalid type '${obj.type}'`);
     }
 
     // Validate difficulty level
-    if (item.difficultyLevel < 1 || item.difficultyLevel > 5) {
+    const difficulty = obj.difficultyLevel as number;
+    if (difficulty < 1 || difficulty > 5) {
       throw new Error(`Annotation ${index}: difficulty level must be 1-5`);
     }
   }

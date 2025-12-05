@@ -5,39 +5,40 @@
 
 import { visionPreflightService } from '../services/VisionPreflightService';
 import { visionAIService } from '../services/VisionAIService';
-import { info } from '../utils/logger';
+import logger from '../utils/logger';
 
 /**
  * Example 1: Basic preflight check before full annotation
  */
 export async function basicPreflightCheck(imageUrl: string) {
-  console.log('=== Example 1: Basic Preflight Check ===\n');
+  logger.info('=== Example 1: Basic Preflight Check ===\n');
 
   // Step 1: Quick preflight check (500-1000 tokens)
   const detection = await visionPreflightService.detectBird(imageUrl);
 
-  console.log('Preflight Detection Result:');
-  console.log(`  Bird Detected: ${detection.birdDetected}`);
-  console.log(`  Confidence: ${(detection.confidence * 100).toFixed(1)}%`);
-  console.log(`  Size: ${detection.approximateSize.toFixed(1)}% of image`);
-  console.log(`  Position: (${detection.position.x.toFixed(2)}, ${detection.position.y.toFixed(2)})`);
-  console.log(`  Occlusion: ${detection.occlusion.toFixed(1)}%`);
-  console.log(`  Assessment: ${detection.quickAssessment || 'N/A'}\n`);
+  logger.info({
+    birdDetected: detection.birdDetected,
+    confidence: detection.confidence,
+    size: detection.approximateSize,
+    position: detection.position,
+    occlusion: detection.occlusion,
+    assessment: detection.quickAssessment
+  }, 'Preflight Detection Result');
 
   // Step 2: Only proceed with full annotation if preflight passes
   const shouldProcess = await visionPreflightService.shouldProcess(imageUrl);
 
   if (shouldProcess) {
-    console.log('✓ Preflight PASSED - Proceeding with full annotation\n');
+    logger.info('✓ Preflight PASSED - Proceeding with full annotation\n');
 
     // Full annotation (8000 tokens)
     const annotations = await visionAIService.generateAnnotations(imageUrl, 'img-001');
-    console.log(`Generated ${annotations.length} annotations\n`);
+    logger.info(`Generated ${annotations.length} annotations\n`);
 
     return { success: true, annotations };
   } else {
-    console.log('✗ Preflight FAILED - Skipping annotation to save costs\n');
-    console.log('Cost saved: ~7000 tokens\n');
+    logger.info('✗ Preflight FAILED - Skipping annotation to save costs\n');
+    logger.info('Cost saved: ~7000 tokens\n');
 
     return { success: false, reason: 'Failed preflight check' };
   }
@@ -47,9 +48,9 @@ export async function basicPreflightCheck(imageUrl: string) {
  * Example 2: Batch preflight checking for multiple images
  */
 export async function batchPreflightCheck(imageUrls: string[]) {
-  console.log('=== Example 2: Batch Preflight Check ===\n');
+  logger.info('=== Example 2: Batch Preflight Check ===\n');
 
-  console.log(`Checking ${imageUrls.length} images...\n`);
+  logger.info(`Checking ${imageUrls.length} images...\n`);
 
   // Run preflight checks for all images
   const results = await visionPreflightService.batchCheck(imageUrls);
@@ -58,18 +59,18 @@ export async function batchPreflightCheck(imageUrls: string[]) {
   const goodImages = results.filter(r => r.shouldProcess);
   const badImages = results.filter(r => !r.shouldProcess);
 
-  console.log('Batch Results:');
-  console.log(`  Total images: ${imageUrls.length}`);
-  console.log(`  Passed preflight: ${goodImages.length}`);
-  console.log(`  Failed preflight: ${badImages.length}`);
-  console.log(`  Rejection rate: ${((badImages.length / imageUrls.length) * 100).toFixed(1)}%\n`);
+  logger.info('Batch Results:');
+  logger.info(`  Total images: ${imageUrls.length}`);
+  logger.info(`  Passed preflight: ${goodImages.length}`);
+  logger.info(`  Failed preflight: ${badImages.length}`);
+  logger.info(`  Rejection rate: ${((badImages.length / imageUrls.length) * 100).toFixed(1)}%\n`);
 
   // Process only good images with full annotation
   const annotations = [];
   for (const { url, result } of goodImages) {
-    console.log(`Processing: ${url}`);
-    console.log(`  Confidence: ${(result.confidence * 100).toFixed(1)}%`);
-    console.log(`  Size: ${result.approximateSize.toFixed(1)}%`);
+    logger.info(`Processing: ${url}`);
+    logger.info(`  Confidence: ${(result.confidence * 100).toFixed(1)}%`);
+    logger.info(`  Size: ${result.approximateSize.toFixed(1)}%`);
 
     const imageAnnotations = await visionAIService.generateAnnotations(url, url);
     annotations.push({ url, annotations: imageAnnotations });
@@ -77,9 +78,9 @@ export async function batchPreflightCheck(imageUrls: string[]) {
 
   // Show cost savings
   const savings = visionPreflightService.getCostSavings();
-  console.log('\nCost Savings:');
-  console.log(`  Tokens saved: ${savings.tokensSaved.toLocaleString()}`);
-  console.log(`  Savings percentage: ${savings.savingsPercentage}%\n`);
+  logger.info('\nCost Savings:');
+  logger.info(`  Tokens saved: ${savings.tokensSaved.toLocaleString()}`);
+  logger.info(`  Savings percentage: ${savings.savingsPercentage}%\n`);
 
   return { goodImages, badImages, annotations };
 }
@@ -88,11 +89,11 @@ export async function batchPreflightCheck(imageUrls: string[]) {
  * Example 3: Pipeline with preflight check
  */
 export async function annotationPipeline(imageUrl: string) {
-  console.log('=== Example 3: Annotation Pipeline with Preflight ===\n');
+  logger.info('=== Example 3: Annotation Pipeline with Preflight ===\n');
 
   try {
     // Stage 1: Preflight check
-    console.log('[Stage 1] Running preflight check...');
+    logger.info('[Stage 1] Running preflight check...');
     const detection = await visionPreflightService.detectBird(imageUrl);
 
     if (!detection.birdDetected) {
@@ -122,14 +123,14 @@ export async function annotationPipeline(imageUrl: string) {
       };
     }
 
-    console.log('[Stage 1] ✓ Preflight passed\n');
+    logger.info('[Stage 1] ✓ Preflight passed\n');
 
     // Stage 2: Full annotation
-    console.log('[Stage 2] Running full annotation...');
+    logger.info('[Stage 2] Running full annotation...');
     const annotations = await visionAIService.generateAnnotations(imageUrl, 'img-001', {
       enablePatternLearning: true
     });
-    console.log(`[Stage 2] ✓ Generated ${annotations.length} annotations\n`);
+    logger.info(`[Stage 2] ✓ Generated ${annotations.length} annotations\n`);
 
     return {
       stage: 'completed',
@@ -140,7 +141,7 @@ export async function annotationPipeline(imageUrl: string) {
     };
 
   } catch (error) {
-    console.error('Pipeline failed:', error);
+    logger.error('Pipeline failed:', error);
     return {
       stage: 'error',
       success: false,
@@ -153,50 +154,50 @@ export async function annotationPipeline(imageUrl: string) {
  * Example 4: Monitor and optimize costs
  */
 export async function monitorCosts() {
-  console.log('=== Example 4: Cost Monitoring ===\n');
+  logger.info('=== Example 4: Cost Monitoring ===\n');
 
   // Get performance statistics
   const stats = visionPreflightService.getStats();
-  console.log('Performance Statistics:');
-  console.log(`  Total preflight checks: ${stats.totalChecks}`);
-  console.log(`  Birds detected: ${stats.birdDetected}`);
-  console.log(`  Birds rejected: ${stats.birdRejected}`);
-  console.log(`  Average confidence: ${(stats.avgConfidence * 100).toFixed(1)}%`);
-  console.log(`  Average tokens/check: ${stats.avgTokensUsed.toFixed(0)}`);
-  console.log(`  Cache hits: ${stats.cacheHits}\n`);
+  logger.info('Performance Statistics:');
+  logger.info(`  Total preflight checks: ${stats.totalChecks}`);
+  logger.info(`  Birds detected: ${stats.birdDetected}`);
+  logger.info(`  Birds rejected: ${stats.birdRejected}`);
+  logger.info(`  Average confidence: ${(stats.avgConfidence * 100).toFixed(1)}%`);
+  logger.info(`  Average tokens/check: ${stats.avgTokensUsed.toFixed(0)}`);
+  logger.info(`  Cache hits: ${stats.cacheHits}\n`);
 
   // Get cost savings
   const savings = visionPreflightService.getCostSavings();
-  console.log('Cost Savings:');
-  console.log(`  Images rejected: ${savings.imagesRejected}`);
-  console.log(`  Tokens saved: ${savings.tokensSaved.toLocaleString()}`);
-  console.log(`  Savings percentage: ${savings.savingsPercentage}%`);
-  console.log(`  Avg preflight tokens: ${savings.avgTokensPerPreflight}`);
-  console.log(`  Full annotation tokens: ${savings.fullAnnotationTokens}\n`);
+  logger.info('Cost Savings:');
+  logger.info(`  Images rejected: ${savings.imagesRejected}`);
+  logger.info(`  Tokens saved: ${savings.tokensSaved.toLocaleString()}`);
+  logger.info(`  Savings percentage: ${savings.savingsPercentage}%`);
+  logger.info(`  Avg preflight tokens: ${savings.avgTokensPerPreflight}`);
+  logger.info(`  Full annotation tokens: ${savings.fullAnnotationTokens}\n`);
 
   // Get cache statistics
   const cacheStats = visionPreflightService.getCacheStats();
-  console.log('Cache Statistics:');
-  console.log(`  Total entries: ${cacheStats.totalEntries}`);
-  console.log(`  Valid entries: ${cacheStats.validEntries}`);
-  console.log(`  Expired entries: ${cacheStats.expiredEntries}`);
-  console.log(`  Max cache size: ${cacheStats.maxSize}`);
-  console.log(`  Cache TTL: ${(cacheStats.cacheTTL / 1000 / 60).toFixed(0)} minutes\n`);
+  logger.info('Cache Statistics:');
+  logger.info(`  Total entries: ${cacheStats.totalEntries}`);
+  logger.info(`  Valid entries: ${cacheStats.validEntries}`);
+  logger.info(`  Expired entries: ${cacheStats.expiredEntries}`);
+  logger.info(`  Max cache size: ${cacheStats.maxSize}`);
+  logger.info(`  Cache TTL: ${(cacheStats.cacheTTL / 1000 / 60).toFixed(0)} minutes\n`);
 
   // Get quality thresholds
   const thresholds = visionPreflightService.getThresholds();
-  console.log('Quality Thresholds:');
-  console.log(`  Min confidence: ${(thresholds.minConfidence * 100).toFixed(0)}%`);
-  console.log(`  Min size: ${thresholds.minSize}%`);
-  console.log(`  Max occlusion: ${thresholds.maxOcclusion}%\n`);
+  logger.info('Quality Thresholds:');
+  logger.info(`  Min confidence: ${(thresholds.minConfidence * 100).toFixed(0)}%`);
+  logger.info(`  Min size: ${thresholds.minSize}%`);
+  logger.info(`  Max occlusion: ${thresholds.maxOcclusion}%\n`);
 }
 
 /**
  * Example 5: Real-world usage scenario
  */
 export async function processImageBatch(imageUrls: string[]) {
-  console.log('=== Example 5: Real-World Batch Processing ===\n');
-  console.log(`Processing ${imageUrls.length} images with preflight optimization\n`);
+  logger.info('=== Example 5: Real-World Batch Processing ===\n');
+  logger.info(`Processing ${imageUrls.length} images with preflight optimization\n`);
 
   let preflightPassed = 0;
   let preflightFailed = 0;
@@ -204,26 +205,26 @@ export async function processImageBatch(imageUrls: string[]) {
   let annotationsGenerated = 0;
 
   for (const imageUrl of imageUrls) {
-    console.log(`\nProcessing: ${imageUrl}`);
+    logger.info(`\nProcessing: ${imageUrl}`);
 
     // Preflight check
     const shouldProcess = await visionPreflightService.shouldProcess(imageUrl);
 
     if (shouldProcess) {
-      console.log('  ✓ Preflight PASSED - Processing');
+      logger.info('  ✓ Preflight PASSED - Processing');
       preflightPassed++;
 
       // Full annotation
       try {
         const annotations = await visionAIService.generateAnnotations(imageUrl, imageUrl);
         annotationsGenerated += annotations.length;
-        console.log(`  ✓ Generated ${annotations.length} annotations`);
+        logger.info(`  ✓ Generated ${annotations.length} annotations`);
       } catch (error) {
-        console.log(`  ✗ Annotation failed: ${(error as Error).message}`);
+        logger.info(`  ✗ Annotation failed: ${(error as Error).message}`);
       }
 
     } else {
-      console.log('  ✗ Preflight FAILED - Skipping');
+      logger.info('  ✗ Preflight FAILED - Skipping');
       preflightFailed++;
       totalTokensSaved += 7300; // Approximate tokens saved
     }
@@ -232,13 +233,13 @@ export async function processImageBatch(imageUrls: string[]) {
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
 
-  console.log('\n=== Batch Processing Summary ===');
-  console.log(`Total images: ${imageUrls.length}`);
-  console.log(`Preflight passed: ${preflightPassed}`);
-  console.log(`Preflight failed: ${preflightFailed}`);
-  console.log(`Annotations generated: ${annotationsGenerated}`);
-  console.log(`Tokens saved: ~${totalTokensSaved.toLocaleString()}`);
-  console.log(`Cost savings: ~${((preflightFailed / imageUrls.length) * 100).toFixed(1)}%\n`);
+  logger.info('\n=== Batch Processing Summary ===');
+  logger.info(`Total images: ${imageUrls.length}`);
+  logger.info(`Preflight passed: ${preflightPassed}`);
+  logger.info(`Preflight failed: ${preflightFailed}`);
+  logger.info(`Annotations generated: ${annotationsGenerated}`);
+  logger.info(`Tokens saved: ~${totalTokensSaved.toLocaleString()}`);
+  logger.info(`Cost savings: ~${((preflightFailed / imageUrls.length) * 100).toFixed(1)}%\n`);
 
   // Show detailed statistics
   await monitorCosts();
@@ -248,29 +249,29 @@ export async function processImageBatch(imageUrls: string[]) {
  * Example 6: Smart caching for repeated checks
  */
 export async function demonstrateCaching() {
-  console.log('=== Example 6: Smart Caching Demo ===\n');
+  logger.info('=== Example 6: Smart Caching Demo ===\n');
 
   const imageUrl = 'https://example.com/bird.jpg';
 
   // First check (cache miss)
-  console.log('First check (cache miss):');
+  logger.info('First check (cache miss):');
   const start1 = Date.now();
   await visionPreflightService.detectBird(imageUrl);
   const time1 = Date.now() - start1;
-  console.log(`  Time: ${time1}ms\n`);
+  logger.info(`  Time: ${time1}ms\n`);
 
   // Second check (cache hit)
-  console.log('Second check (cache hit):');
+  logger.info('Second check (cache hit):');
   const start2 = Date.now();
   await visionPreflightService.detectBird(imageUrl);
   const time2 = Date.now() - start2;
-  console.log(`  Time: ${time2}ms`);
-  console.log(`  Speedup: ${(time1 / time2).toFixed(1)}x faster\n`);
+  logger.info(`  Time: ${time2}ms`);
+  logger.info(`  Speedup: ${(time1 / time2).toFixed(1)}x faster\n`);
 
   // Cache statistics
   const cacheStats = visionPreflightService.getCacheStats();
-  console.log('Cache efficiency:');
-  console.log(`  Cache hit rate: ${((cacheStats.validEntries / (cacheStats.validEntries + 1)) * 100).toFixed(1)}%\n`);
+  logger.info('Cache efficiency:');
+  logger.info(`  Cache hit rate: ${((cacheStats.validEntries / (cacheStats.validEntries + 1)) * 100).toFixed(1)}%\n`);
 }
 
 // Main execution

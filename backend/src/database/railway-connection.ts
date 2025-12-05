@@ -1,3 +1,4 @@
+import logger from '../utils/logger';
 import { Pool, PoolConfig } from 'pg';
 import { info, error as logError } from '../utils/logger';
 
@@ -52,7 +53,7 @@ function getConnectionConfigs(): PoolConfig[] {
 export async function createRailwayConnection(): Promise<Pool | null> {
   const configs = getConnectionConfigs();
 
-  console.log(`Attempting to connect using ${configs.length} different configurations...`);
+  logger.info(`Attempting to connect using ${configs.length} different configurations...`);
 
   for (let i = 0; i < configs.length; i++) {
     const config = configs[i];
@@ -60,7 +61,7 @@ export async function createRailwayConnection(): Promise<Pool | null> {
       ? `Config ${i + 1}: ${config.connectionString.substring(0, 50)}...`
       : `Config ${i + 1}: ${config.host}:${config.port}`;
 
-    console.log(`Trying ${configDesc}`);
+    logger.info(`Trying ${configDesc}`);
 
     const pool = new Pool({
       ...config,
@@ -80,11 +81,11 @@ export async function createRailwayConnection(): Promise<Pool | null> {
       info(`✅ Database connected successfully using ${configDesc}`, {
         timestamp: result.rows[0].now
       });
-      console.log(`SUCCESS: Connected using ${configDesc}`);
+      logger.info(`SUCCESS: Connected using ${configDesc}`);
       return pool; // Return the working pool
 
     } catch (err: any) {
-      console.log(`Failed ${configDesc}: ${err.message}`);
+      logger.info(`Failed ${configDesc}: ${err.message}`);
       await pool.end(); // Clean up failed pool
       // Continue to next configuration
     }

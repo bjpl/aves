@@ -1,3 +1,4 @@
+import logger from '../utils/logger';
 import { Pool } from 'pg';
 import { info, error as logError, warn } from '../utils/logger';
 import { createRailwayConnection } from './railway-connection';
@@ -120,7 +121,7 @@ export const testConnection = async (): Promise<boolean> => {
   try {
     // Use Railway-specific connection in production on Railway
     if (isRailway && process.env.NODE_ENV === 'production') {
-      console.log('Detected Railway environment - using multi-strategy connection...');
+      logger.info('Detected Railway environment - using multi-strategy connection...');
       const railwayPool = await createRailwayConnection();
 
       if (railwayPool) {
@@ -147,7 +148,7 @@ export const testConnection = async (): Promise<boolean> => {
       urlPreview: dbUrl ? `${dbUrl.substring(0, 40)}...` : 'not set'
     };
 
-    console.log('Database connection attempt:', connectionInfo);
+    logger.info('Database connection attempt:', connectionInfo);
     info('Attempting database connection', connectionInfo);
 
     const client = await pool.connect();
@@ -157,7 +158,7 @@ export const testConnection = async (): Promise<boolean> => {
     return true;
   } catch (err) {
     const error = err as any;
-    console.error('Database connection failed with error:', {
+    logger.error('Database connection failed with error:', {
       message: error.message,
       code: error.code,
       detail: error.detail,

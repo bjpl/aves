@@ -1,3 +1,4 @@
+import logger from '../utils/logger';
 import { Pool } from 'pg';
 
 /**
@@ -68,7 +69,7 @@ export interface DifficultTerm {
  *
  * // Get progress
  * const progress = await exerciseService.getSessionProgress(session.session_id);
- * console.log(`Accuracy: ${progress.accuracy}%`);
+ * logger.info(`Accuracy: ${progress.accuracy}%`);
  * ```
  */
 export class ExerciseService {
@@ -190,9 +191,9 @@ export class ExerciseService {
    * @example
    * ```typescript
    * const progress = await exerciseService.getSessionProgress('session_123');
-   * console.log(`Completed ${progress.totalExercises} exercises`);
-   * console.log(`Accuracy: ${progress.accuracy}%`);
-   * console.log(`Avg time: ${progress.avgTimePerExercise}ms`);
+   * logger.info(`Completed ${progress.totalExercises} exercises`);
+   * logger.info(`Accuracy: ${progress.accuracy}%`);
+   * logger.info(`Avg time: ${progress.avgTimePerExercise}ms`);
    * ```
    *
    * @remarks
@@ -243,8 +244,8 @@ export class ExerciseService {
    * ```typescript
    * const difficultTerms = await exerciseService.getDifficultTerms();
    * difficultTerms.forEach(term => {
-   *   console.log(`${term.spanish_term}: ${term.success_rate}% success rate`);
-   *   console.log(`Attempts: ${term.attempts}, Correct: ${term.correct}`);
+   *   logger.info(`${term.spanish_term}: ${term.success_rate}% success rate`);
+   *   logger.info(`Attempts: ${term.attempts}, Correct: ${term.correct}`);
    * });
    * ```
    *

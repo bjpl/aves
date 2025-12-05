@@ -3,6 +3,14 @@ export interface BoundingBox {
   y: number;      // Top-left Y (0-1 normalized)
   width: number;  // Width (0-1 normalized)
   height: number; // Height (0-1 normalized)
+  shape?: BoxShape; // Optional shape type
+}
+
+export type BoxShape = 'rectangle' | 'ellipse' | 'polygon';
+
+export interface Coordinate {
+  x: number;
+  y: number;
 }
 
 export type AnnotationType = 'anatomical' | 'behavioral' | 'color' | 'pattern' | 'habitat';

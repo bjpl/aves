@@ -1,3 +1,4 @@
+import logger from '../utils/logger';
 // CONCEPT: Example usage of UserContextBuilder
 // WHY: Demonstrates how to use context builder for personalized exercises
 // PATTERN: Example code showing integration patterns
@@ -16,9 +17,9 @@ async function basicContextExample() {
   const userId = 'user-123';
   const context = await builder.buildContext(userId);
 
-  console.log('=== User Context ===');
-  console.log(builder.getContextSummary(context));
-  console.log('\nDetailed Context:', JSON.stringify(context, null, 2));
+  logger.info('=== User Context ===');
+  logger.info(builder.getContextSummary(context));
+  logger.info('\nDetailed Context:', JSON.stringify(context, null, 2));
 
   await pool.end();
 }
@@ -77,8 +78,8 @@ Return JSON format:
 }
 `;
 
-  console.log('=== Generated AI Prompt ===');
-  console.log(prompt);
+  logger.info('=== Generated AI Prompt ===');
+  logger.info(prompt);
 
   await pool.end();
 }
@@ -92,19 +93,19 @@ async function trackDifficultyChanges() {
 
   const userId = 'user-789';
 
-  console.log('=== Tracking Difficulty Changes ===\n');
+  logger.info('=== Tracking Difficulty Changes ===\n');
 
   // Simulate checking context over time
   for (let i = 0; i < 3; i++) {
     const context = await builder.buildContext(userId);
 
-    console.log(`Check ${i + 1}:`);
-    console.log(`  Level: ${context.level}`);
-    console.log(`  Difficulty: ${context.difficulty}/5`);
-    console.log(`  Accuracy: ${context.performance.accuracy.toFixed(1)}%`);
-    console.log(`  Streak: ${context.streak}`);
-    console.log(`  Decision: ${getDifficultyReasoning(context)}`);
-    console.log('');
+    logger.info(`Check ${i + 1}:`);
+    logger.info(`  Level: ${context.level}`);
+    logger.info(`  Difficulty: ${context.difficulty}/5`);
+    logger.info(`  Accuracy: ${context.performance.accuracy.toFixed(1)}%`);
+    logger.info(`  Streak: ${context.streak}`);
+    logger.info(`  Decision: ${getDifficultyReasoning(context)}`);
+    logger.info('');
 
     // Wait a bit (in real usage, this would be between actual exercises)
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -127,33 +128,33 @@ async function topicAnalysisExample() {
   const history = await builder.getExerciseHistory(userId, 50);
   const topicStats = builder.analyzeTopics(history);
 
-  console.log('=== Topic Analysis ===\n');
+  logger.info('=== Topic Analysis ===\n');
 
-  console.log('Weak Topics (Need Practice):');
+  logger.info('Weak Topics (Need Practice):');
   context.weakTopics.forEach(topic => {
     const stats = topicStats.find(t => t.topic === topic);
     if (stats) {
-      console.log(`  - ${topic}: ${(stats.accuracy * 100).toFixed(1)}% accuracy (${stats.count} attempts, ${stats.avgTime.toFixed(1)}s avg)`);
+      logger.info(`  - ${topic}: ${(stats.accuracy * 100).toFixed(1)}% accuracy (${stats.count} attempts, ${stats.avgTime.toFixed(1)}s avg)`);
     }
   });
 
-  console.log('\nMastered Topics (Occasional Review):');
+  logger.info('\nMastered Topics (Occasional Review):');
   context.masteredTopics.forEach(topic => {
     const stats = topicStats.find(t => t.topic === topic);
     if (stats) {
-      console.log(`  - ${topic}: ${(stats.accuracy * 100).toFixed(1)}% accuracy (${stats.count} attempts, ${stats.avgTime.toFixed(1)}s avg)`);
+      logger.info(`  - ${topic}: ${(stats.accuracy * 100).toFixed(1)}% accuracy (${stats.count} attempts, ${stats.avgTime.toFixed(1)}s avg)`);
     }
   });
 
-  console.log('\nNew Topics (Ready to Learn):');
+  logger.info('\nNew Topics (Ready to Learn):');
   context.newTopics.slice(0, 5).forEach(topic => {
-    console.log(`  - ${topic}: Never attempted`);
+    logger.info(`  - ${topic}: Never attempted`);
   });
 
-  console.log('\nRecommended Focus:');
-  console.log(`  1. Primary: ${context.weakTopics[0] || 'Explore new topics'}`);
-  console.log(`  2. Secondary: ${context.weakTopics[1] || 'Review mastered content'}`);
-  console.log(`  3. Explore: ${context.newTopics[0] || 'Continue current curriculum'}`);
+  logger.info('\nRecommended Focus:');
+  logger.info(`  1. Primary: ${context.weakTopics[0] || 'Explore new topics'}`);
+  logger.info(`  2. Secondary: ${context.weakTopics[1] || 'Review mastered content'}`);
+  logger.info(`  3. Explore: ${context.newTopics[0] || 'Continue current curriculum'}`);
 
   await pool.end();
 }
@@ -167,20 +168,20 @@ async function cacheKeyExample() {
 
   const userId = 'user-202';
 
-  console.log('=== Cache Key Generation ===\n');
+  logger.info('=== Cache Key Generation ===\n');
 
   // Get context multiple times
   const context1 = await builder.buildContext(userId);
   const context2 = await builder.buildContext(userId);
 
-  console.log('First context hash:', context1.hash);
-  console.log('Second context hash:', context2.hash);
-  console.log('Hashes match:', context1.hash === context2.hash);
-  console.log('\nBenefit: Same hash = cache hit = no AI generation needed = $0.003 saved!\n');
+  logger.info('First context hash:', context1.hash);
+  logger.info('Second context hash:', context2.hash);
+  logger.info('Hashes match:', context1.hash === context2.hash);
+  logger.info('\nBenefit: Same hash = cache hit = no AI generation needed = $0.003 saved!\n');
 
   // Simulate performance change (in reality, this would be from completing exercises)
-  console.log('After user completes more exercises...');
-  console.log('Context would change → New hash → Fresh exercises generated');
+  logger.info('After user completes more exercises...');
+  logger.info('Context would change → New hash → Fresh exercises generated');
 
   await pool.end();
 }
@@ -206,33 +207,33 @@ function getDifficultyReasoning(context: any): string {
  * Run all examples
  */
 async function runAllExamples() {
-  console.log('╔═══════════════════════════════════════════════════════════╗');
-  console.log('║     User Context Builder - Examples                      ║');
-  console.log('╚═══════════════════════════════════════════════════════════╝\n');
+  logger.info('╔═══════════════════════════════════════════════════════════╗');
+  logger.info('║     User Context Builder - Examples                      ║');
+  logger.info('╚═══════════════════════════════════════════════════════════╝\n');
 
   try {
-    console.log('Example 1: Basic Context Building');
-    console.log('─'.repeat(60));
+    logger.info('Example 1: Basic Context Building');
+    logger.info('─'.repeat(60));
     await basicContextExample();
 
-    console.log('\n\nExample 2: AI Prompt Generation');
-    console.log('─'.repeat(60));
+    logger.info('\n\nExample 2: AI Prompt Generation');
+    logger.info('─'.repeat(60));
     await aiPromptExample();
 
-    console.log('\n\nExample 3: Adaptive Difficulty Tracking');
-    console.log('─'.repeat(60));
+    logger.info('\n\nExample 3: Adaptive Difficulty Tracking');
+    logger.info('─'.repeat(60));
     await trackDifficultyChanges();
 
-    console.log('\n\nExample 4: Topic Analysis');
-    console.log('─'.repeat(60));
+    logger.info('\n\nExample 4: Topic Analysis');
+    logger.info('─'.repeat(60));
     await topicAnalysisExample();
 
-    console.log('\n\nExample 5: Cache Key Generation');
-    console.log('─'.repeat(60));
+    logger.info('\n\nExample 5: Cache Key Generation');
+    logger.info('─'.repeat(60));
     await cacheKeyExample();
 
   } catch (error) {
-    console.error('Error running examples:', error);
+    logger.error('Error running examples:', error);
   }
 }
 
@@ -249,10 +250,10 @@ export {
 // Run if executed directly
 if (require.main === module) {
   runAllExamples().then(() => {
-    console.log('\n✓ All examples completed successfully!');
+    logger.info('\n✓ All examples completed successfully!');
     process.exit(0);
   }).catch(err => {
-    console.error('\n✗ Examples failed:', err);
+    logger.error('\n✗ Examples failed:', err);
     process.exit(1);
   });
 }

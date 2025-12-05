@@ -330,7 +330,13 @@ export class AIExerciseGenerator {
    * Select target species for visual discrimination based on user context
    * Prioritizes weak topics, then new topics, then random
    */
-  private async selectTargetSpecies(context: UserContext): Promise<any> {
+  private async selectTargetSpecies(context: UserContext): Promise<{
+    id: string;
+    scientificName: string;
+    commonNameSpanish: string;
+    commonNameEnglish: string;
+    imageUrl: string;
+  }> {
     const pool = this._pool;
 
     if (!pool) {
@@ -338,7 +344,7 @@ export class AIExerciseGenerator {
     }
 
     let query: string;
-    let params: any[];
+    let params: (string[] | undefined)[];
 
     // Try weak topics first
     if (context.weakTopics.length > 0) {
@@ -395,7 +401,17 @@ export class AIExerciseGenerator {
    * Select distractor species (wrong answers) for visual discrimination
    * Ensures distractors are different from target and visually distinct
    */
-  private async selectDistractorSpecies(targetSpecies: any, count: number, context: UserContext): Promise<any[]> {
+  private async selectDistractorSpecies(
+    targetSpecies: { id: string; scientificName: string; commonNameSpanish: string; commonNameEnglish: string; imageUrl: string },
+    count: number,
+    context: UserContext
+  ): Promise<Array<{
+    id: string;
+    scientificName: string;
+    commonNameSpanish: string;
+    commonNameEnglish: string;
+    imageUrl: string;
+  }>> {
     const pool = this._pool;
 
     if (!pool) {

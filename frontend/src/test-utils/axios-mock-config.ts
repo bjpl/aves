@@ -32,6 +32,10 @@ export function createMockAxiosInstance(): MockAxiosInstance {
     options: vi.fn(),
     request: vi.fn(),
     getUri: vi.fn(),
+    postForm: vi.fn(),
+    putForm: vi.fn(),
+    patchForm: vi.fn(),
+    create: vi.fn(() => createMockAxiosInstance()),
     defaults: {
       headers: {
         common: {},
@@ -82,16 +86,17 @@ export type MockAxiosInstance = {
  */
 export function createMockAxiosResponse<T = any>(
   data: T,
-  config?: Partial<AxiosRequestConfig>
+  options?: { status?: number; config?: Partial<AxiosRequestConfig> }
 ): AxiosResponse<T> {
+  const status = options?.status ?? 200;
   return {
     data,
-    status: 200,
-    statusText: 'OK',
+    status,
+    statusText: getStatusText(status),
     headers: {},
     config: {
       headers: {} as any,
-      ...config,
+      ...options?.config,
     },
   };
 }

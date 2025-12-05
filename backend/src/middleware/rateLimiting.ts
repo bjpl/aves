@@ -69,7 +69,7 @@ function skipRateLimiting(req: Request): boolean {
  * Generate a unique key for rate limiting (IP + User ID if authenticated)
  */
 function generateRateLimitKey(req: Request): string {
-  const userId = (req as any).user?.id || 'anonymous';
+  const userId = (req as { user?: { id: string } }).user?.id || 'anonymous';
   const ip = req.ip || 'unknown';
   return `${ip}-${userId}`;
 }
@@ -206,7 +206,7 @@ export function createAIRateLimiter(): RateLimitRequestHandler {
       warn('AI rate limit exceeded', {
         ip: req.ip,
         path: req.path,
-        userId: (req as any).user?.id,
+        userId: (req as { user?: { id: string } }).user?.id,
         timestamp: new Date().toISOString(),
       });
 

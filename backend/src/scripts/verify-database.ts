@@ -1,12 +1,13 @@
+import logger from '../utils/logger';
 import { pool } from '../database/connection';
 
 async function verifyDatabase() {
   try {
-    console.log('Testing database connection...');
+    logger.info('Testing database connection...');
 
     // Test connection
     const client = await pool.connect();
-    console.log('✓ Database connection successful\n');
+    logger.info('✓ Database connection successful\n');
 
     // Get all tables
     const tablesResult = await client.query(`
@@ -16,12 +17,12 @@ async function verifyDatabase() {
       ORDER BY table_name;
     `);
 
-    console.log('Tables in database:');
-    console.log('===================');
+    logger.info('Tables in database:');
+    logger.info('===================');
     tablesResult.rows.forEach((row: any) => {
-      console.log(`  - ${row.table_name}`);
+      logger.info(`  - ${row.table_name}`);
     });
-    console.log('');
+    logger.info('');
 
     // Get migrations
     const migrationsResult = await client.query(`
@@ -30,27 +31,27 @@ async function verifyDatabase() {
       ORDER BY executed_at;
     `);
 
-    console.log('Executed migrations:');
-    console.log('====================');
+    logger.info('Executed migrations:');
+    logger.info('====================');
     migrationsResult.rows.forEach((row: any) => {
-      console.log(`  - ${row.name} (${row.executed_at})`);
+      logger.info(`  - ${row.name} (${row.executed_at})`);
     });
-    console.log('');
+    logger.info('');
 
     // Check key tables
     const keyTables = ['users', 'species', 'images', 'annotations', 'ai_annotation_items'];
 
-    console.log('Key table row counts:');
-    console.log('=====================');
+    logger.info('Key table row counts:');
+    logger.info('=====================');
     for (const table of keyTables) {
       try {
         const result = await client.query(`SELECT COUNT(*) FROM ${table}`);
-        console.log(`  - ${table}: ${result.rows[0].count} rows`);
+        logger.info(`  - ${table}: ${result.rows[0].count} rows`);
       } catch (error: any) {
-        console.log(`  - ${table}: [ERROR - ${error.message}]`);
+        logger.info(`  - ${table}: [ERROR - ${error.message}]`);
       }
     }
-    console.log('');
+    logger.info('');
 
     // Check indexes
     const indexResult = await client.query(`
@@ -63,24 +64,24 @@ async function verifyDatabase() {
       ORDER BY tablename, indexname;
     `);
 
-    console.log('Indexes:');
-    console.log('========');
+    logger.info('Indexes:');
+    logger.info('========');
     let currentTable = '';
     indexResult.rows.forEach((row: any) => {
       if (row.tablename !== currentTable) {
         currentTable = row.tablename;
-        console.log(`\n  ${row.tablename}:`);
+        logger.info(`\n  ${row.tablename}:`);
       }
-      console.log(`    - ${row.indexname}`);
+      logger.info(`    - ${row.indexname}`);
     });
 
     client.release();
     await pool.end();
 
-    console.log('\n✓ Database verification complete');
+    logger.info('\n✓ Database verification complete');
     process.exit(0);
   } catch (error) {
-    console.error('Database verification failed:', error);
+    logger.error('Database verification failed:', error);
     process.exit(1);
   }
 }

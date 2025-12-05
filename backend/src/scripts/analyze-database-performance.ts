@@ -1,24 +1,25 @@
+import logger from '../utils/logger';
 import { pool } from '../database/connection';
 
 async function analyzePerformance() {
   try {
-    console.log('Database Performance Analysis');
-    console.log('============================\n');
+    logger.info('Database Performance Analysis');
+    logger.info('============================\n');
 
     const client = await pool.connect();
 
     // 1. Check database size
-    console.log('1. Database Size:');
-    console.log('------------------');
+    logger.info('1. Database Size:');
+    logger.info('------------------');
     const sizeResult = await client.query(`
       SELECT
         pg_size_pretty(pg_database_size(current_database())) as db_size;
     `);
-    console.log(`Total database size: ${sizeResult.rows[0].db_size}\n`);
+    logger.info(`Total database size: ${sizeResult.rows[0].db_size}\n`);
 
     // 2. Table sizes
-    console.log('2. Table Sizes (Top 10):');
-    console.log('------------------------');
+    logger.info('2. Table Sizes (Top 10):');
+    logger.info('------------------------');
     const tableSizesResult = await client.query(`
       SELECT
         schemaname,
@@ -31,13 +32,13 @@ async function analyzePerformance() {
       LIMIT 10;
     `);
     tableSizesResult.rows.forEach((row: any) => {
-      console.log(`  ${row.tablename.padEnd(30)} - ${row.size}`);
+      logger.info(`  ${row.tablename.padEnd(30)} - ${row.size}`);
     });
-    console.log('');
+    logger.info('');
 
     // 3. Index usage
-    console.log('3. Index Usage Analysis:');
-    console.log('------------------------');
+    logger.info('3. Index Usage Analysis:');
+    logger.info('------------------------');
     const indexUsageResult = await client.query(`
       SELECT
         schemaname,
@@ -52,11 +53,11 @@ async function analyzePerformance() {
       ORDER BY idx_scan DESC
       LIMIT 10;
     `);
-    console.log('Most Used Indexes:');
+    logger.info('Most Used Indexes:');
     indexUsageResult.rows.forEach((row: any) => {
-      console.log(`  ${row.indexname.padEnd(40)} - ${row.index_scans.toString().padStart(8)} scans (${row.index_size})`);
+      logger.info(`  ${row.indexname.padEnd(40)} - ${row.index_scans.toString().padStart(8)} scans (${row.index_size})`);
     });
-    console.log('');
+    logger.info('');
 
     // 4. Unused indexes
     const unusedIndexesResult = await client.query(`
@@ -71,23 +72,23 @@ async function analyzePerformance() {
       ORDER BY pg_relation_size(indexrelid) DESC;
     `);
     if (unusedIndexesResult.rows.length > 0) {
-      console.log('Unused Indexes (consider removing):');
+      logger.info('Unused Indexes (consider removing):');
       unusedIndexesResult.rows.forEach((row: any) => {
-        console.log(`  ⚠️  ${row.indexname.padEnd(40)} - ${row.index_size} (on ${row.tablename})`);
+        logger.info(`  ⚠️  ${row.indexname.padEnd(40)} - ${row.index_size} (on ${row.tablename})`);
       });
-      console.log('');
+      logger.info('');
     }
 
     // 5. Connection pool stats
-    console.log('4. Connection Pool Configuration:');
-    console.log('----------------------------------');
-    console.log(`  Max connections: ${process.env.DB_POOL_MAX || '20'}`);
-    console.log(`  Min connections: ${process.env.DB_POOL_MIN || '5'}`);
-    console.log(`  Statement timeout: ${process.env.DB_STATEMENT_TIMEOUT || '10000'}ms`);
-    console.log(`  Query timeout: ${process.env.DB_QUERY_TIMEOUT || '10000'}ms`);
-    console.log(`  Current pool size: ${pool.totalCount}`);
-    console.log(`  Idle connections: ${pool.idleCount}`);
-    console.log(`  Waiting clients: ${pool.waitingCount}\n`);
+    logger.info('4. Connection Pool Configuration:');
+    logger.info('----------------------------------');
+    logger.info(`  Max connections: ${process.env.DB_POOL_MAX || '20'}`);
+    logger.info(`  Min connections: ${process.env.DB_POOL_MIN || '5'}`);
+    logger.info(`  Statement timeout: ${process.env.DB_STATEMENT_TIMEOUT || '10000'}ms`);
+    logger.info(`  Query timeout: ${process.env.DB_QUERY_TIMEOUT || '10000'}ms`);
+    logger.info(`  Current pool size: ${pool.totalCount}`);
+    logger.info(`  Idle connections: ${pool.idleCount}`);
+    logger.info(`  Waiting clients: ${pool.waitingCount}\n`);
 
     // 6. Active connections
     const connectionsResult = await client.query(`
@@ -98,11 +99,11 @@ async function analyzePerformance() {
       FROM pg_stat_activity
       WHERE datname = current_database();
     `);
-    console.log('5. Database Connections:');
-    console.log('------------------------');
-    console.log(`  Total: ${connectionsResult.rows[0].total}`);
-    console.log(`  Active: ${connectionsResult.rows[0].active}`);
-    console.log(`  Idle: ${connectionsResult.rows[0].idle}\n`);
+    logger.info('5. Database Connections:');
+    logger.info('------------------------');
+    logger.info(`  Total: ${connectionsResult.rows[0].total}`);
+    logger.info(`  Active: ${connectionsResult.rows[0].active}`);
+    logger.info(`  Idle: ${connectionsResult.rows[0].idle}\n`);
 
     // 7. Cache hit ratio
     const cacheHitResult = await client.query(`
@@ -112,23 +113,23 @@ async function analyzePerformance() {
         sum(heap_blks_hit) / NULLIF(sum(heap_blks_hit) + sum(heap_blks_read), 0) * 100 as cache_hit_ratio
       FROM pg_statio_user_tables;
     `);
-    console.log('6. Cache Performance:');
-    console.log('---------------------');
+    logger.info('6. Cache Performance:');
+    logger.info('---------------------');
     if (cacheHitResult.rows[0].cache_hit_ratio) {
-      console.log(`  Cache hit ratio: ${parseFloat(cacheHitResult.rows[0].cache_hit_ratio).toFixed(2)}%`);
+      logger.info(`  Cache hit ratio: ${parseFloat(cacheHitResult.rows[0].cache_hit_ratio).toFixed(2)}%`);
       if (parseFloat(cacheHitResult.rows[0].cache_hit_ratio) < 90) {
-        console.log('  ⚠️  Cache hit ratio is below 90%. Consider increasing shared_buffers.');
+        logger.info('  ⚠️  Cache hit ratio is below 90%. Consider increasing shared_buffers.');
       } else {
-        console.log('  ✓ Cache hit ratio is healthy.');
+        logger.info('  ✓ Cache hit ratio is healthy.');
       }
     } else {
-      console.log('  No cache statistics available yet.');
+      logger.info('  No cache statistics available yet.');
     }
-    console.log('');
+    logger.info('');
 
     // 8. Table bloat check
-    console.log('7. Table Maintenance:');
-    console.log('---------------------');
+    logger.info('7. Table Maintenance:');
+    logger.info('---------------------');
     const bloatResult = await client.query(`
       SELECT
         schemaname,
@@ -149,19 +150,19 @@ async function analyzePerformance() {
       ORDER BY n_dead_tup DESC
       LIMIT 10;
     `);
-    console.log('Tables with dead tuples:');
+    logger.info('Tables with dead tuples:');
     bloatResult.rows.forEach((row: any) => {
       if (row.dead_tuples > 0) {
         const needsVacuum = row.dead_tuple_percentage > 10;
         const indicator = needsVacuum ? '⚠️ ' : '  ';
-        console.log(`  ${indicator}${row.tablename.padEnd(30)} - ${row.dead_tuples} dead tuples (${row.dead_tuple_percentage}%)`);
+        logger.info(`  ${indicator}${row.tablename.padEnd(30)} - ${row.dead_tuples} dead tuples (${row.dead_tuple_percentage}%)`);
       }
     });
-    console.log('');
+    logger.info('');
 
     // 9. Recommendations
-    console.log('8. Recommendations:');
-    console.log('-------------------');
+    logger.info('8. Recommendations:');
+    logger.info('-------------------');
     const recommendations: string[] = [];
 
     // Check for missing indexes on foreign keys
@@ -207,18 +208,18 @@ async function analyzePerformance() {
     }
 
     if (recommendations.length === 0) {
-      console.log('  ✓ No critical issues detected. Database is well-optimized.');
+      logger.info('  ✓ No critical issues detected. Database is well-optimized.');
     } else {
-      recommendations.forEach(rec => console.log(`  ${rec}`));
+      recommendations.forEach(rec => logger.info(`  ${rec}`));
     }
 
-    console.log('\n✓ Performance analysis complete\n');
+    logger.info('\n✓ Performance analysis complete\n');
 
     client.release();
     await pool.end();
     process.exit(0);
   } catch (error) {
-    console.error('Performance analysis failed:', error);
+    logger.error('Performance analysis failed:', error);
     process.exit(1);
   }
 }

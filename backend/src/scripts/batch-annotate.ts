@@ -1,3 +1,4 @@
+import logger from '../utils/logger';
 /**
  * Batch Annotation Script
  *
@@ -95,14 +96,14 @@ async function annotateImage(
   image: ImageRecord
 ): Promise<{ success: boolean; annotationCount: number; error?: string }> {
   try {
-    console.log(`   📸 Annotating: ${image.species_name}`);
-    console.log(`      Image ID: ${image.id}`);
-    console.log(`      URL: ${image.url.substring(0, 60)}...`);
+    logger.info(`   📸 Annotating: ${image.species_name}`);
+    logger.info(`      Image ID: ${image.id}`);
+    logger.info(`      URL: ${image.url.substring(0, 60)}...`);
 
     // Check if already annotated
     const alreadyAnnotated = await hasAnnotations(image.id);
     if (alreadyAnnotated) {
-      console.log(`      ⏭️  Skipping (already has annotations)`);
+      logger.info(`      ⏭️  Skipping (already has annotations)`);
       return { success: true, annotationCount: 0 };
     }
 
@@ -147,13 +148,13 @@ async function annotateImage(
       );
     }
 
-    console.log(`      ✅ Generated ${annotations.length} annotations (Job: ${jobId})`);
+    logger.info(`      ✅ Generated ${annotations.length} annotations (Job: ${jobId})`);
 
     return { success: true, annotationCount: annotations.length };
 
   } catch (error) {
     const errorMessage = (error as Error).message;
-    console.error(`      ❌ Error: ${errorMessage}`);
+    logger.error(`      ❌ Error: ${errorMessage}`);
     logError('Annotation generation failed', error as Error);
 
     return { success: false, annotationCount: 0, error: errorMessage };
@@ -164,28 +165,28 @@ async function annotateImage(
  * Main batch annotation workflow
  */
 async function batchAnnotate() {
-  console.log('\n🤖 AVES Batch Annotation with Claude Sonnet 4.5');
-  console.log('================================================\n');
+  logger.info('\n🤖 AVES Batch Annotation with Claude Sonnet 4.5');
+  logger.info('================================================\n');
 
   // Initialize Vision AI service
   const visionService = new VisionAIService();
 
   if (!visionService.isConfigured()) {
-    console.error('❌ Claude API not configured. Set ANTHROPIC_API_KEY in .env');
+    logger.error('❌ Claude API not configured. Set ANTHROPIC_API_KEY in .env');
     process.exit(1);
   }
 
-  console.log('✅ Claude Sonnet 4.5 Vision initialized');
+  logger.info('✅ Claude Sonnet 4.5 Vision initialized');
 
   // Fetch images to process
   const images = await fetchImagesToAnnotate();
 
   if (images.length === 0) {
-    console.log('\n⚠️  No images found. Run: npx tsx src/scripts/collect-images.ts first\n');
+    logger.info('\n⚠️  No images found. Run: npx tsx src/scripts/collect-images.ts first\n');
     process.exit(0);
   }
 
-  console.log(`📊 Found ${images.length} images to process\n`);
+  logger.info(`📊 Found ${images.length} images to process\n`);
 
   const results = {
     processed: 0,
@@ -201,8 +202,8 @@ async function batchAnnotate() {
     const batchNum = Math.floor(i / BATCH_SIZE) + 1;
     const totalBatches = Math.ceil(images.length / BATCH_SIZE);
 
-    console.log(`\n📦 Batch ${batchNum}/${totalBatches} (${batch.length} images)`);
-    console.log('─'.repeat(60));
+    logger.info(`\n📦 Batch ${batchNum}/${totalBatches} (${batch.length} images)`);
+    logger.info('─'.repeat(60));
 
     for (const image of batch) {
       results.processed++;
@@ -228,29 +229,29 @@ async function batchAnnotate() {
 
     // Delay between batches
     if (i + BATCH_SIZE < images.length) {
-      console.log(`\n   ⏳ Waiting ${DELAY_BETWEEN_BATCHES / 1000}s before next batch...`);
+      logger.info(`\n   ⏳ Waiting ${DELAY_BETWEEN_BATCHES / 1000}s before next batch...`);
       await sleep(DELAY_BETWEEN_BATCHES);
     }
   }
 
   // Summary
-  console.log('\n\n📊 Batch Annotation Summary');
-  console.log('===========================');
-  console.log(`📷 Images processed: ${results.processed}`);
-  console.log(`✅ Successfully annotated: ${results.successful}`);
-  console.log(`⏭️  Skipped (already done): ${results.skipped}`);
-  console.log(`❌ Failed: ${results.failed}`);
-  console.log(`🏷️  Total annotations: ${results.totalAnnotations}`);
+  logger.info('\n\n📊 Batch Annotation Summary');
+  logger.info('===========================');
+  logger.info(`📷 Images processed: ${results.processed}`);
+  logger.info(`✅ Successfully annotated: ${results.successful}`);
+  logger.info(`⏭️  Skipped (already done): ${results.skipped}`);
+  logger.info(`❌ Failed: ${results.failed}`);
+  logger.info(`🏷️  Total annotations: ${results.totalAnnotations}`);
 
   if (results.totalAnnotations > 0) {
-    console.log(`📈 Avg annotations/image: ${(results.totalAnnotations / results.successful).toFixed(1)}`);
+    logger.info(`📈 Avg annotations/image: ${(results.totalAnnotations / results.successful).toFixed(1)}`);
   }
 
-  console.log('\n🎉 Batch annotation complete!\n');
-  console.log('📝 Next steps:');
-  console.log('   1. Login to admin panel: http://localhost:5173/admin/annotations');
-  console.log('   2. Review pending annotations');
-  console.log('   3. Approve/edit annotations for learning content\n');
+  logger.info('\n🎉 Batch annotation complete!\n');
+  logger.info('📝 Next steps:');
+  logger.info('   1. Login to admin panel: http://localhost:5173/admin/annotations');
+  logger.info('   2. Review pending annotations');
+  logger.info('   3. Approve/edit annotations for learning content\n');
 }
 
 /**
@@ -270,6 +271,6 @@ batchAnnotate()
   })
   .catch((error) => {
     logError('Fatal error in batch annotation', error);
-    console.error('\n❌ Batch annotation failed:', error.message);
+    logger.error('\n❌ Batch annotation failed:', error.message);
     process.exit(1);
   });

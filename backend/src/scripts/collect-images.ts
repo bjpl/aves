@@ -1,3 +1,4 @@
+import logger from '../utils/logger';
 /**
  * Image Collection Script
  *
@@ -235,10 +236,10 @@ async function checkTables(): Promise<boolean> {
 
     if (!hasSpecies || !hasImages) {
       logError('Missing required tables. Run migrations first.', new Error('Tables missing'));
-      console.log('\n❌ Missing tables:');
-      if (!hasSpecies) console.log('   - species');
-      if (!hasImages) console.log('   - images');
-      console.log('\n📝 Run: cd backend && npm run migrate\n');
+      logger.info('\n❌ Missing tables:');
+      if (!hasSpecies) logger.info('   - species');
+      if (!hasImages) logger.info('   - images');
+      logger.info('\n📝 Run: cd backend && npm run migrate\n');
       return false;
     }
 
@@ -253,12 +254,12 @@ async function checkTables(): Promise<boolean> {
  * Main collection workflow
  */
 async function collectImages() {
-  console.log('\n🐦 AVES Image Collection Script');
-  console.log('================================\n');
+  logger.info('\n🐦 AVES Image Collection Script');
+  logger.info('================================\n');
 
   // Validate environment
   if (!UNSPLASH_ACCESS_KEY) {
-    console.error('❌ UNSPLASH_ACCESS_KEY not configured in .env');
+    logger.error('❌ UNSPLASH_ACCESS_KEY not configured in .env');
     process.exit(1);
   }
 
@@ -268,8 +269,8 @@ async function collectImages() {
     process.exit(1);
   }
 
-  console.log(`📊 Collecting images for ${BIRD_SPECIES.length} species`);
-  console.log(`📷 ${IMAGES_PER_SPECIES} images per species = ${BIRD_SPECIES.length * IMAGES_PER_SPECIES} total\n`);
+  logger.info(`📊 Collecting images for ${BIRD_SPECIES.length} species`);
+  logger.info(`📷 ${IMAGES_PER_SPECIES} images per species = ${BIRD_SPECIES.length * IMAGES_PER_SPECIES} total\n`);
 
   const results = {
     speciesProcessed: 0,
@@ -279,18 +280,18 @@ async function collectImages() {
 
   // Process each species
   for (const species of BIRD_SPECIES) {
-    console.log(`\n🔍 Processing: ${species.englishName} (${species.spanishName})`);
+    logger.info(`\n🔍 Processing: ${species.englishName} (${species.spanishName})`);
 
     try {
       // Insert species record
       const speciesId = await insertSpecies(species);
-      console.log(`   ✅ Species ID: ${speciesId}`);
+      logger.info(`   ✅ Species ID: ${speciesId}`);
 
       // Search for images
       const photos = await searchUnsplash(species.searchTerms, IMAGES_PER_SPECIES);
 
       if (photos.length === 0) {
-        console.log(`   ⚠️  No images found on Unsplash`);
+        logger.info(`   ⚠️  No images found on Unsplash`);
         results.errors++;
         continue;
       }
@@ -298,7 +299,7 @@ async function collectImages() {
       // Insert each image
       for (const photo of photos) {
         const imageId = await insertImage(speciesId, photo, species.englishName);
-        console.log(`   ✅ Image: ${photo.id} → ${imageId}`);
+        logger.info(`   ✅ Image: ${photo.id} → ${imageId}`);
         results.imagesCollected++;
 
         // Rate limiting - wait 1 second between requests
@@ -308,22 +309,22 @@ async function collectImages() {
       results.speciesProcessed++;
 
     } catch (error) {
-      console.error(`   ❌ Error processing ${species.englishName}:`, (error as Error).message);
+      logger.error(`   ❌ Error processing ${species.englishName}:`, (error as Error).message);
       results.errors++;
     }
   }
 
   // Summary
-  console.log('\n\n📊 Collection Summary');
-  console.log('====================');
-  console.log(`✅ Species processed: ${results.speciesProcessed}/${BIRD_SPECIES.length}`);
-  console.log(`📷 Images collected: ${results.imagesCollected}`);
-  console.log(`❌ Errors: ${results.errors}`);
-  console.log('\n🎉 Collection complete!\n');
-  console.log('📝 Next steps:');
-  console.log('   1. Run: npx tsx src/scripts/batch-annotate.ts');
-  console.log('   2. Review annotations in admin panel');
-  console.log('   3. Approve annotations for learning content\n');
+  logger.info('\n\n📊 Collection Summary');
+  logger.info('====================');
+  logger.info(`✅ Species processed: ${results.speciesProcessed}/${BIRD_SPECIES.length}`);
+  logger.info(`📷 Images collected: ${results.imagesCollected}`);
+  logger.info(`❌ Errors: ${results.errors}`);
+  logger.info('\n🎉 Collection complete!\n');
+  logger.info('📝 Next steps:');
+  logger.info('   1. Run: npx tsx src/scripts/batch-annotate.ts');
+  logger.info('   2. Review annotations in admin panel');
+  logger.info('   3. Approve annotations for learning content\n');
 }
 
 /**

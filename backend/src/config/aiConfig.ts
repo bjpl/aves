@@ -1,3 +1,4 @@
+import logger from '../utils/logger';
 /**
  * AI Configuration
  * Centralized configuration for OpenAI GPT-4o and other AI services
@@ -232,7 +233,7 @@ export function getAIConfig(): AIConfig {
     // Validate configuration
     const validation = validateAIConfig(aiConfigInstance);
     if (!validation.valid) {
-      console.warn('AI Configuration validation warnings:', validation.errors);
+      logger.warn('AI Configuration validation warnings:', validation.errors);
     }
   }
 

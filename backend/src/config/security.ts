@@ -1,3 +1,4 @@
+import logger from '../utils/logger';
 /**
  * Security Configuration Module
  * Centralized security configuration and constants
@@ -227,15 +228,15 @@ export function validateSecurityConfig(config: SecurityConfig): void {
   // Production-specific validations
   if (isProduction) {
     if (!config.features.forceHttps) {
-      console.warn('⚠️  Warning: FORCE_HTTPS is disabled in production');
+      logger.warn('⚠️  Warning: FORCE_HTTPS is disabled in production');
     }
 
     if (!config.features.secureCookies) {
-      console.warn('⚠️  Warning: SECURE_COOKIES is disabled in production');
+      logger.warn('⚠️  Warning: SECURE_COOKIES is disabled in production');
     }
 
     if (!config.headers.hsts.enabled) {
-      console.warn('⚠️  Warning: HSTS is disabled in production');
+      logger.warn('⚠️  Warning: HSTS is disabled in production');
     }
 
     if (config.features.devAuthBypass) {

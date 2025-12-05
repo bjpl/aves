@@ -13,7 +13,7 @@ import { ReactElement } from 'react';
 
 /**
  * Default QueryClient configuration for testing
- * Disables retries, caching, and logging to speed up tests
+ * Disables retries and caching to speed up tests
  */
 export const defaultTestQueryClientConfig: QueryClientConfig = {
   defaultOptions: {
@@ -25,11 +25,6 @@ export const defaultTestQueryClientConfig: QueryClientConfig = {
     mutations: {
       retry: false,
     },
-  },
-  logger: {
-    log: () => {},
-    warn: () => {},
-    error: () => {},
   },
 };
 

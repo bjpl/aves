@@ -40,13 +40,13 @@ async function basicExample() {
 
     // Display results
     annotations.forEach((annotation, index) => {
-      console.log(`\n--- Annotation ${index + 1} ---`);
-      console.log(`Spanish: ${annotation.spanishTerm}`);
-      console.log(`English: ${annotation.englishTerm}`);
-      console.log(`Pronunciation: ${annotation.pronunciation || 'N/A'}`);
-      console.log(`Type: ${annotation.type}`);
-      console.log(`Difficulty: ${annotation.difficultyLevel}/5`);
-      console.log(`Bounding Box:`, annotation.boundingBox);
+      logger.info(`\n--- Annotation ${index + 1} ---`);
+      logger.info(`Spanish: ${annotation.spanishTerm}`);
+      logger.info(`English: ${annotation.englishTerm}`);
+      logger.info(`Pronunciation: ${annotation.pronunciation || 'N/A'}`);
+      logger.info(`Type: ${annotation.type}`);
+      logger.info(`Difficulty: ${annotation.difficultyLevel}/5`);
+      logger.info(`Bounding Box:`, annotation.boundingBox);
     });
 
   } catch (error) {
@@ -202,10 +202,10 @@ async function statisticsExample() {
 
     const stats = await visionAI.getStatistics();
 
-    console.log('\n--- VisionAI Service Statistics ---');
-    console.log(`Total Cached: ${stats.totalCached}`);
-    console.log(`Cache Hit Rate: ${(stats.cacheHitRate * 100).toFixed(1)}%`);
-    console.log(`Avg Annotations/Image: ${stats.averageAnnotationsPerImage.toFixed(1)}`);
+    logger.info('\n--- VisionAI Service Statistics ---');
+    logger.info(`Total Cached: ${stats.totalCached}`);
+    logger.info(`Cache Hit Rate: ${(stats.cacheHitRate * 100).toFixed(1)}%`);
+    logger.info(`Avg Annotations/Image: ${stats.averageAnnotationsPerImage.toFixed(1)}`);
 
   } catch (error) {
     logger.error('Statistics example failed', error as Error);
@@ -392,8 +392,8 @@ if (require.main === module) {
       statisticsExample();
       break;
     default:
-      console.log('Usage: tsx examples/visionAI-example.ts [basic|batch|custom|validation|statistics]');
-      console.log('\nExample successful response:');
-      console.log(JSON.stringify(exampleSuccessfulResponse, null, 2));
+      logger.info('Usage: tsx examples/visionAI-example.ts [basic|batch|custom|validation|statistics]');
+      logger.info('\nExample successful response:');
+      logger.info(JSON.stringify(exampleSuccessfulResponse, null, 2));
   }
 }

@@ -106,3 +106,34 @@ export const CardFooter: React.FC<CardFooterProps> = ({
     </div>
   );
 };
+
+// Additional Card component exports for compatibility
+export interface CardContentProps extends React.HTMLAttributes<HTMLDivElement> {}
+
+export const CardContent: React.FC<CardContentProps> = ({ className = '', children, ...props }) => {
+  return (
+    <div className={`${className}`} {...props}>
+      {children}
+    </div>
+  );
+};
+
+export interface CardTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {}
+
+export const CardTitle: React.FC<CardTitleProps> = ({ className = '', children, ...props }) => {
+  return (
+    <h3 className={`text-lg font-semibold text-gray-900 ${className}`} {...props}>
+      {children}
+    </h3>
+  );
+};
+
+export interface CardDescriptionProps extends React.HTMLAttributes<HTMLParagraphElement> {}
+
+export const CardDescription: React.FC<CardDescriptionProps> = ({ className = '', children, ...props }) => {
+  return (
+    <p className={`text-sm text-gray-500 mt-1 ${className}`} {...props}>
+      {children}
+    </p>
+  );
+};

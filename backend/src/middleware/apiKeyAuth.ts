@@ -1,3 +1,4 @@
+import logger from '../utils/logger';
 /**
  * API Key Authentication Middleware
  * Provides API key-based authentication for external services
@@ -260,7 +261,13 @@ export function listApiKeys(): Array<{
   createdAt: Date;
   lastUsedAt?: Date;
 }> {
-  const keys: Array<any> = [];
+  const keys: Array<{
+    name: string;
+    environment: string;
+    permissions: string[];
+    createdAt: Date;
+    lastUsedAt?: Date;
+  }> = [];
 
   apiKeyStore.forEach((value, key) => {
     keys.push({
@@ -291,7 +298,7 @@ export function initializeApiKeyAuth(): void {
     });
   }
 
-  console.log('API key authentication initialized');
+  logger.info('API key authentication initialized');
 }
 
 export default {

@@ -1,3 +1,4 @@
+import logger from '../utils/logger';
 #!/usr/bin/env ts-node
 /**
  * Performance Optimization Verification Script
@@ -25,7 +26,7 @@ const results: VerificationResult[] = [];
  * Verify database indexes exist
  */
 async function verifyIndexes(): Promise<void> {
-  console.log('\n🔍 Verifying Database Indexes...\n');
+  logger.info('\n🔍 Verifying Database Indexes...\n');
 
   const expectedIndexes = [
     { name: 'idx_exercise_cache_lookup', table: 'exercise_cache' },
@@ -53,14 +54,14 @@ async function verifyIndexes(): Promise<void> {
           status: 'PASS',
           details: `Index exists on ${table}`
         });
-        console.log(`✅ ${name} - EXISTS`);
+        logger.info(`✅ ${name} - EXISTS`);
       } else {
         results.push({
           test: `Index: ${name}`,
           status: 'FAIL',
           details: `Index missing on ${table}`
         });
-        console.log(`❌ ${name} - MISSING`);
+        logger.info(`❌ ${name} - MISSING`);
       }
     } catch (error) {
       results.push({
@@ -68,7 +69,7 @@ async function verifyIndexes(): Promise<void> {
         status: 'FAIL',
         details: `Error checking index: ${(error as Error).message}`
       });
-      console.log(`❌ ${name} - ERROR`);
+      logger.info(`❌ ${name} - ERROR`);
     }
   }
 }
@@ -77,7 +78,7 @@ async function verifyIndexes(): Promise<void> {
  * Verify index usage with EXPLAIN
  */
 async function verifyIndexUsage(): Promise<void> {
-  console.log('\n🔍 Verifying Index Usage (EXPLAIN ANALYZE)...\n');
+  logger.info('\n🔍 Verifying Index Usage (EXPLAIN ANALYZE)...\n');
 
   // Test 1: Exercise cache lookup should use idx_exercise_cache_lookup
   try {
@@ -101,14 +102,14 @@ async function verifyIndexUsage(): Promise<void> {
         status: 'PASS',
         details: 'Query uses idx_exercise_cache_lookup'
       });
-      console.log('✅ Exercise cache query - USES INDEX');
+      logger.info('✅ Exercise cache query - USES INDEX');
     } else {
       results.push({
         test: 'Exercise cache query uses index',
         status: 'WARN',
         details: 'Query may not be using index (table might be empty)'
       });
-      console.log('⚠️  Exercise cache query - NO INDEX (table empty?)');
+      logger.info('⚠️  Exercise cache query - NO INDEX (table empty?)');
     }
   } catch (error) {
     results.push({
@@ -116,7 +117,7 @@ async function verifyIndexUsage(): Promise<void> {
       status: 'FAIL',
       details: `Error: ${(error as Error).message}`
     });
-    console.log('❌ Exercise cache query - ERROR');
+    logger.info('❌ Exercise cache query - ERROR');
   }
 
   // Test 2: Batch jobs query should use idx_batch_jobs_status
@@ -139,14 +140,14 @@ async function verifyIndexUsage(): Promise<void> {
         status: 'PASS',
         details: 'Query uses idx_batch_jobs_status'
       });
-      console.log('✅ Batch jobs query - USES INDEX');
+      logger.info('✅ Batch jobs query - USES INDEX');
     } else {
       results.push({
         test: 'Batch jobs query uses index',
         status: 'WARN',
         details: 'Query may not be using index (table might be empty)'
       });
-      console.log('⚠️  Batch jobs query - NO INDEX (table empty?)');
+      logger.info('⚠️  Batch jobs query - NO INDEX (table empty?)');
     }
   } catch (error) {
     results.push({
@@ -154,7 +155,7 @@ async function verifyIndexUsage(): Promise<void> {
       status: 'FAIL',
       details: `Error: ${(error as Error).message}`
     });
-    console.log('❌ Batch jobs query - ERROR');
+    logger.info('❌ Batch jobs query - ERROR');
   }
 }
 
@@ -162,7 +163,7 @@ async function verifyIndexUsage(): Promise<void> {
  * Benchmark batch INSERT vs individual INSERTs
  */
 async function benchmarkBatchInsert(): Promise<void> {
-  console.log('\n🔍 Benchmarking Batch INSERT Performance...\n');
+  logger.info('\n🔍 Benchmarking Batch INSERT Performance...\n');
 
   const testTableName = 'perf_test_temp';
   const rowCount = 100;
@@ -184,7 +185,7 @@ async function benchmarkBatchInsert(): Promise<void> {
     ]);
 
     // Test 1: Individual INSERTs
-    console.log(`Testing ${rowCount} individual INSERTs...`);
+    logger.info(`Testing ${rowCount} individual INSERTs...`);
     const startIndividual = Date.now();
     for (const [email, name] of testData) {
       await pool.query(
@@ -193,21 +194,21 @@ async function benchmarkBatchInsert(): Promise<void> {
       );
     }
     const durationIndividual = Date.now() - startIndividual;
-    console.log(`⏱️  Individual INSERTs: ${durationIndividual}ms`);
+    logger.info(`⏱️  Individual INSERTs: ${durationIndividual}ms`);
 
     // Clear table
     await pool.query(`TRUNCATE ${testTableName}`);
 
     // Test 2: Batch INSERT
-    console.log(`Testing batch INSERT of ${rowCount} rows...`);
+    logger.info(`Testing batch INSERT of ${rowCount} rows...`);
     const startBatch = Date.now();
     await batchInsert(pool, testTableName, ['email', 'name'], testData);
     const durationBatch = Date.now() - startBatch;
-    console.log(`⏱️  Batch INSERT: ${durationBatch}ms`);
+    logger.info(`⏱️  Batch INSERT: ${durationBatch}ms`);
 
     // Calculate speedup
     const speedup = (durationIndividual / durationBatch).toFixed(1);
-    console.log(`\n📊 Speedup: ${speedup}x faster`);
+    logger.info(`\n📊 Speedup: ${speedup}x faster`);
 
     if (parseFloat(speedup) >= 5) {
       results.push({
@@ -216,7 +217,7 @@ async function benchmarkBatchInsert(): Promise<void> {
         details: `${speedup}x faster than individual INSERTs`,
         metric: `${durationBatch}ms for ${rowCount} rows`
       });
-      console.log(`✅ Batch INSERT is ${speedup}x faster`);
+      logger.info(`✅ Batch INSERT is ${speedup}x faster`);
     } else {
       results.push({
         test: 'Batch INSERT performance',
@@ -224,7 +225,7 @@ async function benchmarkBatchInsert(): Promise<void> {
         details: `Only ${speedup}x faster (expected 5x+)`,
         metric: `${durationBatch}ms for ${rowCount} rows`
       });
-      console.log(`⚠️  Batch INSERT only ${speedup}x faster (expected 5x+)`);
+      logger.info(`⚠️  Batch INSERT only ${speedup}x faster (expected 5x+)`);
     }
 
     // Drop temp table
@@ -236,7 +237,7 @@ async function benchmarkBatchInsert(): Promise<void> {
       status: 'FAIL',
       details: `Error: ${(error as Error).message}`
     });
-    console.log('❌ Batch INSERT benchmark failed');
+    logger.info('❌ Batch INSERT benchmark failed');
   }
 }
 
@@ -244,15 +245,15 @@ async function benchmarkBatchInsert(): Promise<void> {
  * Verify connection pool configuration
  */
 async function verifyConnectionPool(): Promise<void> {
-  console.log('\n🔍 Verifying Connection Pool Configuration...\n');
+  logger.info('\n🔍 Verifying Connection Pool Configuration...\n');
 
   const expectedConfig = {
     max: parseInt(process.env.DB_POOL_MAX || '20'),
     min: parseInt(process.env.DB_POOL_MIN || '5')
   };
 
-  console.log(`Expected max connections: ${expectedConfig.max}`);
-  console.log(`Expected min connections: ${expectedConfig.min}`);
+  logger.info(`Expected max connections: ${expectedConfig.max}`);
+  logger.info(`Expected min connections: ${expectedConfig.min}`);
 
   // Check pool configuration
   if (pool.options.max === expectedConfig.max) {
@@ -261,14 +262,14 @@ async function verifyConnectionPool(): Promise<void> {
       status: 'PASS',
       details: `Pool max set to ${pool.options.max}`
     });
-    console.log(`✅ Pool max: ${pool.options.max}`);
+    logger.info(`✅ Pool max: ${pool.options.max}`);
   } else {
     results.push({
       test: 'Connection pool max size',
       status: 'WARN',
       details: `Pool max is ${pool.options.max}, expected ${expectedConfig.max}`
     });
-    console.log(`⚠️  Pool max: ${pool.options.max} (expected ${expectedConfig.max})`);
+    logger.info(`⚠️  Pool max: ${pool.options.max} (expected ${expectedConfig.max})`);
   }
 
   // Check if pool is working
@@ -279,62 +280,62 @@ async function verifyConnectionPool(): Promise<void> {
       status: 'PASS',
       details: 'Pool can execute queries'
     });
-    console.log('✅ Pool is healthy');
+    logger.info('✅ Pool is healthy');
   } catch (error) {
     results.push({
       test: 'Connection pool health',
       status: 'FAIL',
       details: `Pool error: ${(error as Error).message}`
     });
-    console.log('❌ Pool health check failed');
+    logger.info('❌ Pool health check failed');
   }
 
   // Check pool statistics
-  console.log(`\n📊 Pool Statistics:`);
-  console.log(`   Total connections: ${pool.totalCount}`);
-  console.log(`   Idle connections: ${pool.idleCount}`);
-  console.log(`   Waiting requests: ${pool.waitingCount}`);
+  logger.info(`\n📊 Pool Statistics:`);
+  logger.info(`   Total connections: ${pool.totalCount}`);
+  logger.info(`   Idle connections: ${pool.idleCount}`);
+  logger.info(`   Waiting requests: ${pool.waitingCount}`);
 }
 
 /**
  * Print summary report
  */
 function printSummary(): void {
-  console.log('\n' + '='.repeat(70));
-  console.log('📊 PERFORMANCE OPTIMIZATION VERIFICATION SUMMARY');
-  console.log('='.repeat(70) + '\n');
+  logger.info('\n' + '='.repeat(70));
+  logger.info('📊 PERFORMANCE OPTIMIZATION VERIFICATION SUMMARY');
+  logger.info('='.repeat(70) + '\n');
 
   const passed = results.filter(r => r.status === 'PASS').length;
   const failed = results.filter(r => r.status === 'FAIL').length;
   const warned = results.filter(r => r.status === 'WARN').length;
 
-  console.log(`Total Tests: ${results.length}`);
-  console.log(`✅ Passed: ${passed}`);
-  console.log(`⚠️  Warnings: ${warned}`);
-  console.log(`❌ Failed: ${failed}\n`);
+  logger.info(`Total Tests: ${results.length}`);
+  logger.info(`✅ Passed: ${passed}`);
+  logger.info(`⚠️  Warnings: ${warned}`);
+  logger.info(`❌ Failed: ${failed}\n`);
 
   // Print details for each result
   for (const result of results) {
     const icon = result.status === 'PASS' ? '✅' : result.status === 'WARN' ? '⚠️ ' : '❌';
-    console.log(`${icon} ${result.test}`);
-    console.log(`   ${result.details}`);
+    logger.info(`${icon} ${result.test}`);
+    logger.info(`   ${result.details}`);
     if (result.metric) {
-      console.log(`   Metric: ${result.metric}`);
+      logger.info(`   Metric: ${result.metric}`);
     }
-    console.log();
+    logger.info();
   }
 
   // Overall verdict
   if (failed === 0 && warned === 0) {
-    console.log('🎉 ALL OPTIMIZATIONS VERIFIED SUCCESSFULLY!\n');
+    logger.info('🎉 ALL OPTIMIZATIONS VERIFIED SUCCESSFULLY!\n');
     process.exit(0);
   } else if (failed === 0) {
-    console.log('⚠️  OPTIMIZATIONS VERIFIED WITH WARNINGS\n');
-    console.log('Some tests produced warnings. Review the details above.\n');
+    logger.info('⚠️  OPTIMIZATIONS VERIFIED WITH WARNINGS\n');
+    logger.info('Some tests produced warnings. Review the details above.\n');
     process.exit(0);
   } else {
-    console.log('❌ OPTIMIZATION VERIFICATION FAILED\n');
-    console.log('Some tests failed. Review the details above and fix issues.\n');
+    logger.info('❌ OPTIMIZATION VERIFICATION FAILED\n');
+    logger.info('Some tests failed. Review the details above and fix issues.\n');
     process.exit(1);
   }
 }
@@ -343,9 +344,9 @@ function printSummary(): void {
  * Main execution
  */
 async function main(): Promise<void> {
-  console.log('='.repeat(70));
-  console.log('🚀 PERFORMANCE OPTIMIZATION VERIFICATION');
-  console.log('='.repeat(70));
+  logger.info('='.repeat(70));
+  logger.info('🚀 PERFORMANCE OPTIMIZATION VERIFICATION');
+  logger.info('='.repeat(70));
 
   try {
     await verifyIndexes();

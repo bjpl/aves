@@ -1,3 +1,4 @@
+import logger from '../utils/logger';
 /**
  * Supabase Authentication Middleware
  *
@@ -19,7 +20,7 @@ function getSupabaseClient(): SupabaseClient {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('Environment variables:', {
+      logger.error('Environment variables:', {
         SUPABASE_URL: supabaseUrl ? 'Set' : 'Missing',
         SUPABASE_SERVICE_ROLE_KEY: supabaseServiceKey ? 'Set' : 'Missing',
         NODE_ENV: process.env.NODE_ENV,

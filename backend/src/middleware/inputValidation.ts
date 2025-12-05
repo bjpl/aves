@@ -1,3 +1,4 @@
+import logger from '../utils/logger';
 /**
  * Input Validation and Sanitization Middleware
  * Provides comprehensive input validation using Zod schemas
@@ -77,7 +78,7 @@ export function detectXSS(input: string): boolean {
 /**
  * Recursively sanitize an object
  */
-export function sanitizeObject(obj: any): any {
+export function sanitizeObject(obj: unknown): unknown {
   if (!obj || typeof obj !== 'object') {
     if (typeof obj === 'string') {
       return sanitizeString(obj);
@@ -89,7 +90,7 @@ export function sanitizeObject(obj: any): any {
     return obj.map((item) => sanitizeObject(item));
   }
 
-  const sanitized: any = {};
+  const sanitized: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(obj)) {
     if (typeof value === 'string') {
@@ -230,7 +231,7 @@ export function detectMaliciousInput(
   res: Response,
   next: NextFunction
 ): void {
-  const checkInput = (input: any, path: string = ''): boolean => {
+  const checkInput = (input: unknown, path: string = ''): boolean => {
     if (typeof input === 'string') {
       if (detectSQLInjection(input)) {
         warn('Potential SQL injection detected', {
@@ -331,7 +332,7 @@ export function initializeValidation(): void {
     blockMaliciousInput: process.env.BLOCK_MALICIOUS_INPUT === 'true',
   };
 
-  console.log('Input validation middleware initialized:', config);
+  logger.info('Input validation middleware initialized:', config);
 }
 
 export default {

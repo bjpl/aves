@@ -18,10 +18,10 @@ module.exports = {
   ],
   coverageThreshold: {
     global: {
-      branches: 70,
-      functions: 70,
-      lines: 70,
-      statements: 70
+      branches: 80,
+      functions: 85,
+      lines: 90,
+      statements: 90
     }
   },
   moduleNameMapper: {

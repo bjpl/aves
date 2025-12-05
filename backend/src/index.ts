@@ -1,3 +1,4 @@
+import logger from '../utils/logger';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -9,7 +10,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Log environment detection for debugging
-console.log('Starting server with environment:', {
+logger.info('Starting server with environment:', {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: process.env.PORT || 3001,
   hasDBUrl: !!process.env.DATABASE_URL,
@@ -50,7 +51,7 @@ function validateProductionConfig(): void {
     if (!jwtSecret) {
       throw new Error(
         'FATAL: JWT_SECRET must be set in production environment. ' +
-        'Generate a strong secret with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+        'Generate a strong secret with: node -e "logger.info(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
       );
     }
 
@@ -81,7 +82,7 @@ function validateProductionConfig(): void {
       throw new Error(
         `FATAL: JWT_SECRET contains weak/default value ('${matchedWeakSecret}'). ` +
         'In production, use a strong random secret (min 32 characters). ' +
-        'Generate with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+        'Generate with: node -e "logger.info(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
       );
     }
 
@@ -89,7 +90,7 @@ function validateProductionConfig(): void {
     if (jwtSecret.length < 32) {
       throw new Error(
         `FATAL: JWT_SECRET must be at least 32 characters long in production (current: ${jwtSecret.length}). ` +
-        'Generate a strong secret with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+        'Generate a strong secret with: node -e "logger.info(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
       );
     }
 
@@ -162,7 +163,7 @@ app.use(cors({
     // All other requests must have a valid origin from the allowedOrigins list
     if (!origin) {
       // Block requests without origin by default (security hardening)
-      console.warn('CORS blocked request without origin (non-health check)');
+      logger.warn('CORS blocked request without origin (non-health check)');
       return callback(new Error('Not allowed by CORS'));
     }
 
@@ -170,7 +171,7 @@ app.use(cors({
       callback(null, true);
     } else {
       // Log blocked origins for debugging
-      console.warn(`CORS blocked origin: ${origin}`);
+      logger.warn(`CORS blocked origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -308,8 +309,8 @@ const startServer = async () => {
 };
 
 startServer().catch((err) => {
-  console.error('Failed to start server:', err);
-  console.error('Full error details:', JSON.stringify(err, null, 2));
+  logger.error('Failed to start server:', err);
+  logger.error('Full error details:', JSON.stringify(err, null, 2));
   logError('Failed to start server', err);
   // Exit with error code to trigger Railway to show logs
   process.exit(1);

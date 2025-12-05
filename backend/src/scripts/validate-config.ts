@@ -1,3 +1,4 @@
+import logger from '../utils/logger';
 #!/usr/bin/env tsx
 /**
  * Configuration Validation Script
@@ -12,7 +13,7 @@ import * as dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
-console.log('\n=== AI Configuration Validation ===\n');
+logger.info('\n=== AI Configuration Validation ===\n');
 
 // Load configuration
 const config = getAIConfig();
@@ -21,64 +22,64 @@ const config = getAIConfig();
 const validation = validateAIConfig(config);
 
 // Display results
-console.log('Configuration Status:');
-console.log('--------------------');
+logger.info('Configuration Status:');
+logger.info('--------------------');
 
 if (validation.valid) {
-  console.log('✅ Configuration is VALID\n');
+  logger.info('✅ Configuration is VALID\n');
 } else {
-  console.log('❌ Configuration has ERRORS\n');
-  console.log('Errors:');
+  logger.info('❌ Configuration has ERRORS\n');
+  logger.info('Errors:');
   validation.errors.forEach(error => {
-    console.log(`  - ${error}`);
+    logger.info(`  - ${error}`);
   });
-  console.log('');
+  logger.info('');
 }
 
 // Display configuration summary
-console.log('\nConfiguration Summary:');
-console.log('---------------------');
+logger.info('\nConfiguration Summary:');
+logger.info('---------------------');
 
 // OpenAI
-console.log('\n📡 OpenAI Configuration:');
-console.log(`  API Key: ${config.openai.apiKey ? '✅ Set' : '❌ Not set'}`);
-console.log(`  Model: ${config.openai.model}`);
-console.log(`  Vision Model: ${config.openai.visionModel}`);
-console.log(`  Max Tokens: ${config.openai.maxTokens}`);
-console.log(`  Temperature: ${config.openai.temperature}`);
-console.log(`  Timeout: ${config.openai.timeout}ms`);
-console.log(`  Max Retries: ${config.openai.maxRetries}`);
+logger.info('\n📡 OpenAI Configuration:');
+logger.info(`  API Key: ${config.openai.apiKey ? '✅ Set' : '❌ Not set'}`);
+logger.info(`  Model: ${config.openai.model}`);
+logger.info(`  Vision Model: ${config.openai.visionModel}`);
+logger.info(`  Max Tokens: ${config.openai.maxTokens}`);
+logger.info(`  Temperature: ${config.openai.temperature}`);
+logger.info(`  Timeout: ${config.openai.timeout}ms`);
+logger.info(`  Max Retries: ${config.openai.maxRetries}`);
 
 // Unsplash
-console.log('\n🖼️  Unsplash Configuration:');
-console.log(`  Access Key: ${config.unsplash.accessKey ? '✅ Set' : '❌ Not set'}`);
-console.log(`  Secret Key: ${config.unsplash.secretKey ? '✅ Set' : '❌ Not set'}`);
-console.log(`  API URL: ${config.unsplash.apiUrl}`);
-console.log(`  Rate Limit: ${config.unsplash.rateLimitPerHour}/hour`);
+logger.info('\n🖼️  Unsplash Configuration:');
+logger.info(`  Access Key: ${config.unsplash.accessKey ? '✅ Set' : '❌ Not set'}`);
+logger.info(`  Secret Key: ${config.unsplash.secretKey ? '✅ Set' : '❌ Not set'}`);
+logger.info(`  API URL: ${config.unsplash.apiUrl}`);
+logger.info(`  Rate Limit: ${config.unsplash.rateLimitPerHour}/hour`);
 
 // Vision API
-console.log('\n👁️  Vision API Configuration:');
-console.log(`  Provider: ${config.vision.provider}`);
-console.log(`  Timeout: ${config.vision.timeout}ms`);
-console.log(`  Max Retries: ${config.vision.maxRetries}`);
-console.log(`  Rate Limit: ${config.vision.rateLimitPerMinute}/min`);
+logger.info('\n👁️  Vision API Configuration:');
+logger.info(`  Provider: ${config.vision.provider}`);
+logger.info(`  Timeout: ${config.vision.timeout}ms`);
+logger.info(`  Max Retries: ${config.vision.maxRetries}`);
+logger.info(`  Rate Limit: ${config.vision.rateLimitPerMinute}/min`);
 
 // Feature Flags
-console.log('\n🚩 Feature Flags:');
-console.log(`  Vision AI: ${config.features.enableVisionAI ? '✅ Enabled' : '❌ Disabled'}`);
-console.log(`  Image Generation: ${config.features.enableImageGeneration ? '✅ Enabled' : '❌ Disabled'}`);
-console.log(`  Image Analysis: ${config.features.enableImageAnalysis ? '✅ Enabled' : '❌ Disabled'}`);
-console.log(`  Annotation AI: ${config.features.enableAnnotationAI ? '✅ Enabled' : '❌ Disabled'}`);
+logger.info('\n🚩 Feature Flags:');
+logger.info(`  Vision AI: ${config.features.enableVisionAI ? '✅ Enabled' : '❌ Disabled'}`);
+logger.info(`  Image Generation: ${config.features.enableImageGeneration ? '✅ Enabled' : '❌ Disabled'}`);
+logger.info(`  Image Analysis: ${config.features.enableImageAnalysis ? '✅ Enabled' : '❌ Disabled'}`);
+logger.info(`  Annotation AI: ${config.features.enableAnnotationAI ? '✅ Enabled' : '❌ Disabled'}`);
 
 // Cost Tracking
-console.log('\n💰 Cost Tracking:');
-console.log(`  Enabled: ${config.costTracking.enabled ? '✅ Yes' : '❌ No'}`);
-console.log(`  Alert Threshold: $${config.costTracking.alertThreshold}`);
-console.log(`  Log Level: ${config.costTracking.logLevel}`);
+logger.info('\n💰 Cost Tracking:');
+logger.info(`  Enabled: ${config.costTracking.enabled ? '✅ Yes' : '❌ No'}`);
+logger.info(`  Alert Threshold: $${config.costTracking.alertThreshold}`);
+logger.info(`  Log Level: ${config.costTracking.logLevel}`);
 
 // Recommendations
-console.log('\n💡 Recommendations:');
-console.log('-------------------');
+logger.info('\n💡 Recommendations:');
+logger.info('-------------------');
 
 const recommendations: string[] = [];
 
@@ -115,19 +116,19 @@ if (config.openai.timeout < 10000) {
 }
 
 if (recommendations.length === 0) {
-  console.log('✅ No recommendations - configuration looks good!');
+  logger.info('✅ No recommendations - configuration looks good!');
 } else {
-  recommendations.forEach(rec => console.log(rec));
+  recommendations.forEach(rec => logger.info(rec));
 }
 
 // Quick start guide
-console.log('\n📚 Next Steps:');
-console.log('--------------');
-console.log('1. Get API keys: https://platform.openai.com/api-keys');
-console.log('2. Add keys to backend/.env file');
-console.log('3. Enable features as needed');
-console.log('4. See docs/API_KEYS_SETUP.md for detailed guide');
-console.log('5. See docs/QUICK_START_AI_CONFIG.md for quick reference\n');
+logger.info('\n📚 Next Steps:');
+logger.info('--------------');
+logger.info('1. Get API keys: https://platform.openai.com/api-keys');
+logger.info('2. Add keys to backend/.env file');
+logger.info('3. Enable features as needed');
+logger.info('4. See docs/API_KEYS_SETUP.md for detailed guide');
+logger.info('5. See docs/QUICK_START_AI_CONFIG.md for quick reference\n');
 
 // Exit with appropriate code
 process.exit(validation.valid ? 0 : 1);
