@@ -1,0 +1,108 @@
+graph TB
+    subgraph "Phase 1: Foundation (Weeks 1-2)"
+        A1[A1: Fix PatternLearner DI<br/>2h, +2 health]
+        A2_1[A2.1: Decompose aiExerciseGenerator<br/>4h, +0.8 health]
+        A2_2[A2.2: Decompose PatternLearner<br/>6h, +0.8 health]
+        A6_1[A6.1: ADR - DI Strategy<br/>1h, +0.3 health]
+        A6_2[A6.2: ADR - Service Decomposition<br/>1h, +0.3 health]
+    end
+
+    subgraph "Phase 2: Route Decomposition (Weeks 3-6)"
+        A2_3[A2.3: adminImageManagement.ts<br/>12h, +0.8 health<br/>CRITICAL PATH]
+        A2_4[A2.4: aiAnnotations.ts<br/>8h, +0.8 health<br/>CRITICAL PATH]
+        A2_5[A2.5: 8 Backend Services<br/>32h, +6.4 health]
+        A4_1[A4.1: Route module tests<br/>16h, +1.5 health]
+        A3_1[A3.1: Route type safety<br/>8h, +12 health]
+    end
+
+    subgraph "Phase 3: Frontend (Weeks 7-10)"
+        A2_6[A2.6: ImageManagementPage<br/>6h, +0.8 health]
+        A2_7[A2.7: ImageGalleryTab<br/>4h, +0.8 health]
+        A2_8[A2.8: MLAnalyticsDashboard<br/>4h, +0.8 health]
+        A2_9[A2.9: Admin components<br/>12h, +2.4 health]
+        A7_1[A7.1: Frontend type fixes<br/>12h, +1.5 health]
+        A4_2[A4.2: Component tests<br/>20h, +2.0 health]
+    end
+
+    subgraph "Phase 4: Test Decomposition (Weeks 11-13)"
+        A2_10[A2.10: 17 Frontend test files<br/>34h, +13.6 health]
+        A2_11[A2.11: 9 Backend test files<br/>18h, +7.2 health]
+        A4_3[A4.3: Integration tests<br/>16h, +2.5 health]
+    end
+
+    subgraph "Phase 5: Type Safety (Weeks 14-15)"
+        A3_2[A3.2: Vision AI types<br/>8h, +8 health]
+        A3_3[A3.3: Service layers<br/>12h, +17.2 health]
+        A3_4[A3.4: Test fixtures<br/>6h, +10 health]
+        A5_1[A5.1: Enable no-explicit-any<br/>1h, +1 health]
+    end
+
+    subgraph "Phase 6: Polish (Weeks 16-17)"
+        A4_4[A4.4: Backend edge cases<br/>12h, +1 health]
+        A4_5[A4.5: Frontend edge cases<br/>12h, +1 health]
+        A6_3[A6.3-7: Remaining ADRs<br/>5h, +1.5 health]
+        A5_2[A5.2-4: Enable strict rules<br/>3h, +3 health]
+    end
+
+    START([Current: 46.83/100]) --> A1
+    A1 --> A2_1
+    A1 --> A2_2
+    A2_1 --> A6_2
+    A6_1 -.parallel.-> A6_2
+
+    A2_1 --> A2_3
+    A2_2 --> A2_3
+    A2_3 --> A2_4
+    A2_4 --> A2_5
+    A2_3 --> A3_1
+    A2_4 --> A3_1
+    A2_5 --> A4_1
+    A3_1 --> A4_1
+
+    A2_3 -.parallel.-> A2_6
+    A2_4 -.parallel.-> A2_6
+    A2_6 --> A2_7
+    A2_7 --> A2_8
+    A2_8 --> A2_9
+    A2_9 --> A7_1
+    A2_9 --> A4_2
+    A7_1 -.parallel.-> A4_2
+
+    A2_9 --> A2_10
+    A2_5 --> A2_11
+    A2_10 -.parallel.-> A2_11
+    A2_10 --> A4_3
+    A2_11 --> A4_3
+
+    A4_1 --> A3_2
+    A4_1 --> A3_3
+    A4_2 --> A3_4
+    A3_2 -.parallel.-> A3_3
+    A3_3 -.parallel.-> A3_4
+    A3_2 --> A5_1
+    A3_3 --> A5_1
+    A3_4 --> A5_1
+
+    A4_3 --> A4_4
+    A4_3 --> A4_5
+    A4_4 -.parallel.-> A4_5
+    A4_4 --> A5_2
+    A4_5 --> A5_2
+    A5_1 --> A5_2
+    A4_4 -.parallel.-> A6_3
+    A4_5 -.parallel.-> A6_3
+
+    A5_2 --> END([Target: 95/100])
+    A6_3 --> END
+
+    classDef critical fill:#ff6b6b,stroke:#c92a2a,stroke-width:3px
+    classDef backend fill:#4dabf7,stroke:#1971c2,stroke-width:2px
+    classDef frontend fill:#69db7c,stroke:#2f9e44,stroke-width:2px
+    classDef testing fill:#ffd43b,stroke:#f59f00,stroke-width:2px
+    classDef docs fill:#cc5de8,stroke:#9c36b5,stroke-width:2px
+
+    class A2_3,A2_4 critical
+    class A1,A2_1,A2_2,A2_5,A2_11,A3_1,A3_2,A3_3,A4_4,A5_1,A5_2 backend
+    class A2_6,A2_7,A2_8,A2_9,A2_10,A7_1,A4_5,A3_4 frontend
+    class A4_1,A4_2,A4_3 testing
+    class A6_1,A6_2,A6_3 docs
