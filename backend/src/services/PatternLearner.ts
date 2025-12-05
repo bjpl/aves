@@ -2,20 +2,100 @@
  * Pattern Learning Service
  * Implements memory-based pattern learning to improve annotation quality over time
  * Uses ML techniques to track successful patterns and optimize prompts
+ *
+ * @architecture Uses Dependency Injection for storage abstraction
+ * - IPatternStorage interface allows testability via InMemoryPatternStorage
+ * - SupabasePatternStorage is the production implementation
+ * - Storage is lazy-initialized to prevent module-level side effects
  */
 
 import { info, error as logError } from '../utils/logger';
 import { AIAnnotation } from './VisionAIService';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const execAsync = promisify(exec);
 
-// Initialize Supabase client for storage
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
+/**
+ * Pattern storage interface for dependency injection
+ * Allows swapping between Supabase (production) and in-memory (testing)
+ */
+export interface IPatternStorage {
+  upload(bucket: string, path: string, content: string): Promise<{ error: Error | null }>;
+  download(bucket: string, path: string): Promise<{ data: Blob | null; error: Error | null }>;
+}
+
+/**
+ * Supabase storage implementation for production
+ * Lazy-initialized to prevent module-level side effects
+ */
+export class SupabasePatternStorage implements IPatternStorage {
+  private client: SupabaseClient | null = null;
+
+  private getClient(): SupabaseClient {
+    if (!this.client) {
+      const supabaseUrl = process.env.SUPABASE_URL || '';
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+      this.client = createClient(supabaseUrl, supabaseKey);
+    }
+    return this.client;
+  }
+
+  async upload(bucket: string, path: string, content: string): Promise<{ error: Error | null }> {
+    try {
+      const blob = new Blob([content], { type: 'application/json' });
+      const { error } = await this.getClient().storage
+        .from(bucket)
+        .upload(path, blob, { upsert: true, contentType: 'application/json' });
+      return { error: error as Error | null };
+    } catch (err) {
+      return { error: err as Error };
+    }
+  }
+
+  async download(bucket: string, path: string): Promise<{ data: Blob | null; error: Error | null }> {
+    try {
+      const { data, error } = await this.getClient().storage
+        .from(bucket)
+        .download(path);
+      return { data, error: error as Error | null };
+    } catch (err) {
+      return { data: null, error: err as Error };
+    }
+  }
+}
+
+/**
+ * In-memory storage implementation for testing
+ * No external dependencies - safe for unit tests
+ */
+export class InMemoryPatternStorage implements IPatternStorage {
+  private data: Map<string, string> = new Map();
+
+  async upload(bucket: string, path: string, content: string): Promise<{ error: Error | null }> {
+    this.data.set(`${bucket}/${path}`, content);
+    return { error: null };
+  }
+
+  async download(bucket: string, path: string): Promise<{ data: Blob | null; error: Error | null }> {
+    const content = this.data.get(`${bucket}/${path}`);
+    if (content) {
+      return { data: new Blob([content], { type: 'application/json' }), error: null };
+    }
+    return { data: null, error: null };
+  }
+
+  // Test helper: clear all stored data
+  clear(): void {
+    this.data.clear();
+  }
+
+  // Test helper: get stored data
+  getData(): Map<string, string> {
+    return new Map(this.data);
+  }
+}
 
 /**
  * Learned pattern for a specific feature or species
@@ -103,6 +183,13 @@ export interface QualityMetrics {
 /**
  * Pattern Learning Service
  * Self-improving system that learns from successful annotations
+ *
+ * @example Production usage:
+ *   const learner = new PatternLearner(); // Uses SupabasePatternStorage by default
+ *
+ * @example Testing usage:
+ *   const storage = new InMemoryPatternStorage();
+ *   const learner = new PatternLearner(storage);
  */
 export class PatternLearner {
   private patterns: Map<string, LearnedPattern> = new Map();
@@ -113,6 +200,7 @@ export class PatternLearner {
   private sessionId = `swarm-pattern-learning-${Date.now()}`;
   private initPromise: Promise<void> | null = null;
   private isInitialized = false;
+  private storage: IPatternStorage;
 
   // ML hyperparameters
   private readonly CONFIDENCE_THRESHOLD = 0.75; // Only learn from high-confidence annotations
@@ -123,8 +211,21 @@ export class PatternLearner {
   private readonly REJECTION_CONFIDENCE_PENALTY = 0.1; // Reduce confidence on rejection
   private readonly CORRECTION_WEIGHT = 1.5; // Weight corrections higher than initial observations
 
-  constructor() {
-    this.initPromise = this.initialize();
+  /**
+   * Create a PatternLearner instance
+   * @param storage - Optional storage implementation (defaults to SupabasePatternStorage)
+   * @param skipInit - Skip initialization (useful for testing)
+   */
+  constructor(storage?: IPatternStorage, skipInit: boolean = false) {
+    // Use provided storage or default to Supabase (lazy-initialized)
+    this.storage = storage || new SupabasePatternStorage();
+
+    // Skip initialization in test environments or when explicitly requested
+    if (!skipInit && process.env.NODE_ENV !== 'test') {
+      this.initPromise = this.initialize();
+    } else {
+      this.isInitialized = true;
+    }
   }
 
   /**
@@ -743,7 +844,7 @@ Note: Use these as reference points, not strict requirements`;
   }
 
   /**
-   * Persist patterns to Supabase Storage (Railway-compatible)
+   * Persist patterns to storage (uses injected IPatternStorage)
    */
   private async persistPatterns(): Promise<void> {
     try {
@@ -765,53 +866,36 @@ Note: Use these as reference points, not strict requirements`;
         }
       }));
 
-      // Upload to Supabase Storage
       const bucket = 'ml-patterns';
 
-      // Upload patterns
-      const patternsBlob = new Blob([JSON.stringify(patternsData, null, 2)], { type: 'application/json' });
-      await supabase.storage
-        .from(bucket)
-        .upload('learned-patterns.json', patternsBlob, {
-          upsert: true,
-          contentType: 'application/json'
-        });
+      // Upload patterns using injected storage
+      await this.storage.upload(bucket, 'learned-patterns.json', JSON.stringify(patternsData, null, 2));
 
       // Upload species stats
-      const speciesBlob = new Blob([JSON.stringify(speciesData, null, 2)], { type: 'application/json' });
-      await supabase.storage
-        .from(bucket)
-        .upload('species-stats.json', speciesBlob, {
-          upsert: true,
-          contentType: 'application/json'
-        });
+      await this.storage.upload(bucket, 'species-stats.json', JSON.stringify(speciesData, null, 2));
 
-      info('Patterns persisted to Supabase Storage', {
+      info('Patterns persisted to storage', {
         patterns: patternsData.length,
         species: speciesData.length
       });
 
     } catch (error) {
-      logError('Failed to persist patterns to Supabase', error as Error);
+      logError('Failed to persist patterns to storage', error as Error);
     }
   }
 
   /**
-   * Restore session from Supabase Storage
+   * Restore session from storage (uses injected IPatternStorage)
    */
   private async restoreSession(): Promise<void> {
     try {
       const bucket = 'ml-patterns';
 
-      // Download patterns file
-      const { data: patternsFile, error: patternsError } = await supabase.storage
-        .from(bucket)
-        .download('learned-patterns.json');
+      // Download patterns file using injected storage
+      const { data: patternsFile, error: patternsError } = await this.storage.download(bucket, 'learned-patterns.json');
 
       // Download species stats file
-      const { data: speciesFile, error: speciesError } = await supabase.storage
-        .from(bucket)
-        .download('species-stats.json');
+      const { data: speciesFile, error: speciesError } = await this.storage.download(bucket, 'species-stats.json');
 
       // Parse patterns
       if (patternsFile && !patternsError) {
@@ -844,7 +928,7 @@ Note: Use these as reference points, not strict requirements`;
         }
       }
 
-      info('Session restored from Supabase Storage', {
+      info('Session restored from storage', {
         patterns: this.patterns.size,
         species: this.speciesStats.size
       });
@@ -1275,5 +1359,52 @@ Note: Use these as reference points, not strict requirements`;
   }
 }
 
-// Export singleton instance
-export const patternLearner = new PatternLearner();
+// Lazy singleton pattern - instance created on first access
+// In test environments (NODE_ENV=test), the singleton skips initialization
+let _patternLearnerInstance: PatternLearner | null = null;
+
+/**
+ * Get the singleton PatternLearner instance
+ * Creates the instance lazily to avoid module-level side effects
+ * In test environments, use createPatternLearner() to create testable instances
+ */
+export function getPatternLearner(): PatternLearner {
+  if (!_patternLearnerInstance) {
+    _patternLearnerInstance = new PatternLearner();
+  }
+  return _patternLearnerInstance;
+}
+
+/**
+ * Create a new PatternLearner instance with custom storage
+ * Useful for testing with InMemoryPatternStorage
+ * @param storage - Storage implementation (InMemoryPatternStorage for tests)
+ */
+export function createPatternLearner(storage?: IPatternStorage): PatternLearner {
+  return new PatternLearner(storage);
+}
+
+/**
+ * Reset the singleton (for testing only)
+ * @internal
+ */
+export function resetPatternLearnerSingleton(): void {
+  _patternLearnerInstance = null;
+}
+
+/**
+ * Backward-compatible singleton export
+ * Uses a Proxy to lazily create the instance on first property access
+ * This maintains the API: `patternLearner.learnFromAnnotations(...)`
+ */
+export const patternLearner: PatternLearner = new Proxy({} as PatternLearner, {
+  get(_target, prop: keyof PatternLearner | symbol) {
+    const instance = getPatternLearner();
+    const value = instance[prop as keyof PatternLearner];
+    // Bind methods to the instance
+    if (typeof value === 'function') {
+      return value.bind(instance);
+    }
+    return value;
+  }
+});
