@@ -150,8 +150,24 @@ function cleanupOldJobs(): void {
   }
 }
 
-// Run cleanup every hour
-setInterval(cleanupOldJobs, 60 * 60 * 1000);
+// Run cleanup every hour - store reference for test teardown
+let cleanupIntervalId: NodeJS.Timeout | null = null;
+
+// Only start cleanup interval in non-test environments
+if (process.env.NODE_ENV !== 'test') {
+  cleanupIntervalId = setInterval(cleanupOldJobs, 60 * 60 * 1000);
+}
+
+/**
+ * Cleanup function for test teardown
+ * Clears the cleanup interval to prevent open handles
+ */
+export function cleanupAdminImageManagement(): void {
+  if (cleanupIntervalId) {
+    clearInterval(cleanupIntervalId);
+    cleanupIntervalId = null;
+  }
+}
 
 // ============================================================================
 // Rate Limiting

@@ -18,6 +18,17 @@ module.exports = async () => {
     console.warn('Batch processor cleanup skipped:', (err as Error).message);
   }
 
+  // Step 1b: Cleanup admin image management (stops cleanupOldJobs timer)
+  try {
+    const { cleanupAdminImageManagement } = await import('../routes/adminImageManagement');
+    if (typeof cleanupAdminImageManagement === 'function') {
+      cleanupAdminImageManagement();
+      console.log('✓ Admin image management cleaned up');
+    }
+  } catch (err) {
+    console.warn('Admin image management cleanup skipped:', (err as Error).message);
+  }
+
   // Step 2: Force clear all Jest timers to prevent hanging
   if (typeof jest !== 'undefined') {
     jest.clearAllTimers();
