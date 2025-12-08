@@ -13,7 +13,7 @@
  * Target: 2-3x speed improvement while maintaining quality
  */
 
-import { visionAIService } from './src/services/VisionAIService';
+import { visionAIService, AIAnnotation } from './src/services/VisionAIService';
 import { createClient } from '@supabase/supabase-js';
 import { ParallelBatchProcessor, BatchTask } from './src/utils/batch-processor';
 import { CostEstimator } from './src/utils/cost-estimator';
@@ -32,7 +32,7 @@ interface ImageTask {
 
 interface AnnotationResult {
   imageId: string;
-  annotations: any[];
+  annotations: AIAnnotation[];
   duration: number;
   error?: string;
 }
