@@ -11,6 +11,13 @@ import { Pool, PoolClient } from 'pg';
 import { info, warn } from '../utils/logger';
 
 /**
+ * Type for database row data
+ * Each row is an array of values that can be strings, numbers, booleans, dates, null, or undefined
+ */
+type DatabaseValue = string | number | boolean | Date | null | undefined;
+type DatabaseRow = DatabaseValue[];
+
+/**
  * Generic batch INSERT function
  *
  * @param pool - PostgreSQL connection pool or client
@@ -30,7 +37,7 @@ export async function batchInsert(
   pool: Pool | PoolClient,
   tableName: string,
   columns: string[],
-  rows: any[][],
+  rows: DatabaseRow[],
   batchSize: number = 100
 ): Promise<number> {
   if (rows.length === 0) {
@@ -70,7 +77,7 @@ async function insertBatch(
   pool: Pool | PoolClient,
   tableName: string,
   columns: string[],
-  rows: any[][]
+  rows: DatabaseRow[]
 ): Promise<number> {
   // Build VALUES clause with placeholders
   const valuesClause = rows.map((row, rowIndex) => {
@@ -112,11 +119,11 @@ async function insertBatch(
  *   ['user2@test.com', 'User 2']
  * ], 'id');
  */
-export async function batchInsertReturning<T = any>(
+export async function batchInsertReturning<T = Record<string, DatabaseValue>>(
   pool: Pool | PoolClient,
   tableName: string,
   columns: string[],
-  rows: any[][],
+  rows: DatabaseRow[],
   returning: string | string[] = 'id',
   batchSize: number = 100
 ): Promise<T[]> {
@@ -186,7 +193,7 @@ export async function batchUpsert(
   pool: Pool | PoolClient,
   tableName: string,
   columns: string[],
-  rows: any[][],
+  rows: DatabaseRow[],
   conflictTarget: string | string[],
   updateColumns?: string[],
   batchSize: number = 100
@@ -265,7 +272,7 @@ export async function batchInsertTransaction(
   pool: Pool,
   tableName: string,
   columns: string[],
-  rows: any[][],
+  rows: DatabaseRow[],
   batchSize: number = 100
 ): Promise<number> {
   const client = await pool.connect();

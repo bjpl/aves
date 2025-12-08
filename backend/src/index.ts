@@ -270,11 +270,14 @@ app.use('/api', annotationMasteryRouter);
 // app.use('/api/annotation-exercises', annotationExercisesRouter);
 
 // Error handling middleware
-app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  logError('Request error', err);
-  res.status(err.status || 500).json({
-    error: err.message || 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  const error = err instanceof Error ? err : new Error('Unknown error');
+  const statusCode = (err as { status?: number }).status || 500;
+
+  logError('Request error', error);
+  res.status(statusCode).json({
+    error: error.message || 'Internal server error',
+    ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
   });
 });
 

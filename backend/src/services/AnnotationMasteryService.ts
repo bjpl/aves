@@ -208,7 +208,7 @@ export class AnnotationMasteryService {
         WHERE am.user_id = $1
       `;
 
-      const params: any[] = [userId];
+      const params: (string | number)[] = [userId];
 
       if (annotationType) {
         query += ` AND a.annotation_type = $2`;
@@ -304,7 +304,7 @@ export class AnnotationMasteryService {
           )
       `;
 
-      const params: any[] = [userId];
+      const params: (string | number)[] = [userId];
 
       if (difficultyRange) {
         query += ` AND a.difficulty_level BETWEEN $2 AND $3`;
@@ -504,66 +504,66 @@ export class AnnotationMasteryService {
   // PRIVATE HELPER METHODS
   // ============================================================================
 
-  private mapRowToMasteryRecord(row: any): AnnotationMasteryRecord {
+  private mapRowToMasteryRecord(row: Record<string, unknown>): AnnotationMasteryRecord {
     return {
-      id: row.id,
-      userId: row.user_id,
-      annotationId: row.annotation_id,
-      exposureCount: row.exposure_count,
-      correctCount: row.correct_count,
-      incorrectCount: row.incorrect_count,
-      firstSeenAt: row.first_seen_at,
-      lastSeenAt: row.last_seen_at,
-      lastCorrectAt: row.last_correct_at,
-      nextReviewAt: row.next_review_at,
-      masteryScore: parseFloat(row.mastery_score),
-      confidenceLevel: row.confidence_level,
-      avgResponseTimeMs: row.avg_response_time_ms,
-      fastestResponseTimeMs: row.fastest_response_time_ms,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at
+      id: row.id as string,
+      userId: row.user_id as string,
+      annotationId: row.annotation_id as string,
+      exposureCount: row.exposure_count as number,
+      correctCount: row.correct_count as number,
+      incorrectCount: row.incorrect_count as number,
+      firstSeenAt: row.first_seen_at as Date,
+      lastSeenAt: row.last_seen_at as Date,
+      lastCorrectAt: row.last_correct_at as Date | undefined,
+      nextReviewAt: row.next_review_at as Date | undefined,
+      masteryScore: parseFloat(row.mastery_score as string),
+      confidenceLevel: row.confidence_level as 1 | 2 | 3 | 4 | 5,
+      avgResponseTimeMs: row.avg_response_time_ms as number | undefined,
+      fastestResponseTimeMs: row.fastest_response_time_ms as number | undefined,
+      createdAt: row.created_at as Date,
+      updatedAt: row.updated_at as Date
     };
   }
 
-  private mapRowToAnnotation(row: any): Annotation {
+  private mapRowToAnnotation(row: Record<string, unknown>): Annotation {
     return {
-      id: row.id,
-      imageId: row.image_id,
+      id: row.id as string,
+      imageId: row.image_id as string,
       boundingBox: typeof row.bounding_box === 'string'
         ? JSON.parse(row.bounding_box)
-        : row.bounding_box,
-      type: row.annotation_type,
-      spanishTerm: row.spanish_term,
-      englishTerm: row.english_term,
-      pronunciation: row.pronunciation,
-      difficultyLevel: row.difficulty_level,
-      isVisible: row.is_visible,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at
+        : row.bounding_box as { x: number; y: number; width: number; height: number },
+      type: row.annotation_type as 'anatomical' | 'behavioral' | 'color' | 'pattern' | 'habitat',
+      spanishTerm: row.spanish_term as string,
+      englishTerm: row.english_term as string,
+      pronunciation: row.pronunciation as string | undefined,
+      difficultyLevel: row.difficulty_level as 1 | 2 | 3 | 4 | 5,
+      isVisible: row.is_visible as boolean,
+      createdAt: row.created_at as Date,
+      updatedAt: row.updated_at as Date
     };
   }
 
-  private mapRowToAnnotationWithMastery(row: any): AnnotationWithMastery {
+  private mapRowToAnnotationWithMastery(row: Record<string, unknown>): AnnotationWithMastery {
     const annotation = this.mapRowToAnnotation(row) as AnnotationWithMastery;
 
     if (row.mastery_id) {
       annotation.masteryData = {
-        id: row.mastery_id,
-        userId: row.user_id,
-        annotationId: row.id,
-        exposureCount: row.exposure_count,
-        correctCount: row.correct_count,
-        incorrectCount: row.incorrect_count,
-        firstSeenAt: row.first_seen_at,
-        lastSeenAt: row.last_seen_at,
-        lastCorrectAt: row.last_correct_at,
-        nextReviewAt: row.next_review_at,
-        masteryScore: parseFloat(row.mastery_score),
-        confidenceLevel: row.confidence_level,
-        avgResponseTimeMs: row.avg_response_time_ms,
-        fastestResponseTimeMs: row.fastest_response_time_ms,
-        createdAt: row.created_at || row.first_seen_at,
-        updatedAt: row.updated_at || row.last_seen_at
+        id: row.mastery_id as string,
+        userId: row.user_id as string,
+        annotationId: row.id as string,
+        exposureCount: row.exposure_count as number,
+        correctCount: row.correct_count as number,
+        incorrectCount: row.incorrect_count as number,
+        firstSeenAt: row.first_seen_at as Date,
+        lastSeenAt: row.last_seen_at as Date,
+        lastCorrectAt: row.last_correct_at as Date | undefined,
+        nextReviewAt: row.next_review_at as Date | undefined,
+        masteryScore: parseFloat(row.mastery_score as string),
+        confidenceLevel: row.confidence_level as 1 | 2 | 3 | 4 | 5,
+        avgResponseTimeMs: row.avg_response_time_ms as number | undefined,
+        fastestResponseTimeMs: row.fastest_response_time_ms as number | undefined,
+        createdAt: (row.created_at || row.first_seen_at) as Date,
+        updatedAt: (row.updated_at || row.last_seen_at) as Date
       };
     }
 

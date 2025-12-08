@@ -221,7 +221,7 @@ router.post(
          */
         const updateJobStatus = async (
           status: string,
-          data: any,
+          data: Record<string, unknown>,
           confidenceScore?: number,
           errorMessage?: string
         ): Promise<void> => {
@@ -651,7 +651,7 @@ router.get(
       const countsResult = await pool.query(countsQuery);
       info('📊 Counts query result', { rows: countsResult.rows.length });
 
-      const stats: any = {
+      const stats: Record<string, number> = {
         total: 0,
         pending: 0,
         approved: 0,
@@ -1320,7 +1320,7 @@ router.patch(
 
       // Update ai_annotation_items WITHOUT changing status
       const updateFields: string[] = [];
-      const updateValues: any[] = [];
+      const updateValues: (string | number | null)[] = [];
       let paramIndex = 1;
 
       if (updates.spanishTerm) {
@@ -1620,7 +1620,7 @@ router.post(
 
       let approved = 0;
       let failed = 0;
-      const details: any[] = [];
+      const details: Array<{ jobId: string; status: string; error?: string }> = [];
 
       for (const jobId of jobIds) {
         try {

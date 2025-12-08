@@ -84,8 +84,9 @@ export async function createRailwayConnection(): Promise<Pool | null> {
       logger.info(`SUCCESS: Connected using ${configDesc}`);
       return pool; // Return the working pool
 
-    } catch (err: any) {
-      logger.info(`Failed ${configDesc}: ${err.message}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      logger.info(`Failed ${configDesc}: ${errorMessage}`);
       await pool.end(); // Clean up failed pool
       // Continue to next configuration
     }

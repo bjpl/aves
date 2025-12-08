@@ -19,8 +19,8 @@ export type FeedbackType = 'approve' | 'reject' | 'position_fix';
 export interface FeedbackData {
   type: FeedbackType;
   annotationId: string;
-  originalData: any;
-  correctedData?: any;
+  originalData: Record<string, unknown>;
+  correctedData?: Record<string, unknown>;
   rejectionReason?: string;
   userId: string;
   metadata?: {

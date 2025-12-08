@@ -83,7 +83,7 @@ export interface ImageWithSpecies extends ImageRow {
   speciesEnglishName: string;
   speciesSpanishName: string;
   annotationStatus?: string;
-  annotationData?: any;
+  annotationData?: Record<string, unknown>;
   confidenceScore?: number;
 }
 
@@ -410,7 +410,7 @@ export class ImageRepository {
       const offset = (page - 1) * limit;
 
       let whereClause = 'WHERE 1=1';
-      const params: any[] = [];
+      const params: (string | number)[] = [];
       let paramCount = 0;
 
       if (options.speciesId) {

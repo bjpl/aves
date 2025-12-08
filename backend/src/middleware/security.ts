@@ -4,7 +4,7 @@
  * Implements defense-in-depth with multiple security layers
  */
 
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, Application } from 'express';
 import helmet from 'helmet';
 import { info, warn } from '../utils/logger';
 
@@ -16,7 +16,7 @@ interface SecurityConfig {
     enabled: boolean;
     reportOnly: boolean;
     reportUri?: string;
-    directives: any; // Simplified type for CSP directives
+    directives: Record<string, unknown>;
   };
   hsts: {
     enabled: boolean;
@@ -259,7 +259,7 @@ export function validateRequestSize(maxSize: number = 10 * 1024 * 1024) {
 /**
  * Trusted proxy configuration
  */
-export function configureTrustedProxy(app: any): void {
+export function configureTrustedProxy(app: Application): void {
   if (process.env.TRUST_PROXY === 'true') {
     app.set('trust proxy', 1);
     info('Trust proxy enabled');
@@ -272,7 +272,7 @@ export function configureTrustedProxy(app: any): void {
  * Security middleware bundle
  * Applies all security middleware in the correct order
  */
-export function applySecurityMiddleware(app: any): void {
+export function applySecurityMiddleware(app: Application): void {
   // 1. Force HTTPS (if enabled)
   if (process.env.FORCE_HTTPS === 'true') {
     app.use(forceHttps);

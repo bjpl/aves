@@ -55,7 +55,7 @@ function isSensitiveKey(key: string): boolean {
 /**
  * Recursively sanitize an object by replacing sensitive values
  */
-function sanitizeObject(obj: any, redactedValue: string = '[REDACTED]'): any {
+function sanitizeObject(obj: unknown, redactedValue: string = '[REDACTED]'): unknown {
   if (!obj || typeof obj !== 'object') {
     return obj;
   }
@@ -64,7 +64,7 @@ function sanitizeObject(obj: any, redactedValue: string = '[REDACTED]'): any {
     return obj.map((item) => sanitizeObject(item, redactedValue));
   }
 
-  const sanitized: any = {};
+  const sanitized: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(obj)) {
     if (isSensitiveKey(key)) {
@@ -82,7 +82,7 @@ function sanitizeObject(obj: any, redactedValue: string = '[REDACTED]'): any {
 /**
  * Sanitize request headers
  */
-function sanitizeHeaders(headers: any): any {
+function sanitizeHeaders(headers: Record<string, unknown>): Record<string, unknown> {
   const sanitized = { ...headers };
 
   for (const header of SENSITIVE_HEADERS) {
@@ -97,7 +97,7 @@ function sanitizeHeaders(headers: any): any {
 /**
  * Sanitize request body
  */
-function sanitizeBody(body: any): any {
+function sanitizeBody(body: unknown): unknown {
   if (!body || typeof body !== 'object') {
     return body;
   }
@@ -214,7 +214,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction): 
 
   // Intercept response
   const originalSend = res.send;
-  let responseBody: any;
+  let responseBody: unknown;
 
   res.send = function (data): Response {
     responseBody = data;
@@ -249,18 +249,24 @@ export function requestLogger(req: Request, res: Response, next: NextFunction): 
  * Error logging middleware
  */
 export function errorLogger(
-  err: any,
+  err: unknown,
   req: Request,
   res: Response,
   next: NextFunction
 ): void {
+  // Type guard for error objects
+  const error = err as Error & {
+    code?: string;
+    status?: number;
+    statusCode?: number;
+  };
   const errorData = {
     error: {
-      message: err.message,
-      name: err.name,
-      code: err.code,
-      status: err.status || err.statusCode || 500,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+      message: error.message,
+      name: error.name,
+      code: error.code,
+      status: error.status || error.statusCode || 500,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
     },
     request: {
       method: req.method,

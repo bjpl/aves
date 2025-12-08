@@ -356,11 +356,11 @@ export class RuVectorService {
       });
 
       // Transform results to SearchResult format
-      const searchResults: SearchResult[] = results.map((result: any) => ({
-        id: result.id,
-        score: result.score,
-        type: result.metadata?.type || 'unknown',
-        metadata: result.metadata || {},
+      const searchResults: SearchResult[] = results.map((result: Record<string, unknown>) => ({
+        id: result.id as string,
+        score: result.score as number,
+        type: (result.metadata as Record<string, unknown>)?.type as string || 'unknown',
+        metadata: (result.metadata as Record<string, unknown>) || {},
       }));
 
       // Filter by minimum score if specified
@@ -692,19 +692,22 @@ export class RuVectorService {
       });
 
       // Transform results to ReflexionEpisode objects
-      const episodes: ReflexionEpisode[] = results.map((result: any) => ({
-        userId: result.metadata.userId,
-        sessionId: result.metadata.sessionId,
-        timestamp: new Date(result.metadata.timestamp),
-        situation: result.metadata.situation,
-        action: result.metadata.action,
-        outcome: result.metadata.outcome,
-        reflection: result.metadata.reflection,
-        success: result.metadata.success,
-        exerciseType: result.metadata.exerciseType,
-        speciesId: result.metadata.speciesId,
-        difficulty: result.metadata.difficulty,
-      }));
+      const episodes: ReflexionEpisode[] = results.map((result: Record<string, unknown>) => {
+        const meta = result.metadata as Record<string, unknown>;
+        return {
+          userId: meta.userId as string,
+          sessionId: meta.sessionId as string,
+          timestamp: new Date(meta.timestamp as string),
+          situation: meta.situation as string,
+          action: meta.action as string,
+          outcome: meta.outcome as string,
+          reflection: meta.reflection as string,
+          success: meta.success as boolean,
+          exerciseType: meta.exerciseType as string,
+          speciesId: meta.speciesId as string,
+          difficulty: meta.difficulty as number,
+        };
+      });
 
       const duration = Date.now() - start;
       debug('Queried experiences', {
@@ -754,15 +757,18 @@ export class RuVectorService {
 
       // Transform results to SkillEntry objects
       const skills: SkillEntry[] = results
-        .filter((r: any) => r.metadata.userId === userId)
-        .map((result: any) => ({
-          userId: result.metadata.userId,
-          skillName: result.metadata.skillName,
-          level: result.metadata.level,
-          lastPracticed: new Date(result.metadata.lastPracticed),
-          exercisesCompleted: result.metadata.exercisesCompleted,
-          successRate: result.metadata.successRate,
-        }));
+        .filter((r: Record<string, unknown>) => (r.metadata as Record<string, unknown>).userId === userId)
+        .map((result: Record<string, unknown>) => {
+          const meta = result.metadata as Record<string, unknown>;
+          return {
+            userId: meta.userId as string,
+            skillName: meta.skillName as string,
+            level: meta.level as number,
+            lastPracticed: new Date(meta.lastPracticed as string),
+            exercisesCompleted: meta.exercisesCompleted as number,
+            successRate: meta.successRate as number,
+          };
+        });
 
       const duration = Date.now() - start;
       debug('Retrieved user skills', {

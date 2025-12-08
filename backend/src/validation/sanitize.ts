@@ -116,7 +116,7 @@ export function sanitizeSearchQuery(query: string): string {
 /**
  * Sanitize numeric input to ensure it's a valid number
  */
-export function sanitizeNumber(input: any): number | null {
+export function sanitizeNumber(input: unknown): number | null {
   const num = Number(input);
   if (isNaN(num) || !isFinite(num)) {
     return null;
@@ -127,7 +127,7 @@ export function sanitizeNumber(input: any): number | null {
 /**
  * Sanitize boolean input
  */
-export function sanitizeBoolean(input: any): boolean {
+export function sanitizeBoolean(input: unknown): boolean {
   if (typeof input === 'boolean') {
     return input;
   }
@@ -140,8 +140,8 @@ export function sanitizeBoolean(input: any): boolean {
 /**
  * Sanitize object by applying sanitization to all string values
  */
-export function sanitizeObject<T extends Record<string, any>>(obj: T): T {
-  const sanitized: any = {};
+export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
+  const sanitized: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(obj)) {
     if (typeof value === 'string') {

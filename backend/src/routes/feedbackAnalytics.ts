@@ -581,7 +581,7 @@ router.post(
 
       // Build WHERE clause for filtering
       const filters: string[] = [];
-      const params: any[] = [];
+      const params: (string | number)[] = [];
 
       if (species) {
         params.push(species);

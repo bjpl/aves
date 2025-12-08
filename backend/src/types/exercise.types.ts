@@ -21,7 +21,7 @@ export interface ExerciseBase {
   instructions: string;
   annotation?: Annotation;
   prompt?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface VisualDiscriminationExercise extends ExerciseBase {
@@ -81,7 +81,7 @@ export type Exercise =
 export interface ExerciseResult {
   exerciseId: string;
   exerciseType: ExerciseType;
-  userAnswer: any;
+  userAnswer: unknown;
   isCorrect: boolean;
   timeTaken: number;
   feedback?: string;

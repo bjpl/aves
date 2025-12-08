@@ -18,7 +18,7 @@ export interface ExerciseResult {
   exerciseType: string;
   annotationId?: number;
   spanishTerm: string;
-  userAnswer: any;
+  userAnswer: string | number | boolean | Record<string, unknown>;
   isCorrect: boolean;
   timeTaken: number; // milliseconds
 }

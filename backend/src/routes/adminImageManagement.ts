@@ -348,6 +348,7 @@ interface ImageRow {
 }
 
 interface SpeciesRow {
+  id: string;
   englishName: string;
   scientificName: string;
   spanishName: string;
@@ -568,7 +569,7 @@ router.post(
         }
 
         // Map database results to collection format
-        speciesToCollect = speciesResult.rows.map((row: any) => ({
+        speciesToCollect = speciesResult.rows.map((row: SpeciesRow) => ({
           id: row.id,
           scientificName: row.scientificName,
           englishName: row.englishName,

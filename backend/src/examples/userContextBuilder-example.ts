@@ -189,7 +189,7 @@ async function cacheKeyExample() {
 /**
  * Helper function to explain difficulty reasoning
  */
-function getDifficultyReasoning(context: any): string {
+function getDifficultyReasoning(context: { difficulty: number; streak: number; performance: { accuracy: number } }): string {
   if (context.difficulty === 1) {
     return 'Starting easy for new user or helping rebuild confidence';
   } else if (context.difficulty === 5) {

@@ -419,7 +419,7 @@ Return ONLY the JSON array with 3-8 annotations depending on what's clearly visi
    * @param box - Bounding box to validate
    * @returns True if valid, false otherwise
    */
-  private validateBoundingBox(box: any): boolean {
+  private validateBoundingBox(box: unknown): boolean {
     if (!box || typeof box !== 'object') {
       return false;
     }
@@ -566,20 +566,21 @@ Return ONLY the JSON array with 3-8 annotations depending on what's clearly visi
    * @param response - Response to validate
    * @returns True if response is valid
    */
-  public validateResponse(response: any): boolean {
+  public validateResponse(response: unknown): boolean {
     try {
-      if (!Array.isArray(response) && !response.annotations) {
+      const responseObj = response as Record<string, unknown>;
+      if (!Array.isArray(response) && !responseObj.annotations) {
         return false;
       }
 
-      const annotations = Array.isArray(response) ? response : response.annotations;
+      const annotations = Array.isArray(response) ? response : responseObj.annotations as unknown[];
 
       if (annotations.length === 0) {
         return false;
       }
 
       // All annotations must be valid
-      return annotations.every((ann: any) => this.validateAnnotation(ann));
+      return annotations.every((ann: unknown) => this.validateAnnotation(ann));
 
     } catch (error) {
       return false;

@@ -125,7 +125,7 @@ export const trace = (message: string, context?: Record<string, unknown>) => {
  * Compatible with Express.js
  */
 export const httpLogger = () => {
-  return (req: any, res: any, next: any) => {
+  return (req: { method: string; url: string; ip: string }, res: { on: (event: string, callback: () => void) => void; statusCode: number }, next: () => void) => {
     const start = Date.now();
 
     res.on('finish', () => {

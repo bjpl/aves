@@ -693,7 +693,7 @@ export class VectorExerciseService {
   private async createRecommendation(
     exercise: ExercisePattern,
     userId: string,
-    userContext: any,
+    userContext: Record<string, unknown>,
     reasoning: string
   ): Promise<ExerciseRecommendation> {
     const predictedDifficulty = await this.predictDifficulty(
@@ -701,15 +701,18 @@ export class VectorExerciseService {
       userId
     );
 
+    const currentLevel = (userContext.currentLevel as number) || 5;
+    const recentWeaknesses = (userContext.recentWeaknesses as string[]) || [];
+
     // Calculate relevance score
     let relevanceScore = 0.5; // Base score
 
     // Higher relevance if difficulty matches user level (+/- 1)
-    const difficultyMatch = Math.abs(predictedDifficulty - userContext.currentLevel);
+    const difficultyMatch = Math.abs(predictedDifficulty - currentLevel);
     relevanceScore += (3 - difficultyMatch) * 0.15;
 
     // Higher relevance for weakness topics
-    if (userContext.recentWeaknesses.includes(exercise.topic)) {
+    if (recentWeaknesses.includes(exercise.topic)) {
       relevanceScore += 0.2;
     }
 
@@ -719,7 +722,7 @@ export class VectorExerciseService {
     // Estimate success rate based on difficulty vs user level
     const estimatedSuccessRate = Math.max(
       0.2,
-      Math.min(0.95, 1 - (predictedDifficulty - userContext.currentLevel) * 0.1)
+      Math.min(0.95, 1 - (predictedDifficulty - currentLevel) * 0.1)
     );
 
     return {
@@ -822,22 +825,22 @@ export class VectorExerciseService {
   /**
    * Convert search result to ExercisePattern
    */
-  private searchResultToPattern(result: any): ExercisePattern {
-    const m = result.metadata;
+  private searchResultToPattern(result: Record<string, unknown>): ExercisePattern {
+    const m = result.metadata as Record<string, unknown>;
     return {
-      exerciseId: m.exerciseId,
-      type: m.type,
-      topic: m.topic,
-      difficulty: m.difficulty,
-      question: m.question,
-      correctAnswer: m.correctAnswer,
-      distractors: m.distractors,
-      avgCompletionTime: m.avgCompletionTime,
-      avgAccuracy: m.avgAccuracy,
-      timesAttempted: m.timesAttempted,
-      speciesInvolved: m.speciesInvolved || [],
-      vocabularyUsed: m.vocabularyUsed || [],
-      commonMistakes: m.commonMistakes,
+      exerciseId: m.exerciseId as string,
+      type: m.type as string,
+      topic: m.topic as string,
+      difficulty: m.difficulty as number,
+      question: m.question as string,
+      correctAnswer: m.correctAnswer as string,
+      distractors: m.distractors as string[],
+      avgCompletionTime: m.avgCompletionTime as number,
+      avgAccuracy: m.avgAccuracy as number,
+      timesAttempted: m.timesAttempted as number,
+      speciesInvolved: (m.speciesInvolved as string[]) || [],
+      vocabularyUsed: (m.vocabularyUsed as string[]) || [],
+      commonMistakes: m.commonMistakes as string[],
     };
   }
 
@@ -852,10 +855,13 @@ export class VectorExerciseService {
   /**
    * Calculate topic familiarity (0-1)
    */
-  private calculateTopicFamiliarity(topic: string, userContext: any): number {
-    if (userContext.recentStrengths.includes(topic)) {
+  private calculateTopicFamiliarity(topic: string, userContext: Record<string, unknown>): number {
+    const recentStrengths = (userContext.recentStrengths as string[]) || [];
+    const recentWeaknesses = (userContext.recentWeaknesses as string[]) || [];
+
+    if (recentStrengths.includes(topic)) {
       return 0.8;
-    } else if (userContext.recentWeaknesses.includes(topic)) {
+    } else if (recentWeaknesses.includes(topic)) {
       return 0.2;
     }
     return 0.5;

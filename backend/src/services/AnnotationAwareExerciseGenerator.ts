@@ -26,7 +26,7 @@ import {
   CategorySortingExercise,
   ExerciseSelectionStrategy
 } from '../../../shared/types/enhanced-exercise.types';
-import { AnnotationMasteryService } from './AnnotationMasteryService';
+import { AnnotationMasteryService, AnnotationRecommendation } from './AnnotationMasteryService';
 import * as logger from '../utils/logger';
 
 export interface ExerciseGenerationContext {
@@ -110,7 +110,7 @@ export class AnnotationAwareExerciseGenerator {
    * User clicks on image where feature is located
    */
   private async generateSpatialIdentification(
-    recommendations: any[],
+    recommendations: AnnotationRecommendation[],
     context: ExerciseGenerationContext
   ): Promise<SpatialIdentificationExercise | null> {
     // Select target annotation (prioritize weak or due-for-review)
@@ -191,7 +191,7 @@ export class AnnotationAwareExerciseGenerator {
    * Compare feature across multiple bird images
    */
   private async generateComparativeAnalysis(
-    recommendations: any[],
+    recommendations: AnnotationRecommendation[],
     context: ExerciseGenerationContext
   ): Promise<ComparativeAnalysisExercise | null> {
     // Need at least 3 annotations for comparison
@@ -302,7 +302,7 @@ export class AnnotationAwareExerciseGenerator {
    * Order annotations spatially or by category
    */
   private async generateAnnotationSequencing(
-    recommendations: any[],
+    recommendations: AnnotationRecommendation[],
     context: ExerciseGenerationContext
   ): Promise<AnnotationSequencingExercise | null> {
     // Need at least 4 annotations
@@ -398,7 +398,7 @@ export class AnnotationAwareExerciseGenerator {
    * Sort annotations by type (anatomical, color, behavioral, etc.)
    */
   private async generateCategorySorting(
-    recommendations: any[],
+    recommendations: AnnotationRecommendation[],
     context: ExerciseGenerationContext
   ): Promise<CategorySortingExercise | null> {
     // Need at least 6 annotations from at least 2 different categories

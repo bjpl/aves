@@ -90,7 +90,7 @@ router.get('/annotations', async (req: Request, res: Response) => {
       WHERE is_visible = true
     `;
 
-    const values: any[] = [];
+    const values: string[] = [];
 
     if (imageId && typeof imageId === 'string') {
       query += ' AND image_id = $1';
@@ -101,7 +101,7 @@ router.get('/annotations', async (req: Request, res: Response) => {
 
     const result = await pool.query(query, values);
 
-    const annotations = result.rows.map((row: any) => ({
+    const annotations = result.rows.map((row: Record<string, unknown>) => ({
       ...row,
       boundingBox: typeof row.boundingBox === 'string'
         ? JSON.parse(row.boundingBox)

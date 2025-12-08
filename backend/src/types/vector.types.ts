@@ -103,7 +103,7 @@ export interface EmbeddingRequest {
   type: 'vocabulary' | 'annotation' | 'exercise' | 'user_context' | 'query';
 
   /** Optional metadata to store with embedding */
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -123,7 +123,7 @@ export interface EmbeddingResponse {
   type: EmbeddingContentType;
 
   /** Additional metadata about embedding generation */
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // ============================================================================
@@ -144,7 +144,7 @@ export interface VectorDocument {
   embedding: Float32Array;
 
   /** Document metadata and content */
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 
   /** Creation timestamp */
   createdAt: Date;
@@ -158,7 +158,7 @@ export interface SearchOptions {
   k?: number;
 
   /** Metadata filters to apply */
-  filter?: Record<string, any>;
+  filter?: Record<string, unknown>;
 
   /** Minimum similarity score threshold (0-1) */
   minScore?: number;
@@ -181,10 +181,10 @@ export interface SearchResult {
   type: string;
 
   /** Document metadata */
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 
   /** Full document object if requested */
-  document?: any;
+  document?: unknown;
 }
 
 /**
@@ -609,7 +609,7 @@ export interface BatchEmbeddingRequest {
   type: EmbeddingRequest['type'];
 
   /** Shared metadata */
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -632,7 +632,7 @@ export interface BatchEmbeddingResponse {
   type: EmbeddingContentType;
 
   /** Additional metadata about batch embedding */
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**

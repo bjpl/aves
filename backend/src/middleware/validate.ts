@@ -177,7 +177,7 @@ export function validateOptional(
  * Create a custom validation middleware with a validator function
  */
 export function customValidate(
-  validator: (data: any) => { valid: boolean; error?: string }
+  validator: (data: unknown) => { valid: boolean; error?: string }
 ) {
   return (req: Request, res: Response, next: NextFunction) => {
     const result = validator(req.body);

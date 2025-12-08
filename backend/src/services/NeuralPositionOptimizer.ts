@@ -593,7 +593,7 @@ export class NeuralPositionOptimizer {
   /**
    * Parse bounding box from various formats
    */
-  private parseBoundingBox(box: any): BoundingBox {
+  private parseBoundingBox(box: string | Record<string, unknown>): BoundingBox {
     if (typeof box === 'string') {
       box = JSON.parse(box);
     }

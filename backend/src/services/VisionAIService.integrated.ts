@@ -401,7 +401,7 @@ IMPORTANT: Return only the JSON array, nothing else.
   /**
    * Validate a single annotation object (basic structure validation)
    */
-  private validateAnnotation(item: any, index: number): void {
+  private validateAnnotation(item: Record<string, unknown>, index: number): void {
     const requiredFields = ['spanishTerm', 'englishTerm', 'boundingBox', 'type', 'difficultyLevel'];
 
     for (const field of requiredFields) {

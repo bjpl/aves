@@ -305,8 +305,15 @@ async function processImage(imageUrl: string) {
   };
 }
 
+interface SpeciesData {
+  english_name: string;
+  primary_colors?: string[];
+  habitats?: string[];
+  size_category?: string;
+}
+
 // Helper function to generate prompts
-function generatePrompt(species: any): string {
+function generatePrompt(species: SpeciesData): string {
   const parts = ['professional wildlife photography'];
 
   parts.push(species.english_name);

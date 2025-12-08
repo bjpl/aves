@@ -311,7 +311,7 @@ JSON only.`.trim();
   /**
    * Normalize numeric value to expected range
    */
-  private normalizeValue(value: any, min: number, max: number): number {
+  private normalizeValue(value: unknown, min: number, max: number): number {
     const num = Number(value) || 0;
     return Math.max(min, Math.min(max, num));
   }

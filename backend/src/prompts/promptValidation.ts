@@ -19,6 +19,46 @@ export interface SpanishValidationRules {
   checkVocabulary: boolean;
 }
 
+export interface VocabularyEntry {
+  spanish: string;
+  english: string;
+}
+
+export interface FillInBlankExercise {
+  sentence: string;
+  correctAnswer: string;
+  distractors: string[];
+  hint?: string;
+  vocabulary?: VocabularyEntry[];
+  grammar?: string;
+}
+
+export interface MultipleChoiceOption {
+  id: string;
+  text: string;
+  isCorrect: boolean;
+}
+
+export interface MultipleChoiceExercise {
+  question: string;
+  options: MultipleChoiceOption[];
+  explanation?: string;
+  vocabulary?: VocabularyEntry[];
+}
+
+export interface TranslationExercise {
+  sourceText: string;
+  sourceLanguage: 'es' | 'en';
+  correctTranslations: string[];
+  vocabulary?: VocabularyEntry[];
+}
+
+export interface ContextualSentenceExercise {
+  sentence: string;
+  vocabulary: VocabularyEntry[];
+  educationalNote?: string;
+}
+
 /**
  * Spanish Language Patterns
  */
@@ -138,7 +178,7 @@ export function validateSpanishText(
  * Validate vocabulary entries
  */
 export function validateVocabulary(
-  vocab: Array<{ spanish: string; english: string }>
+  vocab: VocabularyEntry[]
 ): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -199,7 +239,7 @@ export function validateVocabulary(
 /**
  * Validate fill-in-the-blank exercise
  */
-export function validateFillInBlank(exercise: any): ValidationResult {
+export function validateFillInBlank(exercise: FillInBlankExercise): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   let qualityScore = 100;
@@ -306,7 +346,7 @@ export function validateFillInBlank(exercise: any): ValidationResult {
 /**
  * Validate multiple choice exercise
  */
-export function validateMultipleChoice(exercise: any): ValidationResult {
+export function validateMultipleChoice(exercise: MultipleChoiceExercise): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   let qualityScore = 100;
@@ -336,7 +376,7 @@ export function validateMultipleChoice(exercise: any): ValidationResult {
   }
 
   // Check for exactly one correct answer
-  const correctOptions = exercise.options.filter((opt: any) => opt.isCorrect);
+  const correctOptions = exercise.options.filter((opt: MultipleChoiceOption) => opt.isCorrect);
   if (correctOptions.length === 0) {
     errors.push('No correct option specified');
     qualityScore -= 30;
@@ -346,7 +386,7 @@ export function validateMultipleChoice(exercise: any): ValidationResult {
   }
 
   // Validate each option
-  exercise.options.forEach((option: any, index: number) => {
+  exercise.options.forEach((option: MultipleChoiceOption, index: number) => {
     if (!option.id) {
       errors.push(`Option ${index}: missing id field`);
       qualityScore -= 10;
@@ -375,7 +415,7 @@ export function validateMultipleChoice(exercise: any): ValidationResult {
   });
 
   // Check for duplicate options
-  const optionTexts = exercise.options.map((opt: any) => opt.text?.toLowerCase());
+  const optionTexts = exercise.options.map((opt: MultipleChoiceOption) => opt.text?.toLowerCase());
   const uniqueTexts = new Set(optionTexts);
   if (uniqueTexts.size !== optionTexts.length) {
     errors.push('Duplicate options found');
@@ -399,7 +439,7 @@ export function validateMultipleChoice(exercise: any): ValidationResult {
 /**
  * Validate translation exercise
  */
-export function validateTranslation(exercise: any): ValidationResult {
+export function validateTranslation(exercise: TranslationExercise): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   let qualityScore = 100;
@@ -483,7 +523,7 @@ export function validateTranslation(exercise: any): ValidationResult {
 /**
  * Validate contextual sentence
  */
-export function validateContextualSentence(exercise: any): ValidationResult {
+export function validateContextualSentence(exercise: ContextualSentenceExercise): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   let qualityScore = 100;
@@ -522,7 +562,7 @@ export function validateContextualSentence(exercise: any): ValidationResult {
     }
 
     // Check if vocabulary words appear in sentence
-    exercise.vocabulary.forEach((vocab: any) => {
+    exercise.vocabulary.forEach((vocab: VocabularyEntry) => {
       if (exercise.sentence && !exercise.sentence.toLowerCase().includes(vocab.spanish.toLowerCase())) {
         warnings.push(`Vocabulary word "${vocab.spanish}" not found in sentence`);
         qualityScore -= 5;
@@ -548,7 +588,7 @@ export function validateContextualSentence(exercise: any): ValidationResult {
  * Main validation function - routes to specific validators
  */
 export function validateExercise(
-  exercise: any,
+  exercise: FillInBlankExercise | MultipleChoiceExercise | TranslationExercise | ContextualSentenceExercise,
   exerciseType: ExerciseType
 ): ValidationResult {
   // First check if it's valid JSON
@@ -564,14 +604,14 @@ export function validateExercise(
   // Route to specific validator
   switch (exerciseType) {
     case 'contextual_fill':
-      return validateFillInBlank(exercise);
+      return validateFillInBlank(exercise as FillInBlankExercise);
 
     case 'visual_discrimination':
     case 'term_matching':
-      return validateMultipleChoice(exercise);
+      return validateMultipleChoice(exercise as MultipleChoiceExercise);
 
     case 'cultural_context':
-      return validateContextualSentence(exercise);
+      return validateContextualSentence(exercise as ContextualSentenceExercise);
 
     default:
       // Generic validation
@@ -590,8 +630,8 @@ export function validateExercise(
 export function parseAndValidateJSON(
   content: string,
   exerciseType: ExerciseType
-): { parsed: any; validation: ValidationResult } {
-  let parsed: any;
+): { parsed: FillInBlankExercise | MultipleChoiceExercise | TranslationExercise | ContextualSentenceExercise | null; validation: ValidationResult } {
+  let parsed: FillInBlankExercise | MultipleChoiceExercise | TranslationExercise | ContextualSentenceExercise | null = null;
 
   try {
     // Remove markdown code blocks if present
@@ -601,7 +641,7 @@ export function parseAndValidateJSON(
     jsonString = jsonString.trim();
 
     // Parse JSON
-    parsed = JSON.parse(jsonString);
+    parsed = JSON.parse(jsonString) as FillInBlankExercise | MultipleChoiceExercise | TranslationExercise | ContextualSentenceExercise;
   } catch (error) {
     return {
       parsed: null,
@@ -624,7 +664,7 @@ export function parseAndValidateJSON(
  * Batch validate multiple exercises
  */
 export function batchValidateExercises(
-  exercises: Array<{ exercise: any; type: ExerciseType }>
+  exercises: Array<{ exercise: FillInBlankExercise | MultipleChoiceExercise | TranslationExercise | ContextualSentenceExercise; type: ExerciseType }>
 ): Array<ValidationResult & { index: number }> {
   return exercises.map((item, index) => ({
     index,

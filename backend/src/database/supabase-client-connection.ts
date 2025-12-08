@@ -28,7 +28,7 @@ export class SupabasePoolWrapper {
     }
 
     return {
-      query: async (text: string, params?: any[]) => {
+      query: async (text: string, params?: (string | number | boolean | Date | null | undefined)[]) => {
         // Handle basic SELECT NOW() for connection test
         if (text === 'SELECT NOW()') {
           return { rows: [{ now: new Date() }] };
