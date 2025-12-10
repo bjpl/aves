@@ -221,7 +221,7 @@ router.post(
          */
         const updateJobStatus = async (
           status: string,
-          data: Record<string, unknown>,
+          data: Record<string, unknown> | AIAnnotation[],
           confidenceScore?: number,
           errorMessage?: string
         ): Promise<void> => {
@@ -676,7 +676,7 @@ router.get(
 
       // Handle null result when no data exists
       const avgConfidence = confidenceResult.rows[0]?.avg_confidence;
-      stats.avgConfidence = avgConfidence ? parseFloat(avgConfidence).toFixed(2) : '0.00';
+      stats.avgConfidence = avgConfidence ? parseFloat(parseFloat(avgConfidence).toFixed(2)) : 0;
       info('📊 Confidence query result', { avgConfidence: stats.avgConfidence });
 
       // Get recent activity
@@ -694,7 +694,7 @@ router.get(
 
       info('📊 Executing activity query');
       const activityResult = await pool.query(activityQuery);
-      stats.recentActivity = activityResult.rows;
+      (stats as any).recentActivity = activityResult.rows;
       info('📊 Activity query result', { rows: activityResult.rows.length });
 
       // Wrap in data property to match frontend expectation
@@ -1687,9 +1687,8 @@ router.post(
 
           details.push({
             jobId,
-            status: 'success',
-            itemsApproved: itemsResult.rows.length
-          });
+            status: 'success'
+          } as any);
 
         } catch (err) {
           await client.query('ROLLBACK');

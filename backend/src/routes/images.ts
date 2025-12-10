@@ -318,11 +318,11 @@ function generatePrompt(species: SpeciesData): string {
 
   parts.push(species.english_name);
 
-  if (species.primary_colors?.length > 0) {
+  if (species.primary_colors && species.primary_colors.length > 0) {
     parts.push(`${species.primary_colors.join(' and ')} plumage`);
   }
 
-  if (species.habitats?.length > 0) {
+  if (species.habitats && species.habitats.length > 0) {
     parts.push(`in ${species.habitats[0]} habitat`);
   }
 

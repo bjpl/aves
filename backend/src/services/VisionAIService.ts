@@ -340,19 +340,24 @@ IMPORTANT: Return ONLY the JSON array, nothing else. No explanatory text.
       // Validate and normalize each annotation
       const annotations: AIAnnotation[] = parsed.map((item, index) => {
         this.validateAnnotation(item, index);
+
+        // Type assertion after validation
+        const validatedItem = item as Record<string, unknown>;
+        const bbox = validatedItem.boundingBox as Record<string, unknown>;
+
         return {
-          spanishTerm: item.spanishTerm,
-          englishTerm: item.englishTerm,
+          spanishTerm: validatedItem.spanishTerm as string,
+          englishTerm: validatedItem.englishTerm as string,
           boundingBox: {
-            x: Number(item.boundingBox.x),
-            y: Number(item.boundingBox.y),
-            width: Number(item.boundingBox.width),
-            height: Number(item.boundingBox.height)
+            x: Number(bbox.x),
+            y: Number(bbox.y),
+            width: Number(bbox.width),
+            height: Number(bbox.height)
           },
-          type: item.type,
-          difficultyLevel: Number(item.difficultyLevel),
-          pronunciation: item.pronunciation,
-          confidence: item.confidence ? Number(item.confidence) : 0.8
+          type: validatedItem.type as 'anatomical' | 'behavioral' | 'color' | 'pattern',
+          difficultyLevel: Number(validatedItem.difficultyLevel),
+          pronunciation: validatedItem.pronunciation as string | undefined,
+          confidence: validatedItem.confidence ? Number(validatedItem.confidence) : 0.8
         };
       });
 

@@ -17,6 +17,8 @@ import {
   ExerciseRecommendation,
   VectorDocument,
   SearchOptions,
+  SearchResult,
+  EnhancedUserContext,
 } from '../../../types/vector.types';
 import { RuVectorService } from '../core/RuVectorService';
 import { EmbeddingService } from '../core/EmbeddingService';
@@ -693,7 +695,7 @@ export class VectorExerciseService {
   private async createRecommendation(
     exercise: ExercisePattern,
     userId: string,
-    userContext: Record<string, unknown>,
+    userContext: EnhancedUserContext,
     reasoning: string
   ): Promise<ExerciseRecommendation> {
     const predictedDifficulty = await this.predictDifficulty(
@@ -701,8 +703,8 @@ export class VectorExerciseService {
       userId
     );
 
-    const currentLevel = (userContext.currentLevel as number) || 5;
-    const recentWeaknesses = (userContext.recentWeaknesses as string[]) || [];
+    const currentLevel = userContext.currentLevel || 5;
+    const recentWeaknesses = userContext.recentWeaknesses || [];
 
     // Calculate relevance score
     let relevanceScore = 0.5; // Base score
@@ -825,8 +827,8 @@ export class VectorExerciseService {
   /**
    * Convert search result to ExercisePattern
    */
-  private searchResultToPattern(result: Record<string, unknown>): ExercisePattern {
-    const m = result.metadata as Record<string, unknown>;
+  private searchResultToPattern(result: SearchResult): ExercisePattern {
+    const m = result.metadata;
     return {
       exerciseId: m.exerciseId as string,
       type: m.type as string,
@@ -855,9 +857,9 @@ export class VectorExerciseService {
   /**
    * Calculate topic familiarity (0-1)
    */
-  private calculateTopicFamiliarity(topic: string, userContext: Record<string, unknown>): number {
-    const recentStrengths = (userContext.recentStrengths as string[]) || [];
-    const recentWeaknesses = (userContext.recentWeaknesses as string[]) || [];
+  private calculateTopicFamiliarity(topic: string, userContext: EnhancedUserContext): number {
+    const recentStrengths = userContext.recentStrengths || [];
+    const recentWeaknesses = userContext.recentWeaknesses || [];
 
     if (recentStrengths.includes(topic)) {
       return 0.8;

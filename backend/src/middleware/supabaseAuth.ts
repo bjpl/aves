@@ -20,12 +20,12 @@ function getSupabaseClient(): SupabaseClient {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      logger.error('Environment variables:', {
+      logger.error({
         SUPABASE_URL: supabaseUrl ? 'Set' : 'Missing',
         SUPABASE_SERVICE_ROLE_KEY: supabaseServiceKey ? 'Set' : 'Missing',
         NODE_ENV: process.env.NODE_ENV,
         All_ENV_KEYS: Object.keys(process.env).filter(key => key.startsWith('SUPABASE') || key === 'NODE_ENV')
-      });
+      }, 'Environment variables');
       throw new Error('Missing Supabase configuration. Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables');
     }
 

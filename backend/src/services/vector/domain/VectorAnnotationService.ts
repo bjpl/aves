@@ -280,12 +280,12 @@ export class VectorAnnotationService {
 
       // Transform search results to SimilarAnnotation format
       const similarAnnotations: SimilarAnnotation[] = searchResult.data.map(result => ({
-        annotationId: result.metadata.annotationId,
-        imageId: result.metadata.imageId,
+        annotationId: String(result.metadata.annotationId ?? ''),
+        imageId: String(result.metadata.imageId ?? ''),
         similarity: result.score,
-        features: result.metadata.features || [],
-        reasoning: result.metadata.reasoning || '',
-        approved: result.metadata.approved || false,
+        features: (result.metadata.features as string[]) || [],
+        reasoning: String(result.metadata.reasoning ?? ''),
+        approved: Boolean(result.metadata.approved),
       }));
 
       const duration = Date.now() - start;
@@ -366,17 +366,17 @@ export class VectorAnnotationService {
 
       // Transform search results to AnnotationPattern format
       const patterns: AnnotationPattern[] = searchResult.data.map(result => ({
-        annotationId: result.metadata.annotationId,
-        imageId: result.metadata.imageId,
-        speciesId: result.metadata.speciesId,
-        features: result.metadata.features || [],
-        reasoning: result.metadata.reasoning || '',
-        confidence: result.metadata.confidence || 0,
-        approved: result.metadata.approved || false,
-        rejectionReason: result.metadata.rejectionReason,
-        userFeedback: result.metadata.userFeedback,
-        difficulty: result.metadata.difficulty,
-        timestamp: new Date(result.metadata.timestamp),
+        annotationId: String(result.metadata.annotationId ?? ''),
+        imageId: String(result.metadata.imageId ?? ''),
+        speciesId: result.metadata.speciesId ? String(result.metadata.speciesId) : undefined,
+        features: (result.metadata.features as string[]) || [],
+        reasoning: String(result.metadata.reasoning ?? ''),
+        confidence: Number(result.metadata.confidence ?? 0),
+        approved: Boolean(result.metadata.approved),
+        rejectionReason: result.metadata.rejectionReason ? String(result.metadata.rejectionReason) : undefined,
+        userFeedback: result.metadata.userFeedback ? String(result.metadata.userFeedback) : undefined,
+        difficulty: result.metadata.difficulty ? Number(result.metadata.difficulty) : undefined,
+        timestamp: new Date(String(result.metadata.timestamp ?? new Date().toISOString())),
       }));
 
       const duration = Date.now() - start;
@@ -526,17 +526,17 @@ export class VectorAnnotationService {
 
       // Transform search results to AnnotationPattern format
       const mistakes: AnnotationPattern[] = searchResult.data.map(result => ({
-        annotationId: result.metadata.annotationId,
-        imageId: result.metadata.imageId,
-        speciesId: result.metadata.speciesId,
-        features: result.metadata.features || [],
-        reasoning: result.metadata.reasoning || '',
-        confidence: result.metadata.confidence || 0,
+        annotationId: String(result.metadata.annotationId ?? ''),
+        imageId: String(result.metadata.imageId ?? ''),
+        speciesId: result.metadata.speciesId ? String(result.metadata.speciesId) : undefined,
+        features: (result.metadata.features as string[]) || [],
+        reasoning: String(result.metadata.reasoning ?? ''),
+        confidence: Number(result.metadata.confidence ?? 0),
         approved: false,
-        rejectionReason: result.metadata.rejectionReason,
-        userFeedback: result.metadata.userFeedback,
-        difficulty: result.metadata.difficulty,
-        timestamp: new Date(result.metadata.timestamp),
+        rejectionReason: result.metadata.rejectionReason ? String(result.metadata.rejectionReason) : undefined,
+        userFeedback: result.metadata.userFeedback ? String(result.metadata.userFeedback) : undefined,
+        difficulty: result.metadata.difficulty ? Number(result.metadata.difficulty) : undefined,
+        timestamp: new Date(String(result.metadata.timestamp ?? new Date().toISOString())),
       }));
 
       const duration = Date.now() - start;
@@ -641,17 +641,17 @@ export class VectorAnnotationService {
 
       const result = searchResult.data[0];
       const pattern: AnnotationPattern = {
-        annotationId: result.metadata.annotationId,
-        imageId: result.metadata.imageId,
-        speciesId: result.metadata.speciesId,
-        features: result.metadata.features || [],
-        reasoning: result.metadata.reasoning || '',
-        confidence: result.metadata.confidence || 0,
-        approved: result.metadata.approved || false,
-        rejectionReason: result.metadata.rejectionReason,
-        userFeedback: result.metadata.userFeedback,
-        difficulty: result.metadata.difficulty,
-        timestamp: new Date(result.metadata.timestamp),
+        annotationId: String(result.metadata.annotationId ?? ''),
+        imageId: String(result.metadata.imageId ?? ''),
+        speciesId: result.metadata.speciesId ? String(result.metadata.speciesId) : undefined,
+        features: (result.metadata.features as string[]) || [],
+        reasoning: String(result.metadata.reasoning ?? ''),
+        confidence: Number(result.metadata.confidence ?? 0),
+        approved: Boolean(result.metadata.approved),
+        rejectionReason: result.metadata.rejectionReason ? String(result.metadata.rejectionReason) : undefined,
+        userFeedback: result.metadata.userFeedback ? String(result.metadata.userFeedback) : undefined,
+        difficulty: result.metadata.difficulty ? Number(result.metadata.difficulty) : undefined,
+        timestamp: new Date(String(result.metadata.timestamp ?? new Date().toISOString())),
       };
 
       const duration = Date.now() - start;

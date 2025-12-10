@@ -148,7 +148,7 @@ export const testConnection = async (): Promise<boolean> => {
       urlPreview: dbUrl ? `${dbUrl.substring(0, 40)}...` : 'not set'
     };
 
-    logger.info('Database connection attempt:', connectionInfo);
+    logger.info(connectionInfo, 'Database connection attempt');
     info('Attempting database connection', connectionInfo);
 
     const client = await pool.connect();
@@ -158,7 +158,7 @@ export const testConnection = async (): Promise<boolean> => {
     return true;
   } catch (err) {
     const error = err as any;
-    logger.error('Database connection failed with error:', {
+    logger.error({
       message: error.message,
       code: error.code,
       detail: error.detail,
@@ -166,7 +166,7 @@ export const testConnection = async (): Promise<boolean> => {
       hostname: error.hostname,
       port: error.port,
       database: error.database
-    });
+    }, 'Database connection failed with error');
     logError('Database connection failed', error);
     return false;
   }

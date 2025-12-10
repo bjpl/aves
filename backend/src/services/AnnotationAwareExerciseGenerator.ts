@@ -141,7 +141,7 @@ export class AnnotationAwareExerciseGenerator {
     const tolerance = this.calculateTolerance(annotation.difficultyLevel);
 
     // Generate hints based on mastery
-    const hints = targetRec.masteryData?.exposureCount > 0 && targetRec.masteryData?.masteryScore < 0.4
+    const hints = (targetRec.masteryData?.exposureCount ?? 0) > 0 && (targetRec.masteryData?.masteryScore ?? 1) < 0.4
       ? {
           after5Seconds: `Busca ${annotation.spanishTerm} en la imagen`,
           boundingBoxHint: true

@@ -36,7 +36,7 @@ export class SupabasePoolWrapper {
 
         // For other queries, you'd need to parse and convert to Supabase format
         // This is a simplified implementation
-        logger.info('Query via Supabase client:', text);
+        logger.info({ text }, 'Query via Supabase client');
 
         // Use Supabase RPC for raw SQL if needed
         const { data, error } = await supabase.rpc('exec_sql', { query: text, params });

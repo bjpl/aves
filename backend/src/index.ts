@@ -1,4 +1,4 @@
-import logger from '../utils/logger';
+import logger from './utils/logger';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -10,13 +10,13 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Log environment detection for debugging
-logger.info('Starting server with environment:', {
+logger.info({
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: process.env.PORT || 3001,
   hasDBUrl: !!process.env.DATABASE_URL,
   hasSupabaseUrl: !!process.env.SUPABASE_URL,
   hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
-});
+}, 'Starting server with environment');
 
 import authRouter from './routes/auth';
 import annotationsRouter from './routes/annotations';
@@ -312,8 +312,8 @@ const startServer = async () => {
 };
 
 startServer().catch((err) => {
-  logger.error('Failed to start server:', err);
-  logger.error('Full error details:', JSON.stringify(err, null, 2));
+  logger.error({ err }, 'Failed to start server');
+  logger.error({ details: JSON.stringify(err, null, 2) }, 'Full error details');
   logError('Failed to start server', err);
   // Exit with error code to trigger Railway to show logs
   process.exit(1);

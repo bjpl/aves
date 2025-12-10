@@ -594,27 +594,46 @@ export class NeuralPositionOptimizer {
    * Parse bounding box from various formats
    */
   private parseBoundingBox(box: string | Record<string, unknown>): BoundingBox {
+    let boxObj: Record<string, unknown>;
+
     if (typeof box === 'string') {
-      box = JSON.parse(box);
+      boxObj = JSON.parse(box) as Record<string, unknown>;
+    } else {
+      boxObj = box;
     }
 
     // Handle {x, y, width, height} format
-    if (box.x !== undefined && box.width !== undefined) {
+    if (
+      typeof boxObj.x === 'number' &&
+      typeof boxObj.y === 'number' &&
+      typeof boxObj.width === 'number' &&
+      typeof boxObj.height === 'number'
+    ) {
       return {
-        x: box.x,
-        y: box.y,
-        width: box.width,
-        height: box.height
+        x: boxObj.x,
+        y: boxObj.y,
+        width: boxObj.width,
+        height: boxObj.height
       };
     }
 
     // Handle {topLeft, bottomRight} format
-    if (box.topLeft && box.bottomRight) {
+    const topLeft = boxObj.topLeft as Record<string, unknown> | undefined;
+    const bottomRight = boxObj.bottomRight as Record<string, unknown> | undefined;
+
+    if (
+      topLeft &&
+      bottomRight &&
+      typeof topLeft.x === 'number' &&
+      typeof topLeft.y === 'number' &&
+      typeof bottomRight.x === 'number' &&
+      typeof bottomRight.y === 'number'
+    ) {
       return {
-        x: box.topLeft.x,
-        y: box.topLeft.y,
-        width: box.bottomRight.x - box.topLeft.x,
-        height: box.bottomRight.y - box.topLeft.y
+        x: topLeft.x,
+        y: topLeft.y,
+        width: bottomRight.x - topLeft.x,
+        height: bottomRight.y - topLeft.y
       };
     }
 

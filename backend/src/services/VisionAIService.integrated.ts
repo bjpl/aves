@@ -374,19 +374,24 @@ IMPORTANT: Return only the JSON array, nothing else.
       // Validate and normalize each annotation
       const annotations: AIAnnotation[] = parsed.map((item, index) => {
         this.validateAnnotation(item, index);
+
+        // Type assertion after validation
+        const validatedItem = item as Record<string, unknown>;
+        const bbox = validatedItem.boundingBox as Record<string, unknown>;
+
         return {
-          spanishTerm: item.spanishTerm,
-          englishTerm: item.englishTerm,
+          spanishTerm: validatedItem.spanishTerm as string,
+          englishTerm: validatedItem.englishTerm as string,
           boundingBox: {
-            x: Number(item.boundingBox.x),
-            y: Number(item.boundingBox.y),
-            width: Number(item.boundingBox.width),
-            height: Number(item.boundingBox.height)
+            x: Number(bbox.x),
+            y: Number(bbox.y),
+            width: Number(bbox.width),
+            height: Number(bbox.height)
           },
-          type: item.type,
-          difficultyLevel: Number(item.difficultyLevel),
-          pronunciation: item.pronunciation,
-          confidence: item.confidence ? Number(item.confidence) : 0.8
+          type: validatedItem.type as 'anatomical' | 'behavioral' | 'color' | 'pattern',
+          difficultyLevel: Number(validatedItem.difficultyLevel),
+          pronunciation: validatedItem.pronunciation as string | undefined,
+          confidence: validatedItem.confidence ? Number(validatedItem.confidence) : 0.8
         };
       });
 
@@ -410,25 +415,32 @@ IMPORTANT: Return only the JSON array, nothing else.
       }
     }
 
-    // Validate bounding box
-    const bbox = item.boundingBox;
+    // Validate bounding box with type guard
+    const bbox = item.boundingBox as Record<string, unknown>;
+    if (!bbox || typeof bbox !== 'object') {
+      throw new Error(`Annotation ${index}: invalid bounding box structure`);
+    }
     if (bbox.x === undefined || bbox.y === undefined || bbox.width === undefined || bbox.height === undefined) {
       throw new Error(`Annotation ${index}: invalid bounding box structure`);
     }
 
     // Validate coordinates are in 0-1 range
-    if (bbox.x < 0 || bbox.x > 1 || bbox.y < 0 || bbox.y > 1) {
+    const x = Number(bbox.x);
+    const y = Number(bbox.y);
+    if (x < 0 || x > 1 || y < 0 || y > 1) {
       throw new Error(`Annotation ${index}: bounding box coordinates must be 0-1`);
     }
 
     // Validate type
     const validTypes = ['anatomical', 'behavioral', 'color', 'pattern'];
-    if (!validTypes.includes(item.type)) {
-      throw new Error(`Annotation ${index}: invalid type '${item.type}'`);
+    const itemType = item.type as string;
+    if (!validTypes.includes(itemType)) {
+      throw new Error(`Annotation ${index}: invalid type '${itemType}'`);
     }
 
     // Validate difficulty level
-    if (item.difficultyLevel < 1 || item.difficultyLevel > 5) {
+    const difficulty = Number(item.difficultyLevel);
+    if (difficulty < 1 || difficulty > 5) {
       throw new Error(`Annotation ${index}: difficulty level must be 1-5`);
     }
   }

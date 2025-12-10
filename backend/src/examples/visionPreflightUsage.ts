@@ -141,7 +141,7 @@ export async function annotationPipeline(imageUrl: string) {
     };
 
   } catch (error) {
-    logger.error('Pipeline failed:', error);
+    logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Pipeline failed');
     return {
       stage: 'error',
       success: false,

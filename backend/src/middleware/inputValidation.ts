@@ -1,4 +1,3 @@
-import logger from '../utils/logger';
 /**
  * Input Validation and Sanitization Middleware
  * Provides comprehensive input validation using Zod schemas
@@ -7,7 +6,7 @@ import logger from '../utils/logger';
 
 import { Request, Response, NextFunction } from 'express';
 import { z, ZodSchema, ZodError } from 'zod';
-import { warn } from '../utils/logger';
+import { warn, info } from '../utils/logger';
 
 /**
  * Validation error response
@@ -209,12 +208,12 @@ export function sanitizeRequest(req: Request, res: Response, next: NextFunction)
 
     // Sanitize query parameters
     if (req.query) {
-      req.query = sanitizeObject(req.query);
+      req.query = sanitizeObject(req.query) as typeof req.query;
     }
 
     // Sanitize URL parameters
     if (req.params) {
-      req.params = sanitizeObject(req.params);
+      req.params = sanitizeObject(req.params) as typeof req.params;
     }
 
     next();
@@ -332,7 +331,7 @@ export function initializeValidation(): void {
     blockMaliciousInput: process.env.BLOCK_MALICIOUS_INPUT === 'true',
   };
 
-  logger.info('Input validation middleware initialized:', config);
+  info('Input validation middleware initialized:', config);
 }
 
 export default {

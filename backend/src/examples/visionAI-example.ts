@@ -46,7 +46,7 @@ async function basicExample() {
       logger.info(`Pronunciation: ${annotation.pronunciation || 'N/A'}`);
       logger.info(`Type: ${annotation.type}`);
       logger.info(`Difficulty: ${annotation.difficultyLevel}/5`);
-      logger.info(`Bounding Box:`, annotation.boundingBox);
+      logger.info(`Bounding Box: ${JSON.stringify(annotation.boundingBox)}`);
     });
 
   } catch (error) {

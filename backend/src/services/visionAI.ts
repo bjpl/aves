@@ -424,7 +424,8 @@ Return ONLY the JSON array with 3-8 annotations depending on what's clearly visi
       return false;
     }
 
-    const { x, y, width, height } = box;
+    const typedBox = box as Record<string, unknown>;
+    const { x, y, width, height } = typedBox;
 
     // All values must be numbers
     if (typeof x !== 'number' || typeof y !== 'number' ||
@@ -580,7 +581,7 @@ Return ONLY the JSON array with 3-8 annotations depending on what's clearly visi
       }
 
       // All annotations must be valid
-      return annotations.every((ann: unknown) => this.validateAnnotation(ann));
+      return annotations.every((ann: unknown) => this.validateAnnotation(ann as ClaudeAnnotationResponse));
 
     } catch (error) {
       return false;

@@ -233,7 +233,7 @@ export function getAIConfig(): AIConfig {
     // Validate configuration
     const validation = validateAIConfig(aiConfigInstance);
     if (!validation.valid) {
-      logger.warn('AI Configuration validation warnings:', validation.errors);
+      logger.warn({ errors: validation.errors }, 'AI Configuration validation warnings');
     }
   }
 

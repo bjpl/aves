@@ -152,15 +152,15 @@ export class ReinforcementLearningEngine {
   private async capturePositionCorrection(feedback: FeedbackData): Promise<void> {
     const { annotationId, originalData, correctedData, metadata, userId } = feedback;
 
-    if (!originalData.bounding_box || !correctedData.bounding_box) {
+    if (!correctedData || !originalData.bounding_box || !correctedData.bounding_box) {
       logError('Missing bounding box data for position correction', new Error('Invalid data'), {
         annotationId
       });
       return;
     }
 
-    const original = originalData.bounding_box;
-    const corrected = correctedData.bounding_box;
+    const original = originalData.bounding_box as { x: number; y: number; width: number; height: number };
+    const corrected = correctedData.bounding_box as { x: number; y: number; width: number; height: number };
 
     // Calculate deltas
     const deltaX = corrected.x - original.x;
@@ -192,7 +192,7 @@ export class ReinforcementLearningEngine {
     // Update positioning model
     await this.updatePositioningModel(
       metadata?.species || 'unknown',
-      originalData.annotation_type || originalData.type || 'unknown',
+      String(originalData.annotation_type || originalData.type || 'unknown'),
       deltaX,
       deltaY,
       deltaWidth,

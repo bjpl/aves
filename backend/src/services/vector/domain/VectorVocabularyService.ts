@@ -184,18 +184,18 @@ export class VectorVocabularyService extends VocabularyService {
           // Exclude specified IDs
           if (
             options.excludeIds &&
-            options.excludeIds.includes(result.metadata.termId)
+            options.excludeIds.includes(result.metadata.termId as string)
           ) {
             return false;
           }
           return true;
         })
         .map(result => ({
-          termId: result.metadata.termId,
-          term: result.metadata.term,
-          definition: result.metadata.definition,
+          termId: result.metadata.termId as string,
+          term: result.metadata.term as string,
+          definition: result.metadata.definition as string,
           similarity: result.score,
-          category: result.metadata.category,
+          category: result.metadata.category as string | undefined,
         }));
 
       const duration = Date.now() - startTime;
@@ -247,7 +247,7 @@ export class VectorVocabularyService extends VocabularyService {
       }
 
       const termDoc = searchResult.data[0];
-      const term = termDoc.metadata.term;
+      const term = termDoc.metadata.term as string;
 
       // Perform similarity search for related terms
       const similarTerms = await this.searchSimilarTerms(term, {

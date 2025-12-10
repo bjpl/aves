@@ -170,7 +170,7 @@ export class UnsplashService {
       return {
         remaining: parseInt(response.headers['x-ratelimit-remaining'] || '50'),
         limit: parseInt(response.headers['x-ratelimit-limit'] || '50'),
-        resetAt: new Date(Date.now() + 3600000).toISOString() // Unsplash resets hourly
+        resetTime: new Date(Date.now() + 3600000).toISOString() // Unsplash resets hourly
       };
 
     } catch (err) {

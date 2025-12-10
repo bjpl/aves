@@ -19,7 +19,7 @@ async function basicContextExample() {
 
   logger.info('=== User Context ===');
   logger.info(builder.getContextSummary(context));
-  logger.info('\nDetailed Context:', JSON.stringify(context, null, 2));
+  logger.info({ context: JSON.stringify(context, null, 2) }, 'Detailed Context');
 
   await pool.end();
 }
@@ -174,9 +174,9 @@ async function cacheKeyExample() {
   const context1 = await builder.buildContext(userId);
   const context2 = await builder.buildContext(userId);
 
-  logger.info('First context hash:', context1.hash);
-  logger.info('Second context hash:', context2.hash);
-  logger.info('Hashes match:', context1.hash === context2.hash);
+  logger.info({ hash: context1.hash }, 'First context hash');
+  logger.info({ hash: context2.hash }, 'Second context hash');
+  logger.info({ match: context1.hash === context2.hash }, 'Hashes match');
   logger.info('\nBenefit: Same hash = cache hit = no AI generation needed = $0.003 saved!\n');
 
   // Simulate performance change (in reality, this would be from completing exercises)
@@ -233,7 +233,7 @@ async function runAllExamples() {
     await cacheKeyExample();
 
   } catch (error) {
-    logger.error('Error running examples:', error);
+    logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Error running examples');
   }
 }
 
