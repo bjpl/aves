@@ -6,7 +6,6 @@
 
 import { pool } from '../database/connection';
 import { info, error as logError } from '../utils/logger';
-import { patternLearner, PositionCorrection, RejectionPattern } from './PatternLearner';
 
 /**
  * Feedback types for reinforcement learning
@@ -28,6 +27,17 @@ export interface FeedbackData {
     imageId?: string;
     feature?: string;
   };
+}
+
+/**
+ * Rejection analytics result
+ */
+interface RejectionAnalytic {
+  rejection_category: string;
+  species: string;
+  feature_type: string;
+  count: string;
+  avg_confidence: string;
 }
 
 /**
@@ -288,19 +298,20 @@ export class ReinforcementLearningEngine {
 
   /**
    * Categorize rejection reason into standard categories
+   * Note: Check more specific patterns first to avoid false matches
    */
   private categorizeRejection(reason: string): string {
     const lowerReason = reason.toLowerCase();
 
-    // Match common rejection patterns
-    if (lowerReason.includes('species') || lowerReason.includes('wrong bird')) {
+    // Check more specific patterns first to avoid false matches
+    if (lowerReason.includes('not found') || lowerReason.includes('doesn\'t exist') || lowerReason.includes('does not exist') || lowerReason.includes('false')) {
+      return 'false_positive';
+    } else if (lowerReason.includes('species') || lowerReason.includes('wrong bird')) {
       return 'incorrect_species';
     } else if (lowerReason.includes('feature') || lowerReason.includes('part') || lowerReason.includes('anatomy')) {
       return 'incorrect_feature';
     } else if (lowerReason.includes('position') || lowerReason.includes('localization') || lowerReason.includes('bounding box')) {
       return 'poor_localization';
-    } else if (lowerReason.includes('false') || lowerReason.includes('not found') || lowerReason.includes('doesn\'t exist')) {
-      return 'false_positive';
     } else if (lowerReason.includes('duplicate') || lowerReason.includes('already exists')) {
       return 'duplicate';
     } else if (lowerReason.includes('quality') || lowerReason.includes('blurry') || lowerReason.includes('unclear')) {
@@ -363,7 +374,7 @@ export class ReinforcementLearningEngine {
   /**
    * Get rejection analytics
    */
-  async getRejectionAnalytics(timeWindow: string = '30days'): Promise<any> {
+  async getRejectionAnalytics(_timeWindow: string = '30days'): Promise<RejectionAnalytic[]> {
     try {
       const result = await pool.query(
         `SELECT rejection_category, species, feature_type,
@@ -398,14 +409,15 @@ export function extractRejectionCategory(notes: string): string {
   // Otherwise infer from content
   const lowerNotes = notes?.toLowerCase() || '';
 
-  if (lowerNotes.includes('species') || lowerNotes.includes('wrong bird')) {
+  // Check more specific patterns first to avoid false matches
+  if (lowerNotes.includes('does not exist') || lowerNotes.includes('not found') || lowerNotes.includes('false')) {
+    return 'false_positive';
+  } else if (lowerNotes.includes('species') || lowerNotes.includes('wrong bird')) {
     return 'incorrect_species';
   } else if (lowerNotes.includes('feature') || lowerNotes.includes('part')) {
     return 'incorrect_feature';
   } else if (lowerNotes.includes('position') || lowerNotes.includes('box')) {
     return 'poor_localization';
-  } else if (lowerNotes.includes('false') || lowerNotes.includes('not found')) {
-    return 'false_positive';
   } else if (lowerNotes.includes('duplicate')) {
     return 'duplicate';
   } else if (lowerNotes.includes('quality') || lowerNotes.includes('blurry')) {

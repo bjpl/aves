@@ -94,9 +94,9 @@ describe('ReinforcementLearningEngine', () => {
       );
       expect(rejectionCall).toBeDefined();
 
-      // Should update metrics
+      // Should update metrics (rejection_rate is passed as a parameter, not in SQL)
       const metricsCall = mockQuery.mock.calls.find(call =>
-        call[0].includes('rejection_rate')
+        call[0].includes('feedback_metrics') && call[1]?.includes('rejection_rate')
       );
       expect(metricsCall).toBeDefined();
     });
@@ -249,8 +249,9 @@ describe('ReinforcementLearningEngine', () => {
 
       await rlEngine.captureFeedback(feedback);
 
+      // avg_correction_magnitude is passed as a parameter, check feedback_metrics calls with metric_type in params
       const magnitudeCall = mockQuery.mock.calls.find(call =>
-        call[0].includes('avg_correction_magnitude')
+        call[0].includes('feedback_metrics') && call[1]?.includes('avg_correction_magnitude')
       );
 
       expect(magnitudeCall).toBeDefined();
@@ -490,9 +491,9 @@ describe('ReinforcementLearningEngine', () => {
 
       await rlEngine.getRejectionAnalytics();
 
+      // Verify the query includes the 30 day interval (no params passed for this query)
       expect(mockQuery).toHaveBeenCalledWith(
-        expect.stringContaining("INTERVAL '30 days'"),
-        undefined
+        expect.stringContaining("INTERVAL '30 days'")
       );
     });
   });
