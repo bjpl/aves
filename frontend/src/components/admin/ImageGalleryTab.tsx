@@ -379,34 +379,43 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
       ) : imageDetails ? (
         <div className="space-y-6">
           {/* Image with annotations overlay */}
-          <div className="relative">
+          <div className="relative overflow-hidden rounded-lg">
             <img
               src={imageDetails.url}
               alt={imageDetails.species?.englishName || 'Bird image'}
-              className="w-full rounded-lg"
+              className="w-full"
             />
 
-            {/* Annotation overlays */}
+            {/* Annotation overlays - only show approved/pending, not rejected */}
             {showAnnotations &&
-              imageDetails.annotations.map((annotation: ImageAnnotation) =>
-                annotation.boundingBox ? (
-                  <div
-                    key={annotation.id}
-                    className="absolute border-2 border-blue-500 bg-blue-500 bg-opacity-20 rounded"
-                    style={{
-                      left: `${annotation.boundingBox.x * 100}%`,
-                      top: `${annotation.boundingBox.y * 100}%`,
-                      width: `${annotation.boundingBox.width * 100}%`,
-                      height: `${annotation.boundingBox.height * 100}%`,
-                    }}
-                    title={`${annotation.spanishTerm} (${annotation.englishTerm})`}
-                  >
-                    <span className="absolute -top-6 left-0 bg-blue-600 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                      {annotation.spanishTerm}
-                    </span>
-                  </div>
-                ) : null
-              )}
+              imageDetails.annotations
+                .filter((annotation: ImageAnnotation) => annotation.status !== 'rejected')
+                .map((annotation: ImageAnnotation) => {
+                  if (!annotation.boundingBox) return null;
+                  // Clamp bounding box values to valid range (0-1)
+                  const x = Math.max(0, Math.min(1, annotation.boundingBox.x));
+                  const y = Math.max(0, Math.min(1, annotation.boundingBox.y));
+                  const width = Math.min(annotation.boundingBox.width, 1 - x);
+                  const height = Math.min(annotation.boundingBox.height, 1 - y);
+
+                  return (
+                    <div
+                      key={annotation.id}
+                      className="absolute border-2 border-blue-500 bg-blue-500 bg-opacity-20 rounded"
+                      style={{
+                        left: `${x * 100}%`,
+                        top: `${y * 100}%`,
+                        width: `${width * 100}%`,
+                        height: `${height * 100}%`,
+                      }}
+                      title={`${annotation.spanishTerm} (${annotation.englishTerm})`}
+                    >
+                      <span className="absolute -top-6 left-0 bg-blue-600 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                        {annotation.spanishTerm}
+                      </span>
+                    </div>
+                  );
+                })}
           </div>
 
           {/* Toggle annotations */}

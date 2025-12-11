@@ -242,7 +242,7 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
           <div className="space-y-2">
             <h4 className="text-sm font-semibold text-gray-700">Image Preview</h4>
             <div className="border border-gray-200 rounded-lg overflow-hidden relative bg-gray-900">
-              <div className="relative w-full" style={{ paddingTop: '75%' }}>
+              <div className="relative w-full overflow-hidden" style={{ paddingTop: '75%' }}>
                 {/* Bird Image */}
                 <img
                   src={imageUrl}
@@ -251,23 +251,31 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
                   className="absolute inset-0 w-full h-full object-contain"
                 />
                 {/* Yellow Bounding Box Overlay */}
-                {annotation.boundingBox && (
-                  <div
-                    className="absolute border-4 border-yellow-400 bg-yellow-400 bg-opacity-10 pointer-events-none"
-                    style={{
-                      left: `${annotation.boundingBox.x * 100}%`,
-                      top: `${annotation.boundingBox.y * 100}%`,
-                      width: `${annotation.boundingBox.width * 100}%`,
-                      height: `${annotation.boundingBox.height * 100}%`,
-                      boxShadow: 'inset 0 0 0 2px rgba(250, 204, 21, 0.6), 0 0 20px rgba(250, 204, 21, 0.4)',
-                    }}
-                  >
-                    {/* Spanish Term Label */}
-                    <div className="absolute -top-8 left-0 bg-yellow-400 text-yellow-900 px-3 py-1 rounded-md text-sm font-bold shadow-lg whitespace-nowrap">
-                      {annotation.spanishTerm}
+                {annotation.boundingBox && (() => {
+                  // Clamp bounding box values to valid range (0-1)
+                  const x = Math.max(0, Math.min(1, annotation.boundingBox.x));
+                  const y = Math.max(0, Math.min(1, annotation.boundingBox.y));
+                  const width = Math.min(annotation.boundingBox.width, 1 - x);
+                  const height = Math.min(annotation.boundingBox.height, 1 - y);
+
+                  return (
+                    <div
+                      className="absolute border-4 border-yellow-400 bg-yellow-400 bg-opacity-10 pointer-events-none"
+                      style={{
+                        left: `${x * 100}%`,
+                        top: `${y * 100}%`,
+                        width: `${width * 100}%`,
+                        height: `${height * 100}%`,
+                        boxShadow: 'inset 0 0 0 2px rgba(250, 204, 21, 0.6), 0 0 20px rgba(250, 204, 21, 0.4)',
+                      }}
+                    >
+                      {/* Spanish Term Label */}
+                      <div className="absolute -top-8 left-0 bg-yellow-400 text-yellow-900 px-3 py-1 rounded-md text-sm font-bold shadow-lg whitespace-nowrap">
+                        {annotation.spanishTerm}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             </div>
           </div>
