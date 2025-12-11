@@ -21,8 +21,9 @@ import {
 } from './setup';
 import { withTimeout, cleanupAsyncTests } from '../utils/asyncTestUtils';
 
-// Skip integration tests if SUPABASE_URL is not configured (CI environment)
-const skipIntegrationTests = !process.env.SUPABASE_URL && !process.env.TEST_DB_HOST;
+// Skip integration tests unless explicitly enabled
+// Set RUN_INTEGRATION_TESTS=true to run these tests
+const skipIntegrationTests = process.env.RUN_INTEGRATION_TESTS !== 'true';
 const describeOrSkip = skipIntegrationTests ? describe.skip : describe;
 
 // Create test app

@@ -230,13 +230,14 @@ afterAll(async () => {
 (shouldRunDatabaseTests ? describe : describe.skip)('GET /api/auth/verify', () => {
   let authToken: string;
   let userId: string;
+  let registeredEmail: string;
 
   beforeEach(async () => {
     // Register a user and get token - use unique email to avoid conflicts
-    const uniqueEmail = `verify_${Date.now()}@example.com`;
+    registeredEmail = `verify_${Date.now()}@example.com`;
     const response = await request(app)
       .post('/api/auth/register')
-      .send({ email: uniqueEmail, password: testUser.password });
+      .send({ email: registeredEmail, password: testUser.password });
 
     // Handle case where registration might fail (use fallback values for error cases)
     if (response.body.token && response.body.user) {
@@ -256,7 +257,7 @@ afterAll(async () => {
 
     expect(response.body).toHaveProperty('user');
     expect(response.body.user.id).toBe(userId);
-    expect(response.body.user.email).toBe(testUser.email.toLowerCase());
+    expect(response.body.user.email).toBe(registeredEmail.toLowerCase());
   });
 
   test('should reject request without token', async () => {

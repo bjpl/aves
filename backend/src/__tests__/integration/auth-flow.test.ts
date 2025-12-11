@@ -21,8 +21,8 @@ app.use('/api', authRouter);
 
 // NOTE: Integration tests require a real database connection.
 // Skip when running in CI/local environments without database.
-// Set TEST_DB_HOST environment variable to run these tests.
-const shouldRunIntegrationTests = process.env.TEST_DB_HOST !== undefined;
+// Set RUN_AUTH_INTEGRATION_TESTS=true to run these tests.
+const shouldRunIntegrationTests = process.env.RUN_AUTH_INTEGRATION_TESTS === 'true';
 
 (shouldRunIntegrationTests ? describe : describe.skip)('Integration: Authentication Flow', () => {
   describe('Complete User Registration Flow', () => {

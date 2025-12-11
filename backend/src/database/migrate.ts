@@ -4,7 +4,9 @@ import { join } from 'path';
 import dotenv from 'dotenv';
 import { info, error as logError } from '../utils/logger';
 
-dotenv.config();
+// Load appropriate env file based on NODE_ENV
+const envFile = process.env.NODE_ENV === 'test' ? '.env.test' : '.env';
+dotenv.config({ path: envFile });
 
 // Use DATABASE_URL if available, otherwise use individual connection params
 const connectionConfig = process.env.DATABASE_URL

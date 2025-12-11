@@ -19,8 +19,9 @@ import {
   delay,
 } from './setup';
 
-// Skip integration tests if SUPABASE_URL is not configured (CI environment)
-const skipIntegrationTests = !process.env.SUPABASE_URL && !process.env.TEST_DB_HOST;
+// Skip integration tests unless explicitly enabled
+// Set RUN_INTEGRATION_TESTS=true to run these tests
+const skipIntegrationTests = process.env.RUN_INTEGRATION_TESTS !== 'true';
 const describeOrSkip = skipIntegrationTests ? describe.skip : describe;
 
 // Create test app

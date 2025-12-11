@@ -17,12 +17,15 @@ const router = Router();
 
 // Auth-specific rate limiter: 5 attempts per 15 minutes per IP
 // Prevents brute force attacks on authentication endpoints
+// Skip rate limiting in test environment to allow comprehensive testing
+const isTestEnv = process.env.NODE_ENV === 'test';
 const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 attempts per window per IP
+  max: isTestEnv ? 1000 : 5, // High limit in test, 5 attempts per window per IP in production
   message: { error: 'Too many authentication attempts. Please try again in 15 minutes.' },
   standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
+  skip: isTestEnv ? () => true : undefined, // Skip rate limiting entirely in test env
   // Use IP address for rate limiting (works with trust proxy setting)
   keyGenerator: (req) => {
     // Get real IP from proxy headers (Railway, etc.)
