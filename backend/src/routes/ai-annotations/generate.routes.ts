@@ -352,85 +352,11 @@ router.post(
 );
 
 /**
- * GET /api/ai/annotations/:jobId
- * Get specific annotation job status and details
- */
-router.get(
-  '/:jobId',
-  optionalSupabaseAuth,
-  optionalSupabaseAdmin,
-  validateParams(JobIdParamSchema),
-  async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { jobId } = req.params;
-
-      const query = `
-        SELECT
-          job_id as "jobId",
-          image_id as "imageId",
-          annotation_data as "annotationData",
-          status,
-          confidence_score as "confidenceScore",
-          reviewed_by as "reviewedBy",
-          reviewed_at as "reviewedAt",
-          notes,
-          created_at as "createdAt",
-          updated_at as "updatedAt"
-        FROM ai_annotations
-        WHERE job_id = $1
-      `;
-
-      const result = await pool.query(query, [jobId]);
-
-      if (result.rows.length === 0) {
-        res.status(404).json({ error: 'Annotation job not found' });
-        return;
-      }
-
-      const job = {
-        ...result.rows[0],
-        annotationData: result.rows[0].annotationData
-      };
-
-      // Get individual items
-      const itemsQuery = `
-        SELECT
-          id,
-          spanish_term as "spanishTerm",
-          english_term as "englishTerm",
-          bounding_box as "boundingBox",
-          annotation_type as "type",
-          difficulty_level as "difficultyLevel",
-          pronunciation,
-          confidence,
-          status
-        FROM ai_annotation_items
-        WHERE job_id = $1
-        ORDER BY confidence DESC
-      `;
-
-      const itemsResult = await pool.query(itemsQuery, [jobId]);
-
-      const items = itemsResult.rows.map(row => ({
-        ...row,
-        boundingBox: row.boundingBox
-      }));
-
-      res.json({
-        ...job,
-        items
-      });
-
-    } catch (err) {
-      logError('Error fetching annotation job', err as Error);
-      res.status(500).json({ error: 'Failed to fetch annotation job' });
-    }
-  }
-);
-
-/**
  * GET /api/ai/annotations/pending
  * List all pending AI annotations awaiting review
+ *
+ * NOTE: This route MUST be defined BEFORE /:jobId to avoid "pending" being
+ * interpreted as a jobId parameter
  */
 router.get(
   '/pending',
@@ -509,6 +435,83 @@ router.get(
     } catch (err) {
       logError('Error fetching pending annotations', err as Error);
       res.status(500).json({ error: 'Failed to fetch pending annotations' });
+    }
+  }
+);
+
+/**
+ * GET /api/ai/annotations/:jobId
+ * Get specific annotation job status and details
+ */
+router.get(
+  '/:jobId',
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
+  validateParams(JobIdParamSchema),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { jobId } = req.params;
+
+      const query = `
+        SELECT
+          job_id as "jobId",
+          image_id as "imageId",
+          annotation_data as "annotationData",
+          status,
+          confidence_score as "confidenceScore",
+          reviewed_by as "reviewedBy",
+          reviewed_at as "reviewedAt",
+          notes,
+          created_at as "createdAt",
+          updated_at as "updatedAt"
+        FROM ai_annotations
+        WHERE job_id = $1
+      `;
+
+      const result = await pool.query(query, [jobId]);
+
+      if (result.rows.length === 0) {
+        res.status(404).json({ error: 'Annotation job not found' });
+        return;
+      }
+
+      const job = {
+        ...result.rows[0],
+        annotationData: result.rows[0].annotationData
+      };
+
+      // Get individual items
+      const itemsQuery = `
+        SELECT
+          id,
+          spanish_term as "spanishTerm",
+          english_term as "englishTerm",
+          bounding_box as "boundingBox",
+          annotation_type as "type",
+          difficulty_level as "difficultyLevel",
+          pronunciation,
+          confidence,
+          status
+        FROM ai_annotation_items
+        WHERE job_id = $1
+        ORDER BY confidence DESC
+      `;
+
+      const itemsResult = await pool.query(itemsQuery, [jobId]);
+
+      const items = itemsResult.rows.map(row => ({
+        ...row,
+        boundingBox: row.boundingBox
+      }));
+
+      res.json({
+        ...job,
+        items
+      });
+
+    } catch (err) {
+      logError('Error fetching annotation job', err as Error);
+      res.status(500).json({ error: 'Failed to fetch annotation job' });
     }
   }
 );
