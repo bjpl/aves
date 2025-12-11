@@ -22,7 +22,7 @@ import {
 } from '../../../types/vector.types';
 import { EmbeddingService } from '../core/EmbeddingService';
 import { RuVectorService } from '../core/RuVectorService';
-import { info, warn, error as logError, debug } from '../../../utils/logger';
+import { info, error as logError, debug } from '../../../utils/logger';
 
 /**
  * Annotation feedback record for learning

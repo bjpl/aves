@@ -113,7 +113,13 @@ router.get(
       `;
 
       const speciesResult = await pool.query(speciesQuery);
-      const bySpecies: Record<string, any> = {};
+      const bySpecies: Record<string, {
+        total: number;
+        approved: number;
+        corrected: number;
+        rejected: number;
+        avgConfidence: number;
+      }> = {};
 
       for (const row of speciesResult.rows) {
         bySpecies[row.species] = {
@@ -141,7 +147,13 @@ router.get(
       `;
 
       const featureResult = await pool.query(featureQuery);
-      const byFeatureType: Record<string, any> = {};
+      const byFeatureType: Record<string, {
+        total: number;
+        approved: number;
+        corrected: number;
+        rejected: number;
+        avgConfidence: number;
+      }> = {};
 
       for (const row of featureResult.rows) {
         byFeatureType[row.feature_type] = {

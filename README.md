@@ -28,6 +28,8 @@ The platform combines GPT-4 Vision API for automatic bird feature detection with
 
 This project demonstrates AI-powered educational software combining GPT-4 Vision API with interactive canvas-based learning interfaces. The implementation showcases integration of modern web technologies, AI APIs, and evidence-based language acquisition techniques.
 
+**For detailed technical analysis:** [Portfolio Deep Dive](docs/PORTFOLIO_SHOWCASE.md) | [Architecture Evaluation](docs/ARCHITECTURE_EVALUATION.md)
+
 ## Technical Overview
 
 **Key Technologies:**

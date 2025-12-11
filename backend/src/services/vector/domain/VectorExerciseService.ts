@@ -873,8 +873,8 @@ export class VectorExerciseService {
    * Calculate species knowledge (0-1)
    */
   private async calculateSpeciesKnowledge(
-    speciesIds: string[],
-    userId: string
+    _speciesIds: string[],
+    _userId: string
   ): Promise<number> {
     // Stub: In production, would check user's species identification success rate
     return 0.5;

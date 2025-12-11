@@ -79,7 +79,7 @@ export function getHelmetMiddleware() {
     contentSecurityPolicy: config.csp.enabled
       ? {
           useDefaults: false,
-          directives: config.csp.directives as any,
+          directives: config.csp.directives as Record<string, string[]>,
           reportOnly: config.csp.reportOnly,
         }
       : false,
@@ -96,7 +96,7 @@ export function getHelmetMiddleware() {
     noSniff: true,
     xssFilter: true,
     referrerPolicy: {
-      policy: (process.env.REFERRER_POLICY || 'strict-origin-when-cross-origin') as any,
+      policy: (process.env.REFERRER_POLICY || 'strict-origin-when-cross-origin') as 'no-referrer' | 'no-referrer-when-downgrade' | 'origin' | 'origin-when-cross-origin' | 'same-origin' | 'strict-origin' | 'strict-origin-when-cross-origin' | 'unsafe-url',
     },
     hidePoweredBy: true,
     dnsPrefetchControl: {

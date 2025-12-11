@@ -60,11 +60,11 @@ describe('ImageQualityValidator', () => {
 
       expect(result.passed).toBe(false);
       expect(result.score).toBeLessThan(100);
-      expect(result.reasons).toContain(
-        expect.stringContaining('Bird too small')
+      expect(result.reasons).toEqual(
+        expect.arrayContaining([expect.stringContaining('Bird too small')])
       );
-      expect(result.reasons).toContain(
-        expect.stringContaining('not the main subject')
+      expect(result.reasons).toEqual(
+        expect.arrayContaining([expect.stringContaining('not the main subject')])
       );
       expect(result.metrics.birdSize).toBe(0.08 * 0.10); // 0.8%
       expect(result.metrics.isMainSubject).toBe(false);
@@ -75,8 +75,8 @@ describe('ImageQualityValidator', () => {
 
       expect(result.passed).toBe(false);
       expect(result.score).toBeLessThan(100);
-      expect(result.reasons).toContain(
-        expect.stringContaining('Bird too large')
+      expect(result.reasons).toEqual(
+        expect.arrayContaining([expect.stringContaining('Bird too large')])
       );
       expect(result.metrics.birdSize).toBe(0.85 * 0.88);
       expect(result.metrics.isMainSubject).toBe(false);
@@ -87,8 +87,8 @@ describe('ImageQualityValidator', () => {
 
       expect(result.passed).toBe(false);
       expect(result.score).toBeLessThan(100);
-      expect(result.reasons).toContain(
-        expect.stringContaining('heavily occluded')
+      expect(result.reasons).toEqual(
+        expect.arrayContaining([expect.stringContaining('heavily occluded')])
       );
       expect(result.metrics.occlusionRatio).toBe(0.45);
     });
@@ -98,8 +98,8 @@ describe('ImageQualityValidator', () => {
 
       expect(result.passed).toBe(false);
       expect(result.score).toBeLessThan(100);
-      expect(result.reasons).toContain(
-        expect.stringContaining('too dark')
+      expect(result.reasons).toEqual(
+        expect.arrayContaining([expect.stringContaining('too dark')])
       );
       expect(result.metrics.brightness).toBe(20);
     });
@@ -109,8 +109,8 @@ describe('ImageQualityValidator', () => {
 
       expect(result.passed).toBe(false);
       expect(result.score).toBeLessThan(100);
-      expect(result.reasons).toContain(
-        expect.stringContaining('too bright')
+      expect(result.reasons).toEqual(
+        expect.arrayContaining([expect.stringContaining('too bright')])
       );
       expect(result.metrics.brightness).toBe(250);
     });
@@ -120,8 +120,8 @@ describe('ImageQualityValidator', () => {
 
       expect(result.passed).toBe(false);
       expect(result.score).toBeLessThan(100);
-      expect(result.reasons).toContain(
-        expect.stringContaining('Low resolution')
+      expect(result.reasons).toEqual(
+        expect.arrayContaining([expect.stringContaining('Low resolution')])
       );
       expect(result.metrics.resolution).toBe(300 * 200);
     });
@@ -258,15 +258,15 @@ describe('ImageQualityValidator', () => {
 
     it('should apply custom thresholds to validation', () => {
       const customValidator = new ImageQualityValidator({
-        minBirdSize: 0.25 // Require 25% minimum
+        minBirdSize: 0.30 // Require 30% minimum (fixture has max dimension of 0.25)
       });
 
-      // This image has 20% bird size - would pass with default, fail with custom
+      // This image has max dimension of 25% (width=0.20, height=0.25) - fails with 30% threshold
       const result = customValidator.validateImage(fixtures.goodImageMinimalSize);
 
       expect(result.passed).toBe(false);
-      expect(result.reasons).toContain(
-        expect.stringContaining('Bird too small')
+      expect(result.reasons).toEqual(
+        expect.arrayContaining([expect.stringContaining('Bird too small')])
       );
     });
   });

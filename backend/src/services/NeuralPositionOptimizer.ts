@@ -85,6 +85,26 @@ export interface OptimizationResult {
   };
 }
 
+/**
+ * Neural training result from Claude Flow hook
+ */
+interface NeuralTrainResult {
+  modelId: string;
+  accuracy: number;
+  loss: number;
+  epochs: number;
+  status: string;
+}
+
+/**
+ * Neural prediction result from Claude Flow hook
+ */
+interface NeuralPredictResult {
+  prediction: number[];
+  confidence: number;
+  modelId?: string;
+}
+
 // ============================================================================
 // Neural Position Optimizer Class
 // ============================================================================
@@ -509,7 +529,7 @@ export class NeuralPositionOptimizer {
     pattern_type: string;
     training_data: string;
     epochs: number;
-  }): Promise<any> {
+  }): Promise<NeuralTrainResult> {
     try {
       // In production, this would call mcp__claude-flow__neural_train
       // For now, simulate the training process
@@ -552,7 +572,7 @@ export class NeuralPositionOptimizer {
   private async executeNeuralPredictHook(params: {
     modelId: string;
     input: number[];
-  }): Promise<any> {
+  }): Promise<NeuralPredictResult> {
     try {
       info('Executing neural_predict hook', {
         modelId: params.modelId,

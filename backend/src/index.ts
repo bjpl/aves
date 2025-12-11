@@ -20,7 +20,7 @@ logger.info({
 
 import authRouter from './routes/auth';
 import annotationsRouter from './routes/annotations';
-import aiAnnotationsRouter from './routes/aiAnnotations';
+import aiAnnotationsRouter from './routes/ai-annotations';
 import aiExercisesRouter from './routes/aiExercises';
 import vocabularyRouter from './routes/vocabulary';
 import exercisesRouter from './routes/exercises';

@@ -15,7 +15,7 @@
  */
 
 import { Pool } from 'pg';
-import { VocabularyService, Enrichment } from '../../VocabularyService';
+import { VocabularyService } from '../../VocabularyService';
 import { getEmbeddingService } from '../core/EmbeddingService';
 import { getRuVectorService } from '../core/RuVectorService';
 import {
@@ -23,9 +23,8 @@ import {
   RelatedConcept,
   VectorDocument,
   SearchOptions,
-  VectorOperation,
 } from '../../../types/vector.types';
-import { info, warn, error as logError, debug } from '../../../utils/logger';
+import { info, error as logError, debug, warn } from '../../../utils/logger';
 
 /**
  * Options for indexing a vocabulary term
@@ -89,7 +88,6 @@ export class VectorVocabularyService extends VocabularyService {
       const vectorService = getRuVectorService();
 
       // Generate embedding for term + definition
-      const text = `${term}: ${definition}`;
       const embeddingResponse = await embeddingService.embedVocabulary(
         term,
         definition

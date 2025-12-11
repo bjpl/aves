@@ -133,6 +133,7 @@ jobs:
         npm test -- --coverage --maxWorkers=2 --forceExit
       env:
         CI: true
+        RUN_AUTH_INTEGRATION_TESTS: true
 
     - name: Upload coverage reports
       if: matrix.node-version == '20.x'  # Only upload once

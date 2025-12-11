@@ -93,6 +93,7 @@ describe('ExerciseService', () => {
       };
 
       mockClient.query
+        .mockResolvedValueOnce({}) // BEGIN
         .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // INSERT result
         .mockResolvedValueOnce({}) // UPDATE session
         .mockResolvedValueOnce({}); // COMMIT
@@ -132,6 +133,7 @@ describe('ExerciseService', () => {
       };
 
       mockClient.query
+        .mockResolvedValueOnce({}) // BEGIN
         .mockResolvedValueOnce({ rows: [{ id: 1 }] })
         .mockResolvedValueOnce({})
         .mockResolvedValueOnce({});
@@ -169,9 +171,9 @@ describe('ExerciseService', () => {
     it('should return progress for a session with exercises', async () => {
       const sessionId = 'session_123';
       const mockStats = {
-        totalExercises: '10',
-        correctAnswers: '8',
-        avgTimePerExercise: '4500',
+        totalExercises: 10,
+        correctAnswers: 8,
+        avgTimePerExercise: 4500,
       };
 
       (mockPool.query as jest.Mock).mockResolvedValue({
@@ -196,13 +198,54 @@ describe('ExerciseService', () => {
     it('should return zero stats for empty session', async () => {
       const sessionId = 'session_empty';
       const mockStats = {
-        totalExercises: '0',
-        correctAnswers: '0',
+        totalExercises: 0,
+        correctAnswers: 0,
         avgTimePerExercise: null,
       };
 
       (mockPool.query as jest.Mock).mockResolvedValue({
         rows: [mockStats],
+      });
+
+      const result = await service.getSessionProgress(sessionId);
+
+      expect(result).toEqual({
+        sessionId,
+        totalExercises: 0,
+        correctAnswers: 0,
+        avgTimePerExercise: 0,
+        accuracy: '0',
+      });
+    });
+
+    it('should handle string values from database (type conversion)', async () => {
+      const sessionId = 'session_456';
+      const mockStats = {
+        totalExercises: '15',
+        correctAnswers: '12',
+        avgTimePerExercise: '3200.5',
+      };
+
+      (mockPool.query as jest.Mock).mockResolvedValue({
+        rows: [mockStats],
+      });
+
+      const result = await service.getSessionProgress(sessionId);
+
+      expect(result).toEqual({
+        sessionId,
+        totalExercises: 15,
+        correctAnswers: 12,
+        avgTimePerExercise: 3200.5,
+        accuracy: '80.0',
+      });
+    });
+
+    it('should handle empty result set', async () => {
+      const sessionId = 'session_nonexistent';
+
+      (mockPool.query as jest.Mock).mockResolvedValue({
+        rows: [],
       });
 
       const result = await service.getSessionProgress(sessionId);

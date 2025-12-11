@@ -37,7 +37,12 @@ jest.mock('../../services/aiExerciseGenerator', () => ({
   }),
 }));
 
-describe('Integration: AI Exercise Generation Flow', () => {
+// NOTE: Integration tests require a real database connection.
+// Skip when running in CI/local environments without database.
+// Set TEST_DB_HOST environment variable to run these tests.
+const shouldRunIntegrationTests = process.env.TEST_DB_HOST !== undefined;
+
+(shouldRunIntegrationTests ? describe : describe.skip)('Integration: AI Exercise Generation Flow', () => {
   let userToken: string;
   let userId: string;
 

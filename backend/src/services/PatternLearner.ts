@@ -733,7 +733,7 @@ Note: Use these as reference points, not strict requirements`;
    */
   private addBoundingBoxHints(
     prompt: string,
-    context: { species?: string; targetFeatures?: string[] }
+    _context: { species?: string; targetFeatures?: string[] }
   ): string {
     // This is already covered in addFeatureGuidance
     return prompt;
@@ -1105,7 +1105,7 @@ Note: Use these as reference points, not strict requirements`;
 
       // Track rejection pattern
       const rejectionKey = `${context.species}:${annotation.spanishTerm}`;
-      let rejections = this.rejectionPatterns.get(rejectionKey) || [];
+      const rejections = this.rejectionPatterns.get(rejectionKey) || [];
 
       const existingRejection = rejections.find(r => r.reason === reason);
       if (existingRejection) {

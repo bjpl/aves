@@ -101,6 +101,12 @@ export class RateLimiter {
         });
       }
     }, refillIntervalMs);
+
+    // Allow Node.js to exit even if this timer is still running
+    // This prevents the rate limiter from keeping Jest tests from exiting
+    if (this.refillInterval.unref) {
+      this.refillInterval.unref();
+    }
   }
 
   /**

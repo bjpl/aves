@@ -24,7 +24,12 @@ app.use('/api', authRouter);
 app.use('/api', speciesRouter);
 app.use('/api', vocabularyRouter);
 
-describe('Integration: Species & Vocabulary Flow', () => {
+// NOTE: Integration tests require a real database connection.
+// Skip when running in CI/local environments without database.
+// Set TEST_DB_HOST environment variable to run these tests.
+const shouldRunIntegrationTests = process.env.TEST_DB_HOST !== undefined;
+
+(shouldRunIntegrationTests ? describe : describe.skip)('Integration: Species & Vocabulary Flow', () => {
   let userToken: string;
   let userId: string;
 

@@ -5,7 +5,7 @@
 
 import { info, error as logError } from './logger';
 
-export interface BatchTask<T, R> {
+export interface BatchTask<T> {
   id: string;
   data: T;
   priority?: number;
@@ -43,7 +43,7 @@ export interface ProcessorConfig {
 
 export class ParallelBatchProcessor<T, R> {
   private config: ProcessorConfig;
-  private queue: BatchTask<T, R>[] = [];
+  private queue: BatchTask<T>[] = [];
   private processing: Set<string> = new Set();
   private results: BatchResult<R>[] = [];
   private startTime: number = 0;
@@ -63,7 +63,7 @@ export class ParallelBatchProcessor<T, R> {
    * Process tasks in parallel batches
    */
   async processBatch(
-    tasks: BatchTask<T, R>[],
+    tasks: BatchTask<T>[],
     processor: (data: T) => Promise<R>
   ): Promise<BatchResult<R>[]> {
     this.queue = [...tasks].sort((a, b) => (b.priority || 0) - (a.priority || 0));
@@ -143,7 +143,7 @@ export class ParallelBatchProcessor<T, R> {
    * Process a single task with retry logic
    */
   private async processTaskWithRetry(
-    task: BatchTask<T, R>,
+    task: BatchTask<T>,
     processor: (data: T) => Promise<R>
   ): Promise<BatchResult<R>> {
     let lastError: Error | undefined;

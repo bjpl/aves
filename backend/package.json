@@ -8,6 +8,12 @@
     "build": "tsc",
     "start": "node dist/backend/src/index.js",
     "test": "jest",
+    "test:unit": "jest --testPathIgnorePatterns=integration",
+    "test:integration": "RUN_AUTH_INTEGRATION_TESTS=true jest --testPathPattern=integration",
+    "test:db:start": "docker-compose -f docker-compose.test.yml up -d && sleep 3",
+    "test:db:stop": "docker-compose -f docker-compose.test.yml down -v",
+    "test:db:setup": "bash scripts/setup-test-db.sh",
+    "test:all": "npm run test:db:start && npm run migrate && npm test; npm run test:db:stop",
     "lint": "eslint . --ext .ts",
     "migrate": "tsx src/database/migrate.ts",
     "validate-config": "tsx src/scripts/validate-config.ts"

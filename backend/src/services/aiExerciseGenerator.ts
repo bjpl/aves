@@ -404,7 +404,7 @@ export class AIExerciseGenerator {
   private async selectDistractorSpecies(
     targetSpecies: { id: string; scientificName: string; commonNameSpanish: string; commonNameEnglish: string; imageUrl: string },
     count: number,
-    context: UserContext
+    _context: UserContext
   ): Promise<Array<{
     id: string;
     scientificName: string;

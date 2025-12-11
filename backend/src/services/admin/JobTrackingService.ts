@@ -13,7 +13,7 @@
  * - Thread-safe job updates
  */
 
-import { info, error as logError } from '../../utils/logger';
+import { info } from '../../utils/logger';
 
 // ============================================================================
 // Types
@@ -39,7 +39,7 @@ export interface JobProgress {
   errors: JobError[];
   startedAt: string;
   completedAt?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface JobSummary {
@@ -147,7 +147,7 @@ export class JobTrackingService {
   createJob(
     type: JobType,
     totalItems: number,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): string {
     const jobId = this.generateJobId(type);
 

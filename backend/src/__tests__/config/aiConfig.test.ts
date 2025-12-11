@@ -14,7 +14,7 @@ describe('AI Configuration', () => {
     // Reset configuration before each test
     resetAIConfig();
 
-    // Clear environment variables
+    // Clear environment variables (including VISION_PROVIDER to test defaults)
     delete process.env.OPENAI_API_KEY;
     delete process.env.ANTHROPIC_API_KEY;
     delete process.env.UNSPLASH_ACCESS_KEY;
@@ -23,6 +23,7 @@ describe('AI Configuration', () => {
     delete process.env.ENABLE_IMAGE_ANALYSIS;
     delete process.env.ENABLE_ANNOTATION_AI;
     delete process.env.ENABLE_EXERCISE_GENERATION;
+    delete process.env.VISION_PROVIDER;
   });
 
   describe('loadAIConfig', () => {
@@ -32,8 +33,8 @@ describe('AI Configuration', () => {
       // Note: Config structure uses OpenAI naming but system uses Claude/Anthropic
       expect(config.openai.model).toBe('gpt-4o');
       expect(config.openai.maxTokens).toBe(4096);
-      // .env.test overrides default to use Claude/Anthropic for testing
-      expect(config.vision.provider).toBe('claude');
+      // When env vars are cleared in beforeEach, default provider is 'openai'
+      expect(config.vision.provider).toBe('openai');
       expect(config.features.enableVisionAI).toBe(false);
     });
 
@@ -240,16 +241,15 @@ describe('AI Configuration', () => {
     });
 
     it('should default feature flags to false', () => {
-      // Ensure clean state for this test
-      delete process.env.ENABLE_ANNOTATION_AI;
+      // Ensure clean state for this test - all env vars cleared in beforeEach
       resetAIConfig();
 
       const config = loadAIConfig();
 
+      // All feature flags should be false when env vars are cleared
       expect(config.features.enableVisionAI).toBe(false);
-      // .env.test enables image generation and image analysis for testing
-      expect(config.features.enableImageGeneration).toBe(true);
-      expect(config.features.enableImageAnalysis).toBe(true);
+      expect(config.features.enableImageGeneration).toBe(false);
+      expect(config.features.enableImageAnalysis).toBe(false);
       expect(config.features.enableAnnotationAI).toBe(false);
     });
   });
@@ -266,8 +266,8 @@ describe('AI Configuration', () => {
     it('should default to openai provider', () => {
       const config = loadAIConfig();
 
-      // .env.test overrides default to use Anthropic for testing
-      expect(config.vision.provider).toBe('anthropic');
+      // When env vars are cleared in beforeEach, default is 'openai'
+      expect(config.vision.provider).toBe('openai');
     });
   });
 });

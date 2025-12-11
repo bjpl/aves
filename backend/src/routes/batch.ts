@@ -5,10 +5,17 @@ import { error as logError, info } from '../utils/logger';
 
 const router = Router();
 
-// Initialize batch processor (use 'paid' tier for production, 'free' for testing)
-const batchProcessor = new BatchProcessor(
-  process.env.OPENAI_TIER === 'free' ? 'free' : 'paid'
-);
+// Initialize batch processor lazily to allow for mocking in tests
+let batchProcessorInstance: BatchProcessor | null = null;
+
+function getBatchProcessor(): BatchProcessor {
+  if (!batchProcessorInstance) {
+    batchProcessorInstance = new BatchProcessor(
+      process.env.OPENAI_TIER === 'free' ? 'free' : 'paid'
+    );
+  }
+  return batchProcessorInstance;
+}
 
 // Validation schemas
 const CreateBatchJobSchema = z.object({
@@ -30,7 +37,7 @@ router.post('/batch/annotations/start', async (req: Request, res: Response): Pro
       concurrency: validatedData.concurrency
     });
 
-    const jobId = await batchProcessor.startBatch(
+    const jobId = await getBatchProcessor().startBatch(
       validatedData.imageIds,
       validatedData.concurrency,
       validatedData.rateLimitPerMinute
@@ -72,7 +79,7 @@ router.get('/batch/annotations/:jobId/status', async (req: Request, res: Respons
   try {
     const { jobId } = req.params;
 
-    const progress = await batchProcessor.getJobProgress(jobId);
+    const progress = await getBatchProcessor().getJobProgress(jobId);
 
     if (!progress) {
       res.status(404).json({
@@ -99,7 +106,7 @@ router.post('/batch/annotations/:jobId/cancel', async (req: Request, res: Respon
   try {
     const { jobId } = req.params;
 
-    const cancelled = await batchProcessor.cancelJob(jobId);
+    const cancelled = await getBatchProcessor().cancelJob(jobId);
 
     if (!cancelled) {
       res.status(404).json({
@@ -129,7 +136,7 @@ router.post('/batch/annotations/:jobId/cancel', async (req: Request, res: Respon
  */
 router.get('/batch/annotations/active', async (_req: Request, res: Response): Promise<void> => {
   try {
-    const activeJobs = await batchProcessor.listActiveJobs();
+    const activeJobs = await getBatchProcessor().listActiveJobs();
 
     res.json({
       jobs: activeJobs,
@@ -150,7 +157,7 @@ router.get('/batch/annotations/active', async (_req: Request, res: Response): Pr
  */
 router.get('/batch/annotations/stats', async (_req: Request, res: Response): Promise<void> => {
   try {
-    const activeJobs = await batchProcessor.listActiveJobs();
+    const activeJobs = await getBatchProcessor().listActiveJobs();
 
     const stats = {
       activeJobs: activeJobs.length,
@@ -172,12 +179,12 @@ router.get('/batch/annotations/stats', async (_req: Request, res: Response): Pro
 // Cleanup on server shutdown
 process.on('SIGTERM', () => {
   info('Shutting down batch processor');
-  batchProcessor.destroy();
+  cleanupBatchProcessor();
 });
 
 process.on('SIGINT', () => {
   info('Shutting down batch processor');
-  batchProcessor.destroy();
+  cleanupBatchProcessor();
 });
 
 /**
@@ -185,8 +192,9 @@ process.on('SIGINT', () => {
  * Exported for use in test teardown
  */
 export function cleanupBatchProcessor(): void {
-  if (batchProcessor) {
-    batchProcessor.destroy();
+  if (batchProcessorInstance) {
+    batchProcessorInstance.destroy();
+    batchProcessorInstance = null;
   }
 }
 

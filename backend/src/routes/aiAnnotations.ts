@@ -633,7 +633,7 @@ router.get(
       path: req.path,
       url: req.url,
       originalUrl: req.originalUrl,
-      user: (req as any).user?.id
+      user: req.user?.userId
     });
 
     try {
@@ -694,7 +694,8 @@ router.get(
 
       info('📊 Executing activity query');
       const activityResult = await pool.query(activityQuery);
-      (stats as any).recentActivity = activityResult.rows;
+      const statsWithActivity = stats as Record<string, unknown>;
+      statsWithActivity.recentActivity = activityResult.rows;
       info('📊 Activity query result', { rows: activityResult.rows.length });
 
       // Wrap in data property to match frontend expectation
@@ -739,7 +740,7 @@ router.get(
   async (req: Request, res: Response): Promise<void> => {
     info('📈 Analytics endpoint called', {
       path: req.path,
-      user: (req as any).user?.id
+      user: req.user?.userId
     });
 
     try {
@@ -1688,7 +1689,7 @@ router.post(
           details.push({
             jobId,
             status: 'success'
-          } as any);
+          });
 
         } catch (err) {
           await client.query('ROLLBACK');

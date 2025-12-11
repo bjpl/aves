@@ -157,15 +157,17 @@ export const testConnection = async (): Promise<boolean> => {
     info('Database connected successfully', { timestamp: result.rows[0].now });
     return true;
   } catch (err) {
-    const error = err as any;
+    const error = err instanceof Error ? err : new Error(String(err));
+    const pgError = err as Record<string, unknown>;
+
     logger.error({
       message: error.message,
-      code: error.code,
-      detail: error.detail,
-      hint: error.hint,
-      hostname: error.hostname,
-      port: error.port,
-      database: error.database
+      code: pgError.code,
+      detail: pgError.detail,
+      hint: pgError.hint,
+      hostname: pgError.hostname,
+      port: pgError.port,
+      database: pgError.database
     }, 'Database connection failed with error');
     logError('Database connection failed', error);
     return false;

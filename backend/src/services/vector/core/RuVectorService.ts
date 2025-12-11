@@ -25,7 +25,6 @@ import {
   ReflexionEpisode,
   SkillEntry,
   ExperienceQuery,
-  VectorDocumentType,
 } from '../../../types/vector.types';
 import { EmbeddingService } from './EmbeddingService';
 import { info, warn, error as logError, debug } from '../../../utils/logger';
@@ -559,11 +558,8 @@ export class RuVectorService {
       const situationEmbedding = episode.situationEmbedding ||
         (await this.embeddingService.embedText(episode.situation, 'context')).embedding;
 
-      const actionEmbedding = episode.actionEmbedding ||
-        (await this.embeddingService.embedText(episode.action, 'context')).embedding;
-
-      const outcomeEmbedding = episode.outcomeEmbedding ||
-        (await this.embeddingService.embedText(episode.outcome, 'context')).embedding;
+      // Note: actionEmbedding and outcomeEmbedding can be generated when multi-vector storage is implemented
+      // For now, we use situationEmbedding as the primary embedding
 
       // Store in agentic database with composite embedding
       const episodeId = `${episode.userId}-${episode.sessionId}-${episode.timestamp.getTime()}`;

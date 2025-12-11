@@ -258,7 +258,7 @@ export class EmbeddingService {
   /**
    * Generate embedding using OpenAI (placeholder)
    */
-  private async generateOpenAIEmbedding(text: string): Promise<number[]> {
+  private async generateOpenAIEmbedding(_text: string): Promise<number[]> {
     // OpenAI embedding implementation would go here
     // For now, throw error to force fallback
     throw new Error('OpenAI embeddings not yet implemented');

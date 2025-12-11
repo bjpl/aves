@@ -281,8 +281,11 @@ describe('VisionAI Service', () => {
       expect(result[0].imageId).toBe('img_123');
       expect(result[0].spanishTerm).toBe('el pico');
       expect(result[0].englishTerm).toBe('beak');
-      expect(result[0].boundingBox.topLeft).toEqual({ x: 0.4, y: 0.3 });
-      expect(result[0].boundingBox.bottomRight).toEqual({ x: 0.5, y: 0.38 });
+      // BoundingBox now uses x/y/width/height format (not topLeft/bottomRight)
+      expect(result[0].boundingBox.x).toBe(0.4);
+      expect(result[0].boundingBox.y).toBe(0.3);
+      expect(result[0].boundingBox.width).toBe(0.1);
+      expect(result[0].boundingBox.height).toBe(0.08);
       expect(result[0].isVisible).toBe(false);
       expect(result[0].id).toContain('img_123');
     });
@@ -458,8 +461,8 @@ describe('VisionAI Service', () => {
         id: 'cached_1',
         imageId: 'img_old',
         boundingBox: {
-          topLeft: { x: 0.4, y: 0.3 },
-          bottomRight: { x: 0.5, y: 0.38 },
+          x: 0.4,
+          y: 0.3,
           width: 0.1,
           height: 0.08
         },

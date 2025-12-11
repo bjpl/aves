@@ -16,11 +16,10 @@ import {
   LearningEpisode,
   EnhancedUserContext,
   ExperienceQuery,
-  VectorOperation,
 } from '../../../types/vector.types';
 import { RuVectorService } from '../core/RuVectorService';
 import { EmbeddingService } from '../core/EmbeddingService';
-import { info, warn, error as logError, debug } from '../../../utils/logger';
+import { info, error as logError, debug, warn } from '../../../utils/logger';
 
 /**
  * Analysis result for user progress

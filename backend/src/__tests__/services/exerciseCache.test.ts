@@ -186,21 +186,26 @@ describe('ExerciseCache', () => {
       const key1 = 'short_ttl';
       const key2 = 'long_ttl';
 
-      cache.set(key1, [mockExercise], 50);
-      cache.set(key2, [mockExercise], 500);
+      // Use longer TTL values for reliable timing in WSL/CI environments
+      cache.set(key1, [mockExercise], 100);
+      cache.set(key2, [mockExercise], 2000);
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait long enough for short TTL to expire with generous buffer
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       expect(cache.get(key1)).toBeNull(); // Expired
       expect(cache.get(key2)).toEqual([mockExercise]); // Still valid
     });
 
     it('should clean expired entries', async () => {
-      cache.set('key1', [mockExercise], 50);
-      cache.set('key2', [mockExercise], 50);
-      cache.set('key3', [mockExercise], 500);
+      // Use longer TTL values for more reliable timing in CI/WSL environments
+      cache.set('key1', [mockExercise], 100);
+      cache.set('key2', [mockExercise], 100);
+      cache.set('key3', [mockExercise], 2000);
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait long enough to ensure entries with 100ms TTL have expired
+      // Adding generous buffer to account for timing precision on different platforms
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       const cleaned = cache.cleanExpired();
 

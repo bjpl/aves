@@ -9,7 +9,7 @@ export interface EnhancedExercise extends ExerciseBase {
   culturalNote?: string;
   prompt: string;
   instructions: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // EnhancedExerciseType is now the same as ExerciseType since all types are included
