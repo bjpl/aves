@@ -9,15 +9,43 @@ vi.mock('../../services/apiAdapter');
 describe('useProgress', () => {
   const mockProgress = createMockProgress();
 
+  // Mock sessionStorage
+  const mockSessionStorage = {
+    getItem: vi.fn(),
+    setItem: vi.fn(),
+    removeItem: vi.fn(),
+    clear: vi.fn(),
+    key: vi.fn(),
+    length: 0
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
-    sessionStorage.clear();
+
+    // Setup sessionStorage mock
+    Object.defineProperty(window, 'sessionStorage', {
+      value: mockSessionStorage,
+      writable: true,
+      configurable: true
+    });
+
+    // Reset mock functions
+    mockSessionStorage.getItem.mockReturnValue(null);
+    mockSessionStorage.setItem.mockImplementation(() => {});
+    mockSessionStorage.removeItem.mockImplementation(() => {});
+    mockSessionStorage.clear.mockImplementation(() => {});
+    mockSessionStorage.key.mockReturnValue(null);
+
     (api.progress.get as any).mockResolvedValue(null);
     (api.progress.save as any).mockResolvedValue(undefined);
   });
 
   afterEach(() => {
-    sessionStorage.clear();
+    mockSessionStorage.clear();
+    mockSessionStorage.getItem.mockClear();
+    mockSessionStorage.setItem.mockClear();
+    mockSessionStorage.removeItem.mockClear();
+    mockSessionStorage.key.mockClear();
   });
 
   describe('Initialization', () => {
@@ -55,13 +83,14 @@ describe('useProgress', () => {
         expect(result.current.loading).toBe(false);
       });
 
-      const sessionId = sessionStorage.getItem('aves-session-id');
-      expect(sessionId).toBeTruthy();
-      expect(sessionId).toMatch(/^session-\d+-/);
+      expect(mockSessionStorage.setItem).toHaveBeenCalledWith(
+        'aves-session-id',
+        expect.stringMatching(/^session-\d+-/)
+      );
     });
 
     it('should reuse existing session ID', async () => {
-      sessionStorage.setItem('aves-session-id', 'existing-session-123');
+      mockSessionStorage.getItem.mockReturnValue('existing-session-123');
 
       const { result } = renderHook(() => useProgress());
 

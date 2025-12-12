@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '../../test/test-utils';
 import { userEvent } from '@testing-library/user-event';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
@@ -174,18 +174,17 @@ describe('ErrorBoundary Component', () => {
 
     it('should reset error state when Try Again is clicked', async () => {
       const user = userEvent.setup();
-      let renderCount = 0;
+      let shouldThrow = true;
 
       const DynamicComponent = () => {
-        renderCount++;
-        // Only throw on first render
-        if (renderCount === 1) {
+        // Only throw if shouldThrow is true
+        if (shouldThrow) {
           throw new Error('Test error message');
         }
         return <div>Normal content</div>;
       };
 
-      const { rerender } = render(
+      render(
         <ErrorBoundary>
           <DynamicComponent />
         </ErrorBoundary>
@@ -194,11 +193,14 @@ describe('ErrorBoundary Component', () => {
       // Error should be shown
       expect(screen.getByText(/oops! something went wrong/i)).toBeInTheDocument();
 
+      // Change the flag so component won't throw on next render
+      shouldThrow = false;
+
       // Click Try Again - this resets the error boundary and forces a re-render
       await user.click(screen.getByRole('button', { name: /try again/i }));
 
       // The ErrorBoundary should reset and re-render the child
-      // Since renderCount is now 2+, it won't throw
+      // Since shouldThrow is now false, it won't throw
       await waitFor(() => {
         expect(screen.getByText('Normal content')).toBeInTheDocument();
       });

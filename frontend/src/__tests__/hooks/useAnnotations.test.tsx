@@ -49,13 +49,13 @@ describe('useAnnotations', () => {
         wrapper: createWrapper(),
       });
 
-      // Wait for query to complete
+      // Wait for query to complete and data to be populated
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
+        expect(result.current.data).toHaveLength(5);
       });
 
-      // Verify the fetched data has the expected length
-      expect(result.current.data).toHaveLength(5);
+      // Verify the mock was called correctly
       expect(mockAnnotationsList).toHaveBeenCalledWith(undefined);
     });
 
@@ -78,11 +78,12 @@ describe('useAnnotations', () => {
         wrapper: createWrapper(),
       });
 
+      // When the API errors, the hook's catch block returns []
+      // React Query still marks this as success because the queryFn doesn't throw
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
+        expect(result.current.data).toEqual([]);
       });
-
-      expect(result.current.data).toEqual([]);
     });
 
     it('should use placeholder data while loading', () => {

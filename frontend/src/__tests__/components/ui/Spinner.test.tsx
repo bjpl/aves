@@ -14,7 +14,9 @@ describe('Spinner Component', () => {
     it('should render with custom label', () => {
       render(<Spinner label="Loading data..." />);
       expect(screen.getByLabelText('Loading data...')).toBeInTheDocument();
-      expect(screen.getByText('Loading data...')).toBeInTheDocument();
+      // Use getAllByText since there are multiple elements with the same text (sr-only + visible)
+      const labels = screen.getAllByText('Loading data...');
+      expect(labels.length).toBeGreaterThan(0);
     });
 
     it('should apply size styles', () => {
@@ -83,7 +85,9 @@ describe('Spinner Component', () => {
 
     it('should display label next to centered spinner', () => {
       const { container } = render(<Spinner centered label="Please wait" />);
-      expect(screen.getByText('Please wait')).toBeInTheDocument();
+      // Use getAllByText since there are multiple elements with the same text (sr-only + visible)
+      const labels = screen.getAllByText('Please wait');
+      expect(labels.length).toBeGreaterThan(0);
       const wrapper = container.firstChild as HTMLElement;
       expect(wrapper.className).toContain('flex items-center justify-center');
     });
@@ -121,9 +125,12 @@ describe('Spinner Component', () => {
   describe('Label Display', () => {
     it('should show label with visible text', () => {
       render(<Spinner label="Loading..." centered />);
-      const label = screen.getByText('Loading...');
-      expect(label.className).toContain('text-gray-600');
-      expect(label.className).toContain('ml-2');
+      const labels = screen.getAllByText('Loading...');
+      // Find the visible label (not the sr-only one)
+      const visibleLabel = labels.find(label => !label.className.includes('sr-only'));
+      expect(visibleLabel).toBeDefined();
+      expect(visibleLabel?.className).toContain('text-gray-600');
+      expect(visibleLabel?.className).toContain('ml-2');
     });
 
     it('should not show visible label when not provided', () => {

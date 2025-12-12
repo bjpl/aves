@@ -313,7 +313,7 @@ describe('useCMS Hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(invalidateSpy).toHaveBeenCalledWith(['userProgress']);
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['userProgress'] });
     });
   });
 
@@ -390,7 +390,7 @@ describe('useCMS Hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(invalidateSpy).toHaveBeenCalledWith(['userProgress']);
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['userProgress'] });
     });
   });
 

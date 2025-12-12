@@ -14,24 +14,6 @@ vi.mock('../../utils/logger');
 global.fetch = vi.fn();
 
 // Mock IndexedDB
-class IDBDatabaseMock {
-  objectStoreNames = {
-    contains: vi.fn(() => false)
-  };
-  transaction = vi.fn(() => ({
-    objectStore: vi.fn(() => ({
-      get: vi.fn((key: any) => new IDBRequestMock(null)),
-      put: vi.fn(() => new IDBRequestMock(true)),
-      add: vi.fn(() => new IDBRequestMock(true)),
-      getAll: vi.fn(() => new IDBRequestMock([])),
-      clear: vi.fn(() => new IDBRequestMock(true))
-    }))
-  }));
-  createObjectStore = vi.fn((name: string, options?: any) => ({
-    createIndex: vi.fn()
-  }));
-}
-
 class IDBRequestMock {
   result: any = null;
   error: any = null;
@@ -41,40 +23,80 @@ class IDBRequestMock {
   constructor(result?: any, error?: any) {
     this.result = result;
     this.error = error;
-    setTimeout(() => {
+    // Use queueMicrotask for more reliable async behavior in tests
+    queueMicrotask(() => {
       if (error && this.onerror) {
         this.onerror({ target: this });
       } else if (this.onsuccess) {
         this.onsuccess({ target: this });
       }
-    }, 0);
+    });
   }
 }
 
 class IDBObjectStoreMock {
   get = vi.fn((key: any) => new IDBRequestMock(null));
-  put = vi.fn(() => new IDBRequestMock(true));
-  add = vi.fn(() => new IDBRequestMock(true));
+  put = vi.fn((data: any) => new IDBRequestMock(true));
+  add = vi.fn((data: any) => new IDBRequestMock(true));
   getAll = vi.fn(() => new IDBRequestMock([]));
   clear = vi.fn(() => new IDBRequestMock(true));
+  createIndex = vi.fn();
 }
 
 class IDBTransactionMock {
-  private storeMock = new IDBObjectStoreMock();
-  objectStore = vi.fn(() => this.storeMock);
+  private stores: Map<string, IDBObjectStoreMock> = new Map();
+
+  objectStore = vi.fn((name: string) => {
+    if (!this.stores.has(name)) {
+      this.stores.set(name, new IDBObjectStoreMock());
+    }
+    return this.stores.get(name)!;
+  });
+
+  getStore(name: string): IDBObjectStoreMock {
+    return this.stores.get(name) || new IDBObjectStoreMock();
+  }
+}
+
+class IDBDatabaseMock {
+  objectStoreNames = {
+    contains: vi.fn(() => false)
+  };
+
+  private transactions: Map<string, IDBTransactionMock> = new Map();
+
+  transaction = vi.fn((storeNames: string | string[], mode?: string) => {
+    const key = Array.isArray(storeNames) ? storeNames.join(',') : storeNames;
+    if (!this.transactions.has(key)) {
+      this.transactions.set(key, new IDBTransactionMock());
+    }
+    return this.transactions.get(key)!;
+  });
+
+  createObjectStore = vi.fn((name: string, options?: any) => {
+    return new IDBObjectStoreMock();
+  });
+
+  getTransaction(storeNames: string | string[]): IDBTransactionMock | undefined {
+    const key = Array.isArray(storeNames) ? storeNames.join(',') : storeNames;
+    return this.transactions.get(key);
+  }
 }
 
 const mockIndexedDB = {
   open: vi.fn((name: string, version: number) => {
-    const request = new IDBRequestMock(new IDBDatabaseMock());
+    const db = new IDBDatabaseMock();
+    const request = new IDBRequestMock(db);
     (request as any).onupgradeneeded = null;
-    setTimeout(() => {
+
+    queueMicrotask(() => {
       if ((request as any).onupgradeneeded) {
         (request as any).onupgradeneeded({
-          target: { result: new IDBDatabaseMock() }
+          target: { result: db }
         });
       }
-    }, 0);
+    });
+
     return request;
   }),
   deleteDatabase: vi.fn()
@@ -164,17 +186,42 @@ describe('ClientDataService', () => {
     });
 
     it('should create object stores on first initialization', async () => {
-      const mockDB = new IDBDatabaseMock();
+      // Create a fresh mock that will capture the upgrade event
+      let capturedDB: IDBDatabaseMock | null = null;
+      const openRequest = new IDBRequestMock();
 
-      const request = mockIndexedDB.open('aves-learning-db', 1) as any;
-      if (request.onupgradeneeded) {
-        request.onupgradeneeded({ target: { result: mockDB } });
-      }
+      // Override the open mock for this test
+      vi.mocked(mockIndexedDB.open).mockImplementationOnce(() => {
+        capturedDB = new IDBDatabaseMock();
+        openRequest.result = capturedDB;
+
+        queueMicrotask(() => {
+          if ((openRequest as any).onupgradeneeded) {
+            (openRequest as any).onupgradeneeded({
+              target: { result: capturedDB }
+            });
+          }
+          if (openRequest.onsuccess) {
+            openRequest.onsuccess({ target: openRequest });
+          }
+        });
+
+        return openRequest;
+      });
 
       await clientDataService.initialize();
 
-      expect(mockDB.createObjectStore).toHaveBeenCalledWith(
+      expect(capturedDB).toBeDefined();
+      expect(capturedDB!.createObjectStore).toHaveBeenCalledWith(
         'interactions',
+        expect.objectContaining({ keyPath: 'id', autoIncrement: true })
+      );
+      expect(capturedDB!.createObjectStore).toHaveBeenCalledWith(
+        'progress',
+        expect.objectContaining({ keyPath: 'sessionId' })
+      );
+      expect(capturedDB!.createObjectStore).toHaveBeenCalledWith(
+        'exerciseResults',
         expect.objectContaining({ keyPath: 'id', autoIncrement: true })
       );
     });
@@ -422,12 +469,9 @@ describe('ClientDataService', () => {
 
   describe('Interaction Methods', () => {
     let mockDB: IDBDatabaseMock;
-    let mockTransaction: IDBTransactionMock;
 
     beforeEach(() => {
       mockDB = new IDBDatabaseMock();
-      mockTransaction = new IDBTransactionMock();
-      mockDB.transaction = vi.fn(() => mockTransaction);
       (clientDataService as any).db = mockDB;
     });
 
@@ -438,18 +482,26 @@ describe('ClientDataService', () => {
         timestamp: new Date()
       };
 
-      const mockStore = {
-        add: vi.fn(() => new IDBRequestMock(true))
-      };
-      mockTransaction.objectStore = vi.fn(() => mockStore);
-
       await clientDataService.saveInteraction(interaction);
 
+      // Verify transaction was created with correct parameters
       expect(mockDB.transaction).toHaveBeenCalledWith(['interactions'], 'readwrite');
-      expect(mockStore.add).toHaveBeenCalledWith(
+
+      // Get the transaction that was created
+      const transaction = mockDB.getTransaction(['interactions']);
+      expect(transaction).toBeDefined();
+
+      // Verify objectStore was called
+      expect(transaction!.objectStore).toHaveBeenCalledWith('interactions');
+
+      // Get the store and verify add was called with correct data
+      const store = transaction!.getStore('interactions');
+      expect(store.add).toHaveBeenCalledWith(
         expect.objectContaining({
           annotationId: '1',
-          action: 'view'
+          action: 'view',
+          userSessionId: expect.any(String),
+          timestamp: expect.any(Date)
         })
       );
     });
@@ -486,10 +538,10 @@ describe('ClientDataService', () => {
         }
       ];
 
-      const mockStore = {
-        getAll: vi.fn(() => new IDBRequestMock(mockInteractions))
-      };
-      mockTransaction.objectStore = vi.fn(() => mockStore);
+      // Set up the mock to return interactions
+      const transaction = mockDB.transaction(['interactions'], 'readonly');
+      const store = transaction.objectStore('interactions');
+      store.getAll = vi.fn(() => new IDBRequestMock(mockInteractions));
 
       const result = await clientDataService.getInteractions('session-123');
 
@@ -515,10 +567,10 @@ describe('ClientDataService', () => {
         }
       ];
 
-      const mockStore = {
-        getAll: vi.fn(() => new IDBRequestMock(mockInteractions))
-      };
-      mockTransaction.objectStore = vi.fn(() => mockStore);
+      // Set up the mock to return interactions
+      const transaction = mockDB.transaction(['interactions'], 'readonly');
+      const store = transaction.objectStore('interactions');
+      store.getAll = vi.fn(() => new IDBRequestMock(mockInteractions));
 
       const result = await clientDataService.getInteractions('session-123');
 
@@ -529,12 +581,9 @@ describe('ClientDataService', () => {
 
   describe('Progress Methods', () => {
     let mockDB: IDBDatabaseMock;
-    let mockTransaction: IDBTransactionMock;
 
     beforeEach(() => {
       mockDB = new IDBDatabaseMock();
-      mockTransaction = new IDBTransactionMock();
-      mockDB.transaction = vi.fn(() => mockTransaction);
       (clientDataService as any).db = mockDB;
     });
 
@@ -546,18 +595,18 @@ describe('ClientDataService', () => {
         totalInteractions: 20
       };
 
-      const mockStore = {
-        put: vi.fn(() => new IDBRequestMock(true))
-      };
-      mockTransaction.objectStore = vi.fn(() => mockStore);
-
       await clientDataService.saveProgress(progress);
 
       expect(mockDB.transaction).toHaveBeenCalledWith(['progress'], 'readwrite');
-      expect(mockStore.put).toHaveBeenCalledWith(
+
+      const transaction = mockDB.getTransaction(['progress']);
+      const store = transaction!.getStore('progress');
+
+      expect(store.put).toHaveBeenCalledWith(
         expect.objectContaining({
           sessionId: 'session-123',
-          termsLearned: ['pico', 'ala']
+          termsLearned: ['pico', 'ala'],
+          lastUpdated: expect.any(Date)
         })
       );
     });
@@ -587,10 +636,9 @@ describe('ClientDataService', () => {
         lastUpdated: new Date()
       };
 
-      const mockStore = {
-        get: vi.fn(() => new IDBRequestMock(mockProgress))
-      };
-      mockTransaction.objectStore = vi.fn(() => mockStore);
+      const transaction = mockDB.transaction(['progress'], 'readonly');
+      const store = transaction.objectStore('progress');
+      store.get = vi.fn(() => new IDBRequestMock(mockProgress));
 
       const result = await clientDataService.getProgress('session-123');
 
@@ -599,10 +647,9 @@ describe('ClientDataService', () => {
     });
 
     it('should return null if progress not found', async () => {
-      const mockStore = {
-        get: vi.fn(() => new IDBRequestMock(null))
-      };
-      mockTransaction.objectStore = vi.fn(() => mockStore);
+      const transaction = mockDB.transaction(['progress'], 'readonly');
+      const store = transaction.objectStore('progress');
+      store.get = vi.fn(() => new IDBRequestMock(null));
 
       const result = await clientDataService.getProgress('nonexistent');
 
@@ -628,12 +675,9 @@ describe('ClientDataService', () => {
 
   describe('Exercise Results Methods', () => {
     let mockDB: IDBDatabaseMock;
-    let mockTransaction: IDBTransactionMock;
 
     beforeEach(() => {
       mockDB = new IDBDatabaseMock();
-      mockTransaction = new IDBTransactionMock();
-      mockDB.transaction = vi.fn(() => mockTransaction);
       (clientDataService as any).db = mockDB;
     });
 
@@ -645,18 +689,18 @@ describe('ClientDataService', () => {
         sessionId: 'session-123'
       };
 
-      const mockStore = {
-        add: vi.fn(() => new IDBRequestMock(true))
-      };
-      mockTransaction.objectStore = vi.fn(() => mockStore);
-
       await clientDataService.saveExerciseResult(result);
 
       expect(mockDB.transaction).toHaveBeenCalledWith(['exerciseResults'], 'readwrite');
-      expect(mockStore.add).toHaveBeenCalledWith(
+
+      const transaction = mockDB.getTransaction(['exerciseResults']);
+      const store = transaction!.getStore('exerciseResults');
+
+      expect(store.add).toHaveBeenCalledWith(
         expect.objectContaining({
           exerciseId: '1',
-          correct: true
+          correct: true,
+          completedAt: expect.any(Date)
         })
       );
     });
@@ -673,10 +717,9 @@ describe('ClientDataService', () => {
         }
       ];
 
-      const mockStore = {
-        getAll: vi.fn(() => new IDBRequestMock(mockResults))
-      };
-      mockTransaction.objectStore = vi.fn(() => mockStore);
+      const transaction = mockDB.transaction(['exerciseResults'], 'readonly');
+      const store = transaction.objectStore('exerciseResults');
+      store.getAll = vi.fn(() => new IDBRequestMock(mockResults));
 
       const results = await clientDataService.getExerciseResults('session-123');
 
@@ -687,28 +730,34 @@ describe('ClientDataService', () => {
 
   describe('Data Import/Export', () => {
     let mockDB: IDBDatabaseMock;
-    let mockTransaction: IDBTransactionMock;
 
     beforeEach(() => {
       mockDB = new IDBDatabaseMock();
-      mockTransaction = new IDBTransactionMock();
-      mockDB.transaction = vi.fn(() => mockTransaction);
       (clientDataService as any).db = mockDB;
+
+      // Mock sessionStorage for current session ID
+      vi.mocked(sessionStorage.getItem).mockReturnValue('test-session');
     });
 
     it('should export all user data as JSON', async () => {
-      const mockInteractions = [{ id: 1, annotationId: '1', action: 'view' }];
-      const mockProgress = { sessionId: 'session-123', termsLearned: ['pico'] };
-      const mockResults = [{ id: 1, exerciseId: '1', correct: true }];
+      const mockInteractions = [{ id: 1, annotationId: '1', action: 'view', userSessionId: 'test-session' }];
+      const mockProgress = { sessionId: 'test-session', termsLearned: ['pico'] };
+      const mockResults = [{ id: 1, exerciseId: '1', correct: true, sessionId: 'test-session' }];
 
-      const mockStore = {
-        getAll: vi.fn()
-          .mockReturnValueOnce(new IDBRequestMock(mockInteractions))
-          .mockReturnValueOnce(new IDBRequestMock(mockResults)),
-        get: vi.fn(() => new IDBRequestMock(mockProgress))
-      };
+      // Set up interactions
+      const interactionsTransaction = mockDB.transaction(['interactions'], 'readonly');
+      const interactionsStore = interactionsTransaction.objectStore('interactions');
+      interactionsStore.getAll = vi.fn(() => new IDBRequestMock(mockInteractions));
 
-      mockTransaction.objectStore = vi.fn(() => mockStore);
+      // Set up progress
+      const progressTransaction = mockDB.transaction(['progress'], 'readonly');
+      const progressStore = progressTransaction.objectStore('progress');
+      progressStore.get = vi.fn(() => new IDBRequestMock(mockProgress));
+
+      // Set up exercise results
+      const resultsTransaction = mockDB.transaction(['exerciseResults'], 'readonly');
+      const resultsStore = resultsTransaction.objectStore('exerciseResults');
+      resultsStore.getAll = vi.fn(() => new IDBRequestMock(mockResults));
 
       const exported = await clientDataService.exportData();
 
@@ -727,16 +776,22 @@ describe('ClientDataService', () => {
         exerciseResults: [{ exerciseId: '1', answer: 'test', correct: true, sessionId: 'session-123' }]
       };
 
-      const mockStore = {
-        add: vi.fn(() => new IDBRequestMock(true)),
-        put: vi.fn(() => new IDBRequestMock(true))
-      };
-      mockTransaction.objectStore = vi.fn(() => mockStore);
-
       await clientDataService.importData(JSON.stringify(importData));
 
-      expect(mockStore.add).toHaveBeenCalled();
-      expect(mockStore.put).toHaveBeenCalled();
+      // Verify interactions were added
+      const interactionsTransaction = mockDB.getTransaction(['interactions']);
+      const interactionsStore = interactionsTransaction!.getStore('interactions');
+      expect(interactionsStore.add).toHaveBeenCalled();
+
+      // Verify progress was saved
+      const progressTransaction = mockDB.getTransaction(['progress']);
+      const progressStore = progressTransaction!.getStore('progress');
+      expect(progressStore.put).toHaveBeenCalled();
+
+      // Verify exercise results were added
+      const resultsTransaction = mockDB.getTransaction(['exerciseResults']);
+      const resultsStore = resultsTransaction!.getStore('exerciseResults');
+      expect(resultsStore.add).toHaveBeenCalled();
     });
 
     it('should throw StorageError on invalid import data', async () => {
@@ -750,49 +805,43 @@ describe('ClientDataService', () => {
         progress: { sessionId: 'session-123', termsLearned: [] }
       };
 
-      const mockStore = {
-        put: vi.fn(() => new IDBRequestMock(true))
-      };
-      mockTransaction.objectStore = vi.fn(() => mockStore);
-
       await clientDataService.importData(JSON.stringify(partialData));
 
-      expect(mockStore.put).toHaveBeenCalled();
+      const progressTransaction = mockDB.getTransaction(['progress']);
+      const progressStore = progressTransaction!.getStore('progress');
+      expect(progressStore.put).toHaveBeenCalled();
     });
   });
 
   describe('Clear All Data', () => {
     let mockDB: IDBDatabaseMock;
-    let mockTransaction: IDBTransactionMock;
 
     beforeEach(() => {
       mockDB = new IDBDatabaseMock();
-      mockTransaction = new IDBTransactionMock();
-      mockDB.transaction = vi.fn(() => mockTransaction);
       (clientDataService as any).db = mockDB;
     });
 
     it('should clear all IndexedDB stores', async () => {
-      const mockStore = {
-        clear: vi.fn(() => new IDBRequestMock(true))
-      };
-      mockTransaction.objectStore = vi.fn(() => mockStore);
-
       await clientDataService.clearAllData();
 
       expect(mockDB.transaction).toHaveBeenCalledWith(
         ['interactions', 'progress', 'exerciseResults'],
         'readwrite'
       );
-      expect(mockStore.clear).toHaveBeenCalledTimes(3);
+
+      const transaction = mockDB.getTransaction(['interactions', 'progress', 'exerciseResults']);
+      expect(transaction).toBeDefined();
+
+      const interactionsStore = transaction!.getStore('interactions');
+      const progressStore = transaction!.getStore('progress');
+      const resultsStore = transaction!.getStore('exerciseResults');
+
+      expect(interactionsStore.clear).toHaveBeenCalled();
+      expect(progressStore.clear).toHaveBeenCalled();
+      expect(resultsStore.clear).toHaveBeenCalled();
     });
 
     it('should clear localStorage and sessionStorage', async () => {
-      const mockStore = {
-        clear: vi.fn(() => new IDBRequestMock(true))
-      };
-      mockTransaction.objectStore = vi.fn(() => mockStore);
-
       await clientDataService.clearAllData();
 
       expect(localStorage.clear).toHaveBeenCalled();

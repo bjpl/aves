@@ -294,25 +294,25 @@ describe('CircularProgress Component', () => {
     it('should use primary color by default', () => {
       const { container } = render(<CircularProgress value={50} />);
       const progressCircle = container.querySelectorAll('circle')[1];
-      expect(progressCircle.className).toContain('stroke-blue-600');
+      expect(progressCircle.classList.contains('stroke-blue-600')).toBe(true);
     });
 
     it('should apply success color', () => {
       const { container } = render(<CircularProgress value={50} color="success" />);
       const progressCircle = container.querySelectorAll('circle')[1];
-      expect(progressCircle.className).toContain('stroke-green-500');
+      expect(progressCircle.classList.contains('stroke-green-500')).toBe(true);
     });
 
     it('should apply warning color', () => {
       const { container } = render(<CircularProgress value={50} color="warning" />);
       const progressCircle = container.querySelectorAll('circle')[1];
-      expect(progressCircle.className).toContain('stroke-yellow-500');
+      expect(progressCircle.classList.contains('stroke-yellow-500')).toBe(true);
     });
 
     it('should apply danger color', () => {
       const { container } = render(<CircularProgress value={50} color="danger" />);
       const progressCircle = container.querySelectorAll('circle')[1];
-      expect(progressCircle.className).toContain('stroke-red-600');
+      expect(progressCircle.classList.contains('stroke-red-600')).toBe(true);
     });
   });
 
@@ -320,14 +320,14 @@ describe('CircularProgress Component', () => {
     it('should have background circle with gray color', () => {
       const { container } = render(<CircularProgress value={50} />);
       const bgCircle = container.querySelectorAll('circle')[0];
-      expect(bgCircle.className).toContain('text-gray-200');
+      expect(bgCircle.classList.contains('text-gray-200')).toBe(true);
     });
 
     it('should rotate SVG -90 degrees', () => {
       const { container } = render(<CircularProgress value={50} />);
       const svg = container.querySelector('svg');
-      expect(svg?.className).toContain('transform');
-      expect(svg?.className).toContain('-rotate-90');
+      expect(svg?.classList.contains('transform')).toBe(true);
+      expect(svg?.classList.contains('-rotate-90')).toBe(true);
     });
 
     it('should have transparent fill', () => {
@@ -380,8 +380,8 @@ describe('CircularProgress Component', () => {
     it('should have smooth transition', () => {
       const { container } = render(<CircularProgress value={50} />);
       const progressCircle = container.querySelectorAll('circle')[1];
-      expect(progressCircle.className).toContain('transition-all');
-      expect(progressCircle.className).toContain('duration-500');
+      expect(progressCircle.classList.contains('transition-all')).toBe(true);
+      expect(progressCircle.classList.contains('duration-500')).toBe(true);
     });
   });
 });

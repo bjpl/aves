@@ -83,7 +83,7 @@ describe('VisualIdentification', () => {
     });
 
     it('should display visual hints', () => {
-      render(
+      const { container } = render(
         <VisualIdentification
           exercise={mockExercise}
           onAnswer={mockOnAnswer}
@@ -91,8 +91,13 @@ describe('VisualIdentification', () => {
         />
       );
       expect(screen.getByText(/Hover to explore/i)).toBeInTheDocument();
-      expect(screen.getByText(/Correct/i)).toBeInTheDocument();
-      expect(screen.getByText(/Incorrect/i)).toBeInTheDocument();
+
+      // Check for visual hints container
+      const hints = container.querySelectorAll('.flex.items-center span.text-gray-600');
+      const hintTexts = Array.from(hints).map(hint => hint.textContent);
+      expect(hintTexts).toContain('Hover to explore');
+      expect(hintTexts).toContain('Correct');
+      expect(hintTexts).toContain('Incorrect');
     });
   });
 
@@ -218,7 +223,7 @@ describe('VisualIdentification', () => {
       );
 
       const image = screen.getByAltText('Bird for identification');
-      expect(image).toHaveAttribute('src', expect.stringContaining('flamingo'));
+      expect(image).toHaveAttribute('src', 'https://images.unsplash.com/photo-1535821265819-8e7ff3c30737?w=600');
     });
 
     it('should load eagle anatomy map', () => {
@@ -236,7 +241,7 @@ describe('VisualIdentification', () => {
       );
 
       const image = screen.getByAltText('Bird for identification');
-      expect(image).toHaveAttribute('src', expect.stringContaining('eagle'));
+      expect(image).toHaveAttribute('src', 'https://images.unsplash.com/photo-1611689342806-0863700ce1e4?w=600');
     });
 
     it('should load sparrow anatomy map', () => {
@@ -254,7 +259,7 @@ describe('VisualIdentification', () => {
       );
 
       const image = screen.getByAltText('Bird for identification');
-      expect(image).toHaveAttribute('src', expect.stringContaining('sparrow'));
+      expect(image).toHaveAttribute('src', 'https://images.unsplash.com/photo-1552728089-57bdde30beb3?w=600');
     });
 
     it('should default to flamingo if bird not specified', () => {
@@ -272,7 +277,7 @@ describe('VisualIdentification', () => {
       );
 
       const image = screen.getByAltText('Bird for identification');
-      expect(image).toHaveAttribute('src', expect.stringContaining('flamingo'));
+      expect(image).toHaveAttribute('src', 'https://images.unsplash.com/photo-1535821265819-8e7ff3c30737?w=600');
     });
   });
 
@@ -314,7 +319,7 @@ describe('VisualIdentification', () => {
 
       const hotspots = container.querySelectorAll('.relative > div[style]');
       hotspots.forEach((hotspot) => {
-        expect(hotspot).toHaveStyle({ cursor: expect.any(String) });
+        expect(hotspot).toHaveStyle({ cursor: 'pointer' });
       });
     });
   });

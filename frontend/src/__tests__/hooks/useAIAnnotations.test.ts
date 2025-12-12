@@ -19,12 +19,15 @@ import {
 } from '../../hooks/useAIAnnotations';
 
 // Mock the api instance from config/axios (the hook imports 'api' not default axios)
-const mockApi = {
-  get: vi.fn(),
-  post: vi.fn(),
-  patch: vi.fn(),
-  delete: vi.fn(),
-};
+// Use vi.hoisted() to avoid "Cannot access before initialization" error
+const { mockApi } = vi.hoisted(() => ({
+  mockApi: {
+    get: vi.fn(),
+    post: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
+  },
+}));
 
 vi.mock('../../config/axios', () => ({
   api: mockApi,
