@@ -271,7 +271,7 @@ describe('Tooltip Component', () => {
       await user.hover(screen.getByRole('button'));
 
       await waitFor(() => {
-        const tooltipContent = container.querySelector('.shadow-lg');
+        const tooltipContent = container.querySelector('.shadow-xl');
         expect(tooltipContent).toBeInTheDocument();
       });
     });
@@ -292,9 +292,9 @@ describe('Tooltip Component', () => {
       });
     });
 
-    it('should have whitespace-nowrap', async () => {
+    it('should have proper text wrapping', async () => {
       const user = userEvent.setup();
-      render(
+      const { container } = render(
         <Tooltip content="Tooltip text" delay={0}>
           <button>Hover me</button>
         </Tooltip>
@@ -303,12 +303,12 @@ describe('Tooltip Component', () => {
       await user.hover(screen.getByRole('button'));
 
       await waitFor(() => {
-        const tooltip = screen.getByRole('tooltip');
-        expect(tooltip.className).toContain('whitespace-nowrap');
+        const tooltipContent = container.querySelector('.whitespace-normal');
+        expect(tooltipContent).toBeInTheDocument();
       });
     });
 
-    it('should have z-50 for stacking', async () => {
+    it('should have high z-index for stacking', async () => {
       const user = userEvent.setup();
       render(
         <Tooltip content="Tooltip text" delay={0}>
@@ -320,7 +320,7 @@ describe('Tooltip Component', () => {
 
       await waitFor(() => {
         const tooltip = screen.getByRole('tooltip');
-        expect(tooltip.className).toContain('z-50');
+        expect(tooltip.className).toContain('z-[9999]');
       });
     });
   });
@@ -337,7 +337,7 @@ describe('Tooltip Component', () => {
       await user.hover(screen.getByRole('button'));
 
       await waitFor(() => {
-        const arrow = container.querySelector('.border-8');
+        const arrow = container.querySelector('.border-6');
         expect(arrow).toBeInTheDocument();
       });
     });

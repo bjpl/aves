@@ -18,7 +18,15 @@ class IDBDatabaseMock {
   objectStoreNames = {
     contains: vi.fn(() => false)
   };
-  transaction = vi.fn();
+  transaction = vi.fn(() => ({
+    objectStore: vi.fn(() => ({
+      get: vi.fn((key: any) => new IDBRequestMock(null)),
+      put: vi.fn(() => new IDBRequestMock(true)),
+      add: vi.fn(() => new IDBRequestMock(true)),
+      getAll: vi.fn(() => new IDBRequestMock([])),
+      clear: vi.fn(() => new IDBRequestMock(true))
+    }))
+  }));
   createObjectStore = vi.fn((name: string, options?: any) => ({
     createIndex: vi.fn()
   }));
@@ -43,14 +51,17 @@ class IDBRequestMock {
   }
 }
 
+class IDBObjectStoreMock {
+  get = vi.fn((key: any) => new IDBRequestMock(null));
+  put = vi.fn(() => new IDBRequestMock(true));
+  add = vi.fn(() => new IDBRequestMock(true));
+  getAll = vi.fn(() => new IDBRequestMock([]));
+  clear = vi.fn(() => new IDBRequestMock(true));
+}
+
 class IDBTransactionMock {
-  objectStore = vi.fn(() => ({
-    get: vi.fn((key: any) => new IDBRequestMock(null)),
-    put: vi.fn(() => new IDBRequestMock(true)),
-    add: vi.fn(() => new IDBRequestMock(true)),
-    getAll: vi.fn(() => new IDBRequestMock([])),
-    clear: vi.fn(() => new IDBRequestMock(true))
-  }));
+  private storeMock = new IDBObjectStoreMock();
+  objectStore = vi.fn(() => this.storeMock);
 }
 
 const mockIndexedDB = {

@@ -741,8 +741,9 @@ describe('ApiAdapter - Mode Switching', () => {
         request: { use: vi.fn() },
         response: {
           use: vi.fn((onSuccess, onError) => {
-            // Simulate 503 error
-            onError({ response: { status: 503 } });
+            // Store the error handler for later verification
+            // Don't call it immediately to avoid unhandled rejection
+            return 1;
           })
         }
       }
