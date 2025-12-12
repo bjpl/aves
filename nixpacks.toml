@@ -2,7 +2,8 @@
 nixPkgs = ["nodejs_20", "python3", "gcc"]
 
 [phases.install]
-cmds = ["npm ci"]
+# Include devDependencies for TypeScript compilation
+cmds = ["npm ci --include=dev"]
 
 [phases.build]
 cmds = ["npm run build --workspace=backend"]
