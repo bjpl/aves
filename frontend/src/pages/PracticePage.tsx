@@ -6,10 +6,10 @@ import { Badge } from '../components/ui/Badge';
 import { useAnnotations } from '../hooks/useAnnotations';
 import { usePrefetchExercises, useAIExerciseAvailability } from '../hooks/useAIExercise';
 import { debug } from '../utils/logger';
-import type { Exercise } from '../types';
+import type { Exercise, Annotation } from '../types';
 
 // Sample annotations only used as fallback if API data is unavailable
-const fallbackAnnotations = [
+const fallbackAnnotations: Annotation[] = [
   // BEGINNER LEVEL - Recognition & Basic Vocabulary
   {
     id: '1',

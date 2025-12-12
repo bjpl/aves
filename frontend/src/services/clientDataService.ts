@@ -203,13 +203,13 @@ class ClientDataService {
 
     if (filters) {
       if (filters.habitat) {
-        results = results.filter(s => s.habitats.includes(filters.habitat!));
+        results = results.filter(s => s.habitats?.includes(filters.habitat!) ?? false);
       }
       if (filters.sizeCategory) {
         results = results.filter(s => s.sizeCategory === filters.sizeCategory);
       }
       if (filters.primaryColor) {
-        results = results.filter(s => s.primaryColors.includes(filters.primaryColor!));
+        results = results.filter(s => s.primaryColors?.includes(filters.primaryColor!) ?? false);
       }
       if (filters.searchTerm) {
         const searchLower = filters.searchTerm.toLowerCase();

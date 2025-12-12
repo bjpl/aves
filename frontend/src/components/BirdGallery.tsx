@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useBirds } from '../hooks/useCMS';
-import { CMSService } from '../services/cms.service';
+import { CMSService, Bird } from '../services/cms.service';
 import { ChevronRight, Search } from 'lucide-react';
 
 // PATTERN: Component Composition with CMS Data
@@ -12,6 +12,11 @@ interface BirdGalleryProps {
   limit?: number;
 }
 
+interface BirdsResponse {
+  data: Bird[];
+  meta?: unknown;
+}
+
 export const BirdGallery: React.FC<BirdGalleryProps> = ({ difficulty, limit }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState(difficulty);
@@ -21,7 +26,7 @@ export const BirdGallery: React.FC<BirdGalleryProps> = ({ difficulty, limit }) =
     populate: ['images', 'sounds'],
     pagination: limit ? { pageSize: limit } : undefined,
     sort: ['spanishName:asc']
-  });
+  }) as { data: BirdsResponse | undefined; isLoading: boolean; error: Error | null };
 
   if (isLoading) {
     return (
@@ -84,12 +89,12 @@ export const BirdGallery: React.FC<BirdGalleryProps> = ({ difficulty, limit }) =
       {/* Birds Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {birds
-          .filter(bird =>
+          .filter((bird: Bird) =>
             !searchTerm ||
             bird.attributes.spanishName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             bird.attributes.englishName.toLowerCase().includes(searchTerm.toLowerCase())
           )
-          .map((bird) => (
+          .map((bird: Bird) => (
             <BirdCard key={bird.id} bird={bird} />
           ))}
       </div>
@@ -104,7 +109,7 @@ export const BirdGallery: React.FC<BirdGalleryProps> = ({ difficulty, limit }) =
 };
 
 // Bird Card Component
-const BirdCard: React.FC<{ bird: any }> = ({ bird }) => {
+const BirdCard: React.FC<{ bird: Bird }> = ({ bird }) => {
   const imageUrl = bird.attributes.images?.data?.[0]?.attributes.url;
   const fullImageUrl = imageUrl ? CMSService.getMediaUrl(imageUrl) : '/placeholder-bird.jpg';
 

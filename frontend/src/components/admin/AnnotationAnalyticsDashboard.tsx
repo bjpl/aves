@@ -5,7 +5,6 @@
 import React from 'react';
 import { Card, CardHeader, CardBody } from '../ui/Card';
 import { Badge } from '../ui/Badge';
-import { Tooltip } from '../ui/Tooltip';
 import { useAnnotationAnalytics, calculateDatasetProgress } from '../../hooks/useAnnotationAnalytics';
 
 /**

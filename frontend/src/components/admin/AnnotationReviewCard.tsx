@@ -7,10 +7,8 @@ import { Card, CardHeader, CardBody, CardFooter } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { Input } from '../ui/Input';
-import { AnnotationCanvas } from '../annotation/AnnotationCanvas';
 import { AIAnnotation } from '../../hooks/useAIAnnotations';
 import { useApproveAnnotation, useRejectAnnotation, useEditAnnotation, useUpdateAnnotation } from '../../hooks/useAIAnnotations';
-import { Annotation } from '../../types';
 import { EnhancedRejectModal } from './EnhancedRejectModal';
 import { BoundingBoxEditor } from './BoundingBoxEditor';
 import { RejectionCategoryValue } from '../../constants/annotationQuality';
@@ -42,7 +40,6 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [showEnhancedReject, setShowEnhancedReject] = useState(false);
   const [showBboxEditor, setShowBboxEditor] = useState(false);
-  const [editedBbox, setEditedBbox] = useState(annotation.boundingBox);
 
   const approveMutation = useApproveAnnotation();
   const rejectMutation = useRejectAnnotation();
@@ -76,7 +73,7 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
     try {
       await editMutation.mutateAsync({
         annotationId: annotation.id,
-        updates: editedData as Partial<Annotation>,
+        updates: editedData as Partial<AIAnnotation>,
       });
       setIsEditing(false);
       onActionComplete?.();
@@ -538,17 +535,19 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
       {showBboxEditor && (
         <BoundingBoxEditor
           imageUrl={imageUrl}
-          initialBox={annotation.boundingBox}
+          initialBox={{
+            ...annotation.boundingBox,
+            shape: annotation.boundingBox.shape === 'polygon' ? 'rectangle' : annotation.boundingBox.shape
+          }}
           label={annotation.spanishTerm}
           onSave={async (newBox) => {
             try {
               // Update bounding box WITHOUT approving (keeps in review queue)
-              const result = await updateMutation.mutateAsync({
+              await updateMutation.mutateAsync({
                 annotationId: annotation.id,
                 updates: { boundingBox: newBox }
               });
 
-              setEditedBbox(newBox);
               setShowBboxEditor(false);
               onActionComplete?.();
             } catch (error: any) {

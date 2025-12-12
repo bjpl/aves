@@ -6,7 +6,7 @@
  * PATTERN: Multi-panel dashboard with job tracking and real-time progress
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
 import { useSpecies } from '../../hooks/useSpecies';
@@ -20,7 +20,6 @@ import {
   TabType,
   SpeciesMultiSelect,
   ToastContainer,
-  BulkActionToolbar,
   DeleteConfirmationModal,
   useImageManagement,
   useToast,
@@ -37,7 +36,7 @@ export const ImageManagementPage: React.FC = () => {
     jobs,
     pendingImages,
     isLoading: dataLoading,
-    hasActiveJobs,
+    // hasActiveJobs - available for future use in UI indicators
     refetchStats,
     collectMutation,
     annotateMutation,
@@ -756,7 +755,7 @@ export const ImageManagementPage: React.FC = () => {
                           .map(([speciesName, data]) => {
                             const count = typeof data === 'number' ? data : data.count;
                             const sampleImageUrl = typeof data === 'object' && data.sampleImageUrl ? data.sampleImageUrl : null;
-                            const speciesId = typeof data === 'object' && data.speciesId ? data.speciesId : null;
+                            // speciesId available for filtering: typeof data === 'object' && data.speciesId ? data.speciesId : null;
 
                             return (
                               <button

@@ -4,7 +4,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  useAIAnnotationsPending,
   useAIAnnotations,
   useAIAnnotationStats,
   AIAnnotationStatus,
@@ -14,7 +13,7 @@ import { AnnotationBatchActions } from '../../components/admin/AnnotationBatchAc
 import { Tabs, TabList, Tab, TabPanel } from '../../components/ui/Tabs';
 import { Badge } from '../../components/ui/Badge';
 import { Spinner } from '../../components/ui/Spinner';
-import { Card, CardBody } from '../../components/ui/Card';
+import { Card } from '../../components/ui/Card';
 import { Alert } from '../../components/ui/Alert';
 import { useToast, ToastContainer } from '../../components/admin/image-management';
 
@@ -205,7 +204,7 @@ export const AnnotationReviewPage: React.FC = () => {
 
     if (error) {
       return (
-        <Alert variant="error">
+        <Alert variant="danger">
           Failed to load annotations. Please try again later.
         </Alert>
       );
@@ -260,7 +259,7 @@ export const AnnotationReviewPage: React.FC = () => {
             <div key={annotation.id} data-annotation-id={annotation.id}>
               <AnnotationReviewCard
                 annotation={annotation}
-                imageUrl={annotation.imageUrl}
+                imageUrl={annotation.imageUrl || ''}
                 isSelected={selectedIds.includes(annotation.id)}
                 onSelect={(selected) => handleToggleSelection(annotation.id, selected)}
                 onActionComplete={() => addToast('success', 'Action completed successfully!')}

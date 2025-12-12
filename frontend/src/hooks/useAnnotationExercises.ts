@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { useAuth } from '@/context/AuthContext';
+import { useAuthStore } from '../stores/authStore';
 import { useCallback } from 'react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -43,7 +43,7 @@ interface PipelineStats {
  * Hook to fetch Learn tab exercises from the annotation pipeline
  */
 export function useLearnExercises(limit: number = 10) {
-  const { user } = useAuth();
+  const user = useAuthStore((state) => state.user);
 
   return useQuery<ExerciseResponse>({
     queryKey: ['annotation-exercises', 'learn', user?.id, limit],
@@ -71,7 +71,7 @@ export function useLearnExercises(limit: number = 10) {
  * Hook to fetch Practice tab exercises from the annotation pipeline
  */
 export function usePracticeExercises(limit: number = 10) {
-  const { user } = useAuth();
+  const user = useAuthStore((state) => state.user);
 
   return useQuery<ExerciseResponse>({
     queryKey: ['annotation-exercises', 'practice', user?.id, limit],
@@ -99,7 +99,7 @@ export function usePracticeExercises(limit: number = 10) {
  * Hook to prefetch exercises for a user based on their weak areas
  */
 export function usePrefetchExercises() {
-  const { user } = useAuth();
+  const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
 
   return useMutation({

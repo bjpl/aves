@@ -22,7 +22,7 @@ import { error as logError, warn } from '../utils/logger';
 
 // Determine if we're running on GitHub Pages or local development
 const isGitHubPages = window.location.hostname.includes('github.io');
-const isLocalDev = window.location.hostname === 'localhost' && !isGitHubPages;
+// isLocalDev available for debugging - window.location.hostname === 'localhost' && !isGitHubPages
 
 class ApiAdapter {
   private axiosInstance: AxiosInstance | null = null;

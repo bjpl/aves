@@ -44,14 +44,18 @@ export interface GenerateExerciseParams {
 
 class AIExerciseService {
   private readonly baseUrl: string;
-  private readonly sessionId: string;
+  private _sessionId: string;
 
   constructor() {
     // Use backend API URL - AI exercise generation requires backend
     const env = import.meta.env as Record<string, unknown> | undefined;
     const apiUrl = env?.VITE_API_URL as string | undefined;
     this.baseUrl = apiUrl || 'http://localhost:3001';
-    this.sessionId = this.getOrCreateSessionId();
+    this._sessionId = this.getOrCreateSessionId();
+  }
+
+  private get sessionId(): string {
+    return this._sessionId;
   }
 
   /**
@@ -217,7 +221,7 @@ class AIExerciseService {
    * @internal
    */
   __resetSessionId(): void {
-    (this as { -readonly [K in keyof this]: this[K] }).sessionId = this.getOrCreateSessionId();
+    this._sessionId = this.getOrCreateSessionId();
   }
 }
 

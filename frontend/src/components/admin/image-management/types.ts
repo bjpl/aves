@@ -2,12 +2,18 @@
  * Type definitions for Image Management
  */
 
+export interface SpeciesImageData {
+  count: number;
+  sampleImageUrl?: string;
+  speciesId?: string;
+}
+
 export interface ImageStats {
   totalImages: number;
   pendingAnnotation: number;
   annotated: number;
   failed: number;
-  bySpecies: Record<string, number>;
+  bySpecies: Record<string, number | SpeciesImageData>;
 }
 
 export interface QuotaStatus {

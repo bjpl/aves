@@ -224,7 +224,7 @@ export const useAnnotateImage = () => {
       }>(`/api/admin/images/${imageId}/annotate`);
       return response.data;
     },
-    onSuccess: (data, imageId) => {
+    onSuccess: (_data, imageId) => {
       // Invalidate specific image and list queries
       queryClient.invalidateQueries({ queryKey: galleryKeys.detail(imageId) });
       queryClient.invalidateQueries({ queryKey: galleryKeys.all });

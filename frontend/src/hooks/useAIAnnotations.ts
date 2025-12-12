@@ -23,6 +23,7 @@ export interface AIAnnotation extends Annotation {
   reviewedBy?: string;
   reviewedAt?: Date;
   rejectionReason?: string;
+  imageUrl?: string; // URL of the associated image for review display
 }
 
 /**
@@ -176,7 +177,7 @@ export const useApproveAnnotation = () => {
 
       return { previousData };
     },
-    onSuccess: async (data, annotationId) => {
+    onSuccess: async (_data, _annotationId) => {
       // Invalidate and FORCE immediate refetch
       await Promise.all([
         queryClient.invalidateQueries({

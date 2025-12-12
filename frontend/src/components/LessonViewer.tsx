@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useLesson, useQuizzesByLesson, useQuizSubmission, useProgressTracking } from '../hooks/useCMS';
 import { LessonOverview } from './lesson/LessonOverview';
 import { LessonContent } from './lesson/LessonContent';
 import { LessonQuiz } from './lesson/LessonQuiz';
+import { Lesson, Quiz } from '../services/cms.service';
 
 // PATTERN: Progressive Learning Interface
 // WHY: Guides users through structured content
@@ -14,39 +15,41 @@ interface LessonViewerProps {
   onComplete?: () => void;
 }
 
+interface QuizSubmitResult {
+  correct: boolean;
+  explanation?: string;
+  points: number;
+}
+
 export const LessonViewer: React.FC<LessonViewerProps> = ({ lessonId, userId, onComplete }) => {
   const [currentSection, setCurrentSection] = useState<'overview' | 'content' | 'quiz'>('overview');
-  const [quizAnswers, setQuizAnswers] = useState<Record<number, any>>({});
+  const [quizAnswers, setQuizAnswers] = useState<Record<number, unknown>>({});
   const [quizResults, setQuizResults] = useState<Record<number, boolean>>({});
-  const [progress, setProgress] = useState(0);
 
-  const { data: lesson, isLoading: lessonLoading } = useLesson(lessonId);
-  const { data: quizzes, isLoading: quizzesLoading } = useQuizzesByLesson(lessonId);
+  const { data: lesson, isLoading: lessonLoading } = useLesson(lessonId) as {
+    data: Lesson | undefined;
+    isLoading: boolean;
+  };
+  const { data: quizzes, isLoading: quizzesLoading } = useQuizzesByLesson(lessonId) as {
+    data: Quiz[] | undefined;
+    isLoading: boolean;
+  };
   const submitQuiz = useQuizSubmission();
   const trackProgress = useProgressTracking();
 
-  const sectionProgress = useMemo(() => ({
+  const sectionProgress: Record<'overview' | 'content' | 'quiz', number> = useMemo(() => ({
     overview: 33,
     content: 66,
     quiz: 100
   }), []);
 
-  useEffect(() => {
-    // Calculate progress based on current section
-    const newProgress = sectionProgress[currentSection];
-    setProgress(newProgress);
-
-    // Track progress if user is logged in
-    if (userId && lesson) {
-      trackProgress.mutate({ userId, lessonId, progress: newProgress });
-    }
-  }, [currentSection, userId, lessonId, lesson, trackProgress, sectionProgress]);
+  const progress = sectionProgress[currentSection];
 
   const handleSectionChange = useCallback((section: 'overview' | 'content' | 'quiz') => {
     setCurrentSection(section);
   }, []);
 
-  const handleQuizAnswerChange = useCallback((quizId: number, answer: any) => {
+  const handleQuizAnswerChange = useCallback((quizId: number, answer: unknown) => {
     setQuizAnswers(prev => ({ ...prev, [quizId]: answer }));
   }, []);
 
@@ -72,12 +75,12 @@ export const LessonViewer: React.FC<LessonViewerProps> = ({ lessonId, userId, on
 
   const handleQuizSubmit = useCallback(async () => {
     const results: Record<number, boolean> = {};
-    const quizData = quizzes || [];
+    const quizData: Quiz[] = quizzes || [];
 
     for (const quiz of quizData) {
       const answer = quizAnswers[quiz.id];
       if (answer !== undefined) {
-        const result = await submitQuiz.mutateAsync({ quizId: quiz.id, answer });
+        const result = await submitQuiz.mutateAsync({ quizId: quiz.id, answer }) as QuizSubmitResult;
         results[quiz.id] = result.correct;
       }
     }

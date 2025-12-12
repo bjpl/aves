@@ -1,4 +1,4 @@
-import React from 'react';
+// React import handled by JSX transform
 import { usePipelineStats, useBatchGeneration } from '@/hooks/useAnnotationExercises';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -198,7 +198,7 @@ export function PipelineMonitoringDashboard() {
           )}
 
           {batchGeneration.isError && (
-            <Badge variant="destructive" className="w-fit">
+            <Badge variant="danger" className="w-fit">
               Failed to start batch generation
             </Badge>
           )}

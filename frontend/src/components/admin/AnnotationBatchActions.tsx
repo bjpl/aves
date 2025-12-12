@@ -169,7 +169,7 @@ export const AnnotationBatchActions: React.FC<AnnotationBatchActionsProps> = ({
           <ProgressBar
             value={isLoading ? 50 : 100}
             max={100}
-            variant={isLoading ? 'primary' : 'success'}
+            color={isLoading ? 'primary' : 'success'}
             size="sm"
           />
           <p className="text-xs text-gray-600 mt-1">

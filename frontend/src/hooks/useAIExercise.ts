@@ -3,7 +3,6 @@
 // PATTERN: useQuery for stats, useMutation for generation/prefetch
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '../config/queryClient';
 import {
   aiExerciseService,
   type GenerateExerciseParams,

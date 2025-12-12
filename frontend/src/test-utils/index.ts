@@ -82,17 +82,22 @@ export type { WaitForOptions } from './async-test-helpers';
  * ```
  */
 export function setupTestEnvironment() {
-  const queryClient = createTestQueryClient();
-  const axios = createMockAxiosInstance();
-  const wrapper = createQueryClientWrapper(queryClient);
+  // Import from local exports for type checking
+  const { createTestQueryClient: createClient, createQueryClientWrapper: createWrapper, clearQueryClient: clearClient } =
+    require('./react-query-test-utils');
+  const { createMockAxiosInstance: createAxios, resetAxiosMocks: resetMocks } = require('./axios-mock-config');
+
+  const queryClient = createClient();
+  const axios = createAxios();
+  const wrapper = createWrapper(queryClient);
 
   return {
     queryClient,
     axios,
     wrapper,
     cleanup: () => {
-      clearQueryClient(queryClient);
-      resetAxiosMocks(axios);
+      clearClient(queryClient);
+      resetMocks(axios);
     },
   };
 }

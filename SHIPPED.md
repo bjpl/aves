@@ -1,7 +1,7 @@
 # 🚀 AVES - SUCCESSFULLY SHIPPED
 
 **Ship Date:** November 27, 2025
-**Version:** 0.1.0
+**Version:** 0.1.1 (Updated December 11, 2025)
 **Status:** ✅ **PRODUCTION READY & DEPLOYED**
 
 ---
@@ -252,12 +252,14 @@ FRONTEND_URL=https://bjpl.github.io/aves/
 ## ✅ Shipping Checklist
 
 ### Code Quality ✅
-- [x] TypeScript compilation successful
-- [x] All tests passing (475 tests)
+- [x] TypeScript compilation successful (0 errors)
+- [x] All tests passing (475+ tests)
 - [x] ESLint configured and passing
 - [x] Code coverage at 79%
 - [x] No critical security vulnerabilities
 - [x] Dependencies up to date
+- [x] React Query v5 migration complete
+- [x] Strict type checking enabled
 
 ### Documentation ✅
 - [x] README.md comprehensive and current
@@ -388,7 +390,55 @@ FRONTEND_URL=https://bjpl.github.io/aves/
 
 ---
 
-**Last Updated:** November 27, 2025
-**Version:** 0.1.0
+**Last Updated:** December 11, 2025
+**Version:** 0.1.1
 **Status:** PRODUCTION READY
 **Deployment:** ACTIVE
+
+---
+
+## 📝 Version History
+
+### v0.1.1 (December 11, 2025)
+**TypeScript Compliance & Code Quality Update**
+
+Fixed all pre-existing TypeScript compilation errors in the frontend codebase:
+
+**Components Fixed (26 files):**
+- `BirdGallery.tsx` - Removed unused imports
+- `LessonViewer.tsx` - Fixed component structure
+- `AnnotationAnalyticsDashboard.tsx` - Removed unused Tooltip import
+- `AnnotationBatchActions.tsx` - Fixed ProgressBar variant prop
+- `AnnotationReviewCard.tsx` - Fixed BoundingBox shape type
+- `BoundingBoxEditor.tsx` - Fixed handleReset type, removed unused imports
+- `ImageGalleryTab.tsx` - Fixed selection handler types
+- `PipelineMonitoringDashboard.tsx` - Fixed Badge variant types
+- `AIExerciseContainer.tsx` - Added ExerciseType mapping, fixed options type
+- `PracticePage.tsx` - Added proper Annotation type annotation
+- `EnhancedPracticePage.tsx` - Fixed unused constants
+- `LearnPage.tsx` - Removed unused imports
+- `AnnotationReviewPage.tsx` - Fixed Alert variant, AIAnnotation imageUrl
+
+**Hooks Fixed:**
+- `useAIAnnotations.ts` - Added imageUrl to AIAnnotation interface
+- `useAIExercise.ts` - Fixed import issues
+- `useAnnotationExercises.ts` - Migrated from useAuth to useAuthStore
+- `useCMS.ts` - Migrated to React Query v5 object syntax
+- `useImageGallery.ts` - Fixed unused parameters
+
+**Services Fixed:**
+- `aiExerciseService.ts` - Fixed sessionId readonly issue
+- `apiAdapter.ts` - Removed unused variables
+- `clientDataService.ts` - Added optional chaining for undefined checks
+
+**Test Utilities:**
+- Created `react-query-test-utils.ts` for React Query testing
+- Fixed `test-utils/index.ts` require imports
+
+**Type Definitions:**
+- `image-management/types.ts` - Added SpeciesImageData interface
+
+### v0.1.0 (November 27, 2025)
+- Initial production release
+- Core features shipped
+- 79% test coverage achieved

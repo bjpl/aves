@@ -19,9 +19,10 @@ Aves leverages visual-spatial memory, AI-powered annotations, and contextual dis
 
 The platform combines GPT-4 Vision API for automatic bird feature detection with an interactive canvas-based annotation system, progressive vocabulary disclosure, and AI-powered exercise generation to create a comprehensive language learning experience.
 
-**Version**: 0.1.0
+**Version**: 0.1.1
 **Status**: ACTIVE - Production Deployment (December 2025)
-**Test Coverage**: 472 passing tests, 19 test suites passing
+**Test Coverage**: 475+ passing tests, TypeScript strict mode compliant
+**Code Quality**: Zero TypeScript compilation errors (frontend + backend)
 **Deployments**:
 - Frontend: Vercel (bjpl.github.io/aves)
 - Backend: Railway (aves-production.up.railway.app)

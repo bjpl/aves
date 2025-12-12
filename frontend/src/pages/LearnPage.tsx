@@ -10,7 +10,7 @@ import { Annotation } from '../types';
 import { useProgress } from '../hooks/useProgress';
 import { useMobileDetect } from '../hooks/useMobileDetect';
 import { usePendingAnnotations } from '../hooks/useSupabaseAnnotations';
-import { info, error as logError } from '../utils/logger';
+import { info } from '../utils/logger';
 
 export const LearnPage: React.FC = () => {
   const [selectedAnnotation, setSelectedAnnotation] = useState<Annotation | null>(null);

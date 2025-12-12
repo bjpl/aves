@@ -13,7 +13,7 @@ import { Badge } from '../ui/Badge';
 import { Modal } from '../ui/Modal';
 import { Alert } from '../ui/Alert';
 import { LazyImage } from '../ui/LazyImage';
-import { Tooltip } from '../ui/Tooltip';
+// Tooltip removed - not currently used
 import { Species } from '../../types';
 import {
   useGalleryImages,
@@ -648,11 +648,12 @@ export const ImageGalleryTab: React.FC<ImageGalleryTabProps> = ({
   // Selection handlers
   const handleToggleSelect = useCallback(
     (imageId: string) => {
-      setSelectedImages((prev) =>
-        prev.includes(imageId) ? prev.filter((id) => id !== imageId) : [...prev, imageId]
-      );
+      const newSelection = selectedImages.includes(imageId)
+        ? selectedImages.filter((id: string) => id !== imageId)
+        : [...selectedImages, imageId];
+      setSelectedImages(newSelection);
     },
-    [setSelectedImages]
+    [selectedImages, setSelectedImages]
   );
 
   const handleSelectAll = useCallback(() => {

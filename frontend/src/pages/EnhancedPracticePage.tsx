@@ -5,12 +5,15 @@ import { ExerciseRenderer } from '../components/practice/ExerciseRenderer';
 import { FeedbackDisplay } from '../components/practice/FeedbackDisplay';
 import { practiceExerciseService, PracticeExercise } from '../services/practiceExerciseService';
 
-// Practice exercise types
-const exerciseTypes = {
+// Practice exercise types available in the system
+/* eslint-disable @typescript-eslint/no-unused-vars */
+const EXERCISE_TYPES = {
   VISUAL_MATCH: 'visual_match',
   FILL_BLANK: 'fill_blank',
   MULTIPLE_CHOICE: 'multiple_choice'
-};
+} as const;
+void EXERCISE_TYPES; // Intentionally kept for documentation
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 export const EnhancedPracticePage: React.FC = () => {
   const [exercises, setExercises] = useState<PracticeExercise[]>([]);

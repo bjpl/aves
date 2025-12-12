@@ -99,11 +99,18 @@ export const AIExerciseContainer: React.FC<AIExerciseContainerProps> = ({
 
   const getExerciseOptions = (exercise: Exercise): string[] => {
     if ('options' in exercise && exercise.options) {
-      return exercise.options;
+      // Handle both array of strings and array of objects
+      if (typeof exercise.options[0] === 'string') {
+        return exercise.options as string[];
+      }
+      // For visual discrimination, options are objects - return IDs or species names
+      return (exercise.options as Array<{ id: string; species: string }>).map(opt => opt.species || opt.id);
     }
-    if ('distractors' in exercise && exercise.distractors && 'correctAnswer' in exercise) {
+    if ('distractors' in exercise && (exercise as { distractors?: string[] }).distractors && 'correctAnswer' in exercise) {
       // Combine correct answer and distractors, then shuffle
-      const options = [...exercise.distractors, exercise.correctAnswer];
+      const distractors = (exercise as { distractors: string[] }).distractors;
+      const correctAnswer = (exercise as { correctAnswer: string }).correctAnswer;
+      const options = [...distractors, correctAnswer];
       return shuffleArray(options);
     }
     return [];
@@ -116,6 +123,21 @@ export const AIExerciseContainer: React.FC<AIExerciseContainerProps> = ({
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     return shuffled;
+  };
+
+  // Map ExerciseType to ExerciseRenderer's expected type
+  const mapExerciseType = (type: string): 'visual_match' | 'fill_blank' | 'multiple_choice' => {
+    switch (type) {
+      case 'visual_discrimination':
+      case 'visual_identification':
+      case 'image_labeling':
+        return 'visual_match';
+      case 'contextual_fill':
+        return 'fill_blank';
+      case 'term_matching':
+      default:
+        return 'multiple_choice';
+    }
   };
 
   // Not available in static mode
@@ -272,15 +294,15 @@ export const AIExerciseContainer: React.FC<AIExerciseContainerProps> = ({
 
       {/* Exercise Content */}
       <ExerciseRenderer
-        type={exercise.type as any}
-        question={'prompt' in exercise ? exercise.prompt : ''}
-        imageUrl={'imageUrl' in exercise ? exercise.imageUrl : undefined}
-        translation={'translation' in exercise ? exercise.translation : undefined}
+        type={mapExerciseType(exercise.type)}
+        question={'prompt' in exercise ? (exercise.prompt ?? '') : ''}
+        imageUrl={'imageUrl' in exercise ? (exercise as { imageUrl?: string }).imageUrl : undefined}
+        translation={'translation' in exercise ? (exercise as { translation?: string }).translation : undefined}
         options={options}
         selectedAnswer={selectedAnswer}
-        correctAnswer={'correctAnswer' in exercise ? exercise.correctAnswer : ''}
+        correctAnswer={'correctAnswer' in exercise ? (exercise as { correctAnswer: string }).correctAnswer : ''}
         showFeedback={showFeedback}
-        explanation={'explanation' in exercise ? exercise.explanation : undefined}
+        explanation={'explanation' in exercise ? String((exercise as { explanation?: unknown }).explanation || '') : undefined}
         onAnswer={handleAnswer}
       />
 
@@ -298,8 +320,8 @@ export const AIExerciseContainer: React.FC<AIExerciseContainerProps> = ({
           <p className={`text-lg font-semibold ${isCorrect ? 'text-green-800' : 'text-red-800'}`}>
             {isCorrect ? '✓ Correct!' : '✗ Incorrect'}
           </p>
-          {'hint' in exercise && exercise.hint && !isCorrect && (
-            <p className="text-sm text-red-700 mt-2">Hint: {exercise.hint}</p>
+          {'hint' in exercise && (exercise as { hint?: string }).hint && !isCorrect && (
+            <p className="text-sm text-red-700 mt-2">Hint: {String((exercise as { hint?: string }).hint)}</p>
           )}
         </div>
       )}

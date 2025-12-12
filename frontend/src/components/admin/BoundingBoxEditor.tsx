@@ -6,7 +6,7 @@
  * PATTERN: Drag handles with real-time coordinate updates
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 
 type BoxShape = 'rectangle' | 'ellipse';
 
@@ -112,7 +112,7 @@ export const BoundingBoxEditor: React.FC<BoundingBoxEditorProps> = ({
   };
 
   const handleReset = () => {
-    setBox(initialBox);
+    setBox({ ...initialBox, shape: initialBox.shape || 'rectangle' as BoxShape });
   };
 
   const handleSave = (e: React.MouseEvent) => {
