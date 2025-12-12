@@ -11,7 +11,7 @@ import { api as axios } from '../config/axios';
 /**
  * Status of AI-generated annotations
  */
-export type AIAnnotationStatus = 'pending' | 'approved' | 'rejected';
+export type AIAnnotationStatus = 'pending' | 'approved' | 'rejected' | 'edited';
 
 /**
  * Extended annotation with AI metadata

@@ -12,6 +12,180 @@ import { useMobileDetect } from '../hooks/useMobileDetect';
 import { usePendingAnnotations } from '../hooks/useSupabaseAnnotations';
 import { info } from '../utils/logger';
 
+// Fallback sample annotations with real bird images for when database is empty
+const FALLBACK_LEARNING_DATA: { imageUrl: string; annotations: Annotation[] }[] = [
+  {
+    imageUrl: 'https://images.unsplash.com/photo-1606567595334-d39972c85dfd?w=1200',
+    annotations: [
+      {
+        id: 'learn-1',
+        imageId: 'cardinal-1',
+        imageUrl: 'https://images.unsplash.com/photo-1606567595334-d39972c85dfd?w=1200',
+        boundingBox: { x: 0.35, y: 0.1, width: 0.25, height: 0.15 },
+        type: 'anatomical',
+        spanishTerm: 'la cresta',
+        englishTerm: 'crest',
+        pronunciation: 'lah KREHS-tah',
+        difficultyLevel: 1,
+        status: 'approved',
+        isVisible: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 'learn-2',
+        imageId: 'cardinal-1',
+        imageUrl: 'https://images.unsplash.com/photo-1606567595334-d39972c85dfd?w=1200',
+        boundingBox: { x: 0.4, y: 0.25, width: 0.15, height: 0.1 },
+        type: 'anatomical',
+        spanishTerm: 'el pico',
+        englishTerm: 'beak',
+        pronunciation: 'el PEE-koh',
+        difficultyLevel: 1,
+        status: 'approved',
+        isVisible: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 'learn-3',
+        imageId: 'cardinal-1',
+        imageUrl: 'https://images.unsplash.com/photo-1606567595334-d39972c85dfd?w=1200',
+        boundingBox: { x: 0.2, y: 0.3, width: 0.5, height: 0.35 },
+        type: 'color',
+        spanishTerm: 'las plumas rojas',
+        englishTerm: 'red feathers',
+        pronunciation: 'lahs PLOO-mahs ROH-hahs',
+        difficultyLevel: 2,
+        status: 'approved',
+        isVisible: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ]
+  },
+  {
+    imageUrl: 'https://images.unsplash.com/photo-1591608971362-f08b2a75731a?w=1200',
+    annotations: [
+      {
+        id: 'learn-4',
+        imageId: 'bluejay-1',
+        imageUrl: 'https://images.unsplash.com/photo-1591608971362-f08b2a75731a?w=1200',
+        boundingBox: { x: 0.3, y: 0.3, width: 0.4, height: 0.3 },
+        type: 'color',
+        spanishTerm: 'las plumas azules',
+        englishTerm: 'blue feathers',
+        pronunciation: 'lahs PLOO-mahs ah-SOO-lehs',
+        difficultyLevel: 1,
+        status: 'approved',
+        isVisible: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 'learn-5',
+        imageId: 'bluejay-1',
+        imageUrl: 'https://images.unsplash.com/photo-1591608971362-f08b2a75731a?w=1200',
+        boundingBox: { x: 0.35, y: 0.15, width: 0.2, height: 0.15 },
+        type: 'anatomical',
+        spanishTerm: 'la cabeza',
+        englishTerm: 'head',
+        pronunciation: 'lah kah-BEH-sah',
+        difficultyLevel: 1,
+        status: 'approved',
+        isVisible: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ]
+  },
+  {
+    imageUrl: 'https://images.unsplash.com/photo-1611689342806-0863700ce1e4?w=1200',
+    annotations: [
+      {
+        id: 'learn-6',
+        imageId: 'eagle-1',
+        imageUrl: 'https://images.unsplash.com/photo-1611689342806-0863700ce1e4?w=1200',
+        boundingBox: { x: 0.35, y: 0.2, width: 0.2, height: 0.15 },
+        type: 'anatomical',
+        spanishTerm: 'el pico curvo',
+        englishTerm: 'curved beak',
+        pronunciation: 'el PEE-koh KOOR-boh',
+        difficultyLevel: 2,
+        status: 'approved',
+        isVisible: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 'learn-7',
+        imageId: 'eagle-1',
+        imageUrl: 'https://images.unsplash.com/photo-1611689342806-0863700ce1e4?w=1200',
+        boundingBox: { x: 0.25, y: 0.15, width: 0.15, height: 0.12 },
+        type: 'anatomical',
+        spanishTerm: 'los ojos agudos',
+        englishTerm: 'sharp eyes',
+        pronunciation: 'lohs OH-hohs ah-GOO-dohs',
+        difficultyLevel: 2,
+        status: 'approved',
+        isVisible: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 'learn-8',
+        imageId: 'eagle-1',
+        imageUrl: 'https://images.unsplash.com/photo-1611689342806-0863700ce1e4?w=1200',
+        boundingBox: { x: 0.2, y: 0.1, width: 0.6, height: 0.25 },
+        type: 'color',
+        spanishTerm: 'la cabeza blanca',
+        englishTerm: 'white head',
+        pronunciation: 'lah kah-BEH-sah BLAHN-kah',
+        difficultyLevel: 1,
+        status: 'approved',
+        isVisible: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ]
+  },
+  {
+    imageUrl: 'https://images.unsplash.com/photo-1520808663317-647b476a81b9?w=1200',
+    annotations: [
+      {
+        id: 'learn-9',
+        imageId: 'hummingbird-1',
+        imageUrl: 'https://images.unsplash.com/photo-1520808663317-647b476a81b9?w=1200',
+        boundingBox: { x: 0.3, y: 0.35, width: 0.35, height: 0.2 },
+        type: 'anatomical',
+        spanishTerm: 'las alas rápidas',
+        englishTerm: 'fast wings',
+        pronunciation: 'lahs AH-lahs RAH-pee-dahs',
+        difficultyLevel: 2,
+        status: 'approved',
+        isVisible: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 'learn-10',
+        imageId: 'hummingbird-1',
+        imageUrl: 'https://images.unsplash.com/photo-1520808663317-647b476a81b9?w=1200',
+        boundingBox: { x: 0.4, y: 0.25, width: 0.25, height: 0.1 },
+        type: 'anatomical',
+        spanishTerm: 'el pico largo',
+        englishTerm: 'long beak',
+        pronunciation: 'el PEE-koh LAHR-goh',
+        difficultyLevel: 1,
+        status: 'approved',
+        isVisible: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ]
+  }
+];
+
 export const LearnPage: React.FC = () => {
   const [selectedAnnotation, setSelectedAnnotation] = useState<Annotation | null>(null);
   const [discoveredTerms, setDiscoveredTerms] = useState<Set<string>>(new Set());
@@ -23,21 +197,29 @@ export const LearnPage: React.FC = () => {
   const { progress, recordTermDiscovery } = useProgress();
   const { isMobile } = useMobileDetect();
 
-  // Group annotations by image
+  // Group annotations by image, with fallback to sample data
   const annotationsByImage = useMemo(() => {
     const grouped = new Map<string, { imageUrl: string; annotations: Annotation[] }>();
 
-    approvedAnnotations
-      .filter(a => a.status === 'approved' && a.imageUrl)
-      .forEach(annotation => {
-        const key = annotation.imageUrl!;
-        if (!grouped.has(key)) {
-          grouped.set(key, { imageUrl: key, annotations: [] });
-        }
-        grouped.get(key)!.annotations.push(annotation);
-      });
+    // Filter and group approved annotations with images
+    const filteredAnnotations = approvedAnnotations.filter(a => a.status === 'approved' && a.imageUrl);
 
-    return Array.from(grouped.values());
+    filteredAnnotations.forEach(annotation => {
+      const key = annotation.imageUrl!;
+      if (!grouped.has(key)) {
+        grouped.set(key, { imageUrl: key, annotations: [] });
+      }
+      grouped.get(key)!.annotations.push(annotation);
+    });
+
+    const groupedArray = Array.from(grouped.values());
+
+    // Use fallback data if no approved annotations with images exist
+    if (groupedArray.length === 0) {
+      return FALLBACK_LEARNING_DATA;
+    }
+
+    return groupedArray;
   }, [approvedAnnotations]);
 
   const currentImage = annotationsByImage[currentImageIndex] || { imageUrl: '', annotations: [] };
@@ -92,6 +274,8 @@ export const LearnPage: React.FC = () => {
     );
   }
 
+  // Note: annotationsByImage always has data due to FALLBACK_LEARNING_DATA
+  // This check is kept for type safety but won't trigger in practice
   if (annotationsByImage.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50">
@@ -99,9 +283,9 @@ export const LearnPage: React.FC = () => {
           <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
           </svg>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">No Learning Materials Yet</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Loading Learning Materials...</h2>
           <p className="text-gray-600 mb-4">
-            Learning materials will appear here once annotations are approved by administrators.
+            Preparing your interactive learning experience.
           </p>
           <Link
             to="/"
@@ -114,7 +298,11 @@ export const LearnPage: React.FC = () => {
     );
   }
 
-  const totalAnnotations = approvedAnnotations.length;
+  // Calculate total annotations from all images (including fallback data)
+  const totalAnnotations = useMemo(() => {
+    return annotationsByImage.reduce((sum, img) => sum + img.annotations.length, 0);
+  }, [annotationsByImage]);
+
   const discoveryProgress = useMemo(() =>
     totalAnnotations > 0 ? Math.round((discoveredTerms.size / totalAnnotations) * 100) : 0,
     [discoveredTerms.size, totalAnnotations]

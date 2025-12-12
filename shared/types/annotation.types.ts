@@ -15,9 +15,12 @@ export interface Coordinate {
 
 export type AnnotationType = 'anatomical' | 'behavioral' | 'color' | 'pattern' | 'habitat';
 
+export type AnnotationStatus = 'pending' | 'approved' | 'rejected' | 'edited';
+
 export interface Annotation {
   id: string;
   imageId: string;
+  imageUrl?: string;  // URL of the associated image (for display)
   boundingBox: BoundingBox;
   type: AnnotationType;
   spanishTerm: string;
@@ -25,6 +28,8 @@ export interface Annotation {
   pronunciation?: string;
   difficultyLevel: 1 | 2 | 3 | 4 | 5;
   isVisible: boolean;
+  status?: AnnotationStatus;  // Workflow status
+  confidenceScore?: number;  // AI confidence score (0-1)
   createdAt: Date;
   updatedAt: Date;
 }

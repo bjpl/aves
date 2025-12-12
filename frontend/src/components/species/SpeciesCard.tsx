@@ -8,11 +8,48 @@ interface SpeciesCardProps {
   viewMode?: 'grid' | 'list';
 }
 
+// Fallback images for common species when primaryImageUrl is not available
+const FALLBACK_IMAGES: Record<string, string> = {
+  'Northern Cardinal': 'https://images.unsplash.com/photo-1606567595334-d39972c85dfd?w=800',
+  'Cardenal Rojo': 'https://images.unsplash.com/photo-1606567595334-d39972c85dfd?w=800',
+  'Blue Jay': 'https://images.unsplash.com/photo-1591608971362-f08b2a75731a?w=800',
+  'Arrendajo Azul': 'https://images.unsplash.com/photo-1591608971362-f08b2a75731a?w=800',
+  'American Robin': 'https://images.unsplash.com/photo-1552728089-57bdde30beb3?w=800',
+  'Petirrojo Americano': 'https://images.unsplash.com/photo-1552728089-57bdde30beb3?w=800',
+  'Mourning Dove': 'https://images.unsplash.com/photo-1596071915134-94f36f1d3188?w=800',
+  'Paloma Huilota': 'https://images.unsplash.com/photo-1596071915134-94f36f1d3188?w=800',
+  'House Sparrow': 'https://images.unsplash.com/photo-1521651201144-634f700b36ef?w=800',
+  'Gorrión Común': 'https://images.unsplash.com/photo-1521651201144-634f700b36ef?w=800',
+  'American Goldfinch': 'https://images.unsplash.com/photo-1580774998750-bfb65320b286?w=800',
+  'Jilguero Americano': 'https://images.unsplash.com/photo-1580774998750-bfb65320b286?w=800',
+  'Red-winged Blackbird': 'https://images.unsplash.com/photo-1588690203882-81b0d1a39b51?w=800',
+  'Tordo Sargento': 'https://images.unsplash.com/photo-1588690203882-81b0d1a39b51?w=800',
+  'Great Blue Heron': 'https://images.unsplash.com/photo-1604608672516-f1b9a53a4ed6?w=800',
+  'Garza Azulada': 'https://images.unsplash.com/photo-1604608672516-f1b9a53a4ed6?w=800',
+  'Ruby-throated Hummingbird': 'https://images.unsplash.com/photo-1520808663317-647b476a81b9?w=800',
+  'Colibrí Garganta de Rubí': 'https://images.unsplash.com/photo-1520808663317-647b476a81b9?w=800',
+  'Bald Eagle': 'https://images.unsplash.com/photo-1611689342806-0863700ce1e4?w=800',
+  'Águila Calva': 'https://images.unsplash.com/photo-1611689342806-0863700ce1e4?w=800',
+};
+
+// Generic bird image fallback
+const DEFAULT_BIRD_IMAGE = 'https://images.unsplash.com/photo-1444464666168-49d633b86797?w=800';
+
 export const SpeciesCard: React.FC<SpeciesCardProps> = React.memo(({
   species,
   onClick,
   viewMode = 'grid'
 }) => {
+  // Get image URL with fallback chain
+  const getImageUrl = (): string | undefined => {
+    if (species.primaryImageUrl) return species.primaryImageUrl;
+    if (FALLBACK_IMAGES[species.englishName]) return FALLBACK_IMAGES[species.englishName];
+    if (FALLBACK_IMAGES[species.spanishName]) return FALLBACK_IMAGES[species.spanishName];
+    return DEFAULT_BIRD_IMAGE;
+  };
+
+  const imageUrl = getImageUrl();
+
   const getConservationColor = (status?: string) => {
     switch (status) {
       case 'LC': return 'bg-green-100 text-green-800';
@@ -39,9 +76,9 @@ export const SpeciesCard: React.FC<SpeciesCardProps> = React.memo(({
         onClick={() => onClick?.(species)}
         className="flex items-center gap-4 p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-gray-200"
       >
-        {species.primaryImageUrl ? (
+        {imageUrl ? (
           <LazyImage
-            src={species.primaryImageUrl}
+            src={imageUrl}
             alt={species.spanishName}
             className="w-16 h-16 rounded-lg"
             blurAmount={10}
@@ -84,9 +121,9 @@ export const SpeciesCard: React.FC<SpeciesCardProps> = React.memo(({
       className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all cursor-pointer overflow-hidden group"
     >
       <div className="aspect-square bg-gradient-to-br from-gray-200 to-gray-300 relative">
-        {species.primaryImageUrl ? (
+        {imageUrl ? (
           <LazyImage
-            src={species.primaryImageUrl}
+            src={imageUrl}
             alt={species.spanishName}
             className="w-full h-full"
           />

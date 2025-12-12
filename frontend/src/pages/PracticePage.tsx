@@ -8,13 +8,28 @@ import { usePrefetchExercises, useAIExerciseAvailability } from '../hooks/useAIE
 import { debug } from '../utils/logger';
 import type { Exercise, Annotation } from '../types';
 
+// Fallback image URLs for annotations when database is empty
+const FALLBACK_IMAGE_URLS: Record<string, string> = {
+  'flamingo': 'https://images.unsplash.com/photo-1497206365907-f5e630693df0?w=800',
+  'sparrow': 'https://images.unsplash.com/photo-1521651201144-634f700b36ef?w=800',
+  'eagle': 'https://images.unsplash.com/photo-1611689342806-0863700ce1e4?w=800',
+  'stork': 'https://images.unsplash.com/photo-1604608672516-f1b9a53a4ed6?w=800',
+  'cardinal': 'https://images.unsplash.com/photo-1606567595334-d39972c85dfd?w=800',
+  'owl': 'https://images.unsplash.com/photo-1543549790-8b5f4a028cfb?w=800',
+  'peacock': 'https://images.unsplash.com/photo-1515442261404-cdc31a521b4c?w=800',
+  'migratory': 'https://images.unsplash.com/photo-1444464666168-49d633b86797?w=800',
+  'bluejay': 'https://images.unsplash.com/photo-1591608971362-f08b2a75731a?w=800',
+  'hummingbird': 'https://images.unsplash.com/photo-1520808663317-647b476a81b9?w=800',
+};
+
 // Sample annotations only used as fallback if API data is unavailable
 const fallbackAnnotations: Annotation[] = [
   // BEGINNER LEVEL - Recognition & Basic Vocabulary
   {
     id: '1',
     imageId: 'flamingo',
-    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
+    imageUrl: FALLBACK_IMAGE_URLS['flamingo'],
+    boundingBox: { x: 0.3, y: 0.2, width: 0.2, height: 0.15 },
     type: 'anatomical',
     spanishTerm: 'el pico',
     englishTerm: 'beak',
@@ -27,7 +42,8 @@ const fallbackAnnotations: Annotation[] = [
   {
     id: '2',
     imageId: 'flamingo',
-    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
+    imageUrl: FALLBACK_IMAGE_URLS['flamingo'],
+    boundingBox: { x: 0.3, y: 0.6, width: 0.15, height: 0.35 },
     type: 'anatomical',
     spanishTerm: 'las patas',
     englishTerm: 'legs',
@@ -40,7 +56,8 @@ const fallbackAnnotations: Annotation[] = [
   {
     id: '3',
     imageId: 'sparrow',
-    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
+    imageUrl: FALLBACK_IMAGE_URLS['sparrow'],
+    boundingBox: { x: 0.25, y: 0.3, width: 0.5, height: 0.25 },
     type: 'anatomical',
     spanishTerm: 'las alas',
     englishTerm: 'wings',
@@ -53,7 +70,8 @@ const fallbackAnnotations: Annotation[] = [
   {
     id: '4',
     imageId: 'eagle',
-    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
+    imageUrl: FALLBACK_IMAGE_URLS['eagle'],
+    boundingBox: { x: 0.35, y: 0.15, width: 0.15, height: 0.1 },
     type: 'anatomical',
     spanishTerm: 'los ojos',
     englishTerm: 'eyes',
@@ -65,12 +83,13 @@ const fallbackAnnotations: Annotation[] = [
   },
   {
     id: '5',
-    imageId: 'stork',
-    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
-    type: 'habitat',
-    spanishTerm: 'el nido',
-    englishTerm: 'nest',
-    pronunciation: 'el NEE-doh',
+    imageId: 'cardinal',
+    imageUrl: FALLBACK_IMAGE_URLS['cardinal'],
+    boundingBox: { x: 0.3, y: 0.1, width: 0.3, height: 0.2 },
+    type: 'anatomical',
+    spanishTerm: 'la cresta',
+    englishTerm: 'crest',
+    pronunciation: 'lah KREHS-tah',
     difficultyLevel: 1,
     isVisible: true,
     createdAt: new Date(),
@@ -81,7 +100,8 @@ const fallbackAnnotations: Annotation[] = [
   {
     id: '6',
     imageId: 'flamingo',
-    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
+    imageUrl: FALLBACK_IMAGE_URLS['flamingo'],
+    boundingBox: { x: 0.2, y: 0.25, width: 0.6, height: 0.4 },
     type: 'color',
     spanishTerm: 'las plumas rosadas',
     englishTerm: 'pink feathers',
@@ -94,7 +114,8 @@ const fallbackAnnotations: Annotation[] = [
   {
     id: '7',
     imageId: 'eagle',
-    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
+    imageUrl: FALLBACK_IMAGE_URLS['eagle'],
+    boundingBox: { x: 0.3, y: 0.7, width: 0.2, height: 0.2 },
     type: 'anatomical',
     spanishTerm: 'las garras',
     englishTerm: 'talons',
@@ -107,7 +128,8 @@ const fallbackAnnotations: Annotation[] = [
   {
     id: '8',
     imageId: 'stork',
-    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
+    imageUrl: FALLBACK_IMAGE_URLS['stork'],
+    boundingBox: { x: 0.35, y: 0.2, width: 0.15, height: 0.35 },
     type: 'anatomical',
     spanishTerm: 'el cuello largo',
     englishTerm: 'long neck',
@@ -120,7 +142,8 @@ const fallbackAnnotations: Annotation[] = [
   {
     id: '9',
     imageId: 'cardinal',
-    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
+    imageUrl: FALLBACK_IMAGE_URLS['cardinal'],
+    boundingBox: { x: 0.25, y: 0.15, width: 0.35, height: 0.25 },
     type: 'anatomical',
     spanishTerm: 'la cresta roja',
     englishTerm: 'red crest',
@@ -133,7 +156,8 @@ const fallbackAnnotations: Annotation[] = [
   {
     id: '10',
     imageId: 'owl',
-    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
+    imageUrl: FALLBACK_IMAGE_URLS['owl'],
+    boundingBox: { x: 0.25, y: 0.15, width: 0.5, height: 0.25 },
     type: 'behavioral',
     spanishTerm: 'caza de noche',
     englishTerm: 'hunts at night',
@@ -148,7 +172,8 @@ const fallbackAnnotations: Annotation[] = [
   {
     id: '11',
     imageId: 'peacock',
-    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
+    imageUrl: FALLBACK_IMAGE_URLS['peacock'],
+    boundingBox: { x: 0.1, y: 0.3, width: 0.8, height: 0.5 },
     type: 'behavioral',
     spanishTerm: 'hacer la rueda',
     englishTerm: 'display tail feathers',
@@ -160,12 +185,13 @@ const fallbackAnnotations: Annotation[] = [
   },
   {
     id: '12',
-    imageId: 'migratory',
-    boundingBox: { x: 0, y: 0, width: 1, height: 1 },
+    imageId: 'hummingbird',
+    imageUrl: FALLBACK_IMAGE_URLS['hummingbird'],
+    boundingBox: { x: 0.2, y: 0.2, width: 0.6, height: 0.6 },
     type: 'behavioral',
-    spanishTerm: 'migrar al sur',
-    englishTerm: 'migrate south',
-    pronunciation: 'mee-GRAHR ahl soor',
+    spanishTerm: 'volar en el lugar',
+    englishTerm: 'hover in place',
+    pronunciation: 'boh-LAHR ehn el loo-GAHR',
     difficultyLevel: 3,
     isVisible: true,
     createdAt: new Date(),

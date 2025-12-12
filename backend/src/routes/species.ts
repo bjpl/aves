@@ -64,7 +64,14 @@ router.get('/species', async (_req: Request, res: Response) => {
         s.description_spanish as "descriptionSpanish",
         s.description_english as "descriptionEnglish",
         s.fun_fact as "funFact",
-        COUNT(DISTINCT i.id) as "annotationCount"
+        COUNT(DISTINCT i.id) as "annotationCount",
+        (
+          SELECT COALESCE(img.url, img.thumbnail_url)
+          FROM images img
+          WHERE img.species_id = s.id
+          ORDER BY img.annotation_count DESC NULLS LAST, img.created_at DESC
+          LIMIT 1
+        ) as "primaryImageUrl"
       FROM species s
       LEFT JOIN images i ON i.species_id = s.id
       GROUP BY s.id
