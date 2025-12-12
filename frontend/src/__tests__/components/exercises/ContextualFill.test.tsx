@@ -225,8 +225,11 @@ describe('ContextualFill', () => {
       await user.click(correctOption);
 
       await waitFor(() => {
-        const blankSpan = screen.getByText(mockExercise.correctAnswer);
-        expect(blankSpan.closest('span')).toHaveClass('text-green-600');
+        const blankSpans = screen.getAllByText(mockExercise.correctAnswer);
+        // Find the span in the sentence (not in the button)
+        const sentenceSpan = blankSpans.find(el => el.tagName === 'SPAN' && el.className.includes('text-green-600'));
+        expect(sentenceSpan).toBeDefined();
+        expect(sentenceSpan).toHaveClass('text-green-600');
       });
     });
   });
@@ -315,8 +318,11 @@ describe('ContextualFill', () => {
       await user.click(incorrectOption);
 
       await waitFor(() => {
-        const blankSpan = screen.getByText(mockExercise.options[1]);
-        expect(blankSpan.closest('span')).toHaveClass('text-red-600');
+        const blankSpans = screen.getAllByText(mockExercise.options[1]);
+        // Find the span in the sentence (not in the button)
+        const sentenceSpan = blankSpans.find(el => el.tagName === 'SPAN' && el.className.includes('text-red-600'));
+        expect(sentenceSpan).toBeDefined();
+        expect(sentenceSpan).toHaveClass('text-red-600');
       });
     });
 

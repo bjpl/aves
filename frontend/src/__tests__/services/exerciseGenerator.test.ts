@@ -289,10 +289,14 @@ describe('ExerciseGenerator', () => {
       expect(emptyGenerator.generateExercise('contextual_fill')).toBeNull();
     });
 
-    it('should generate unique exercise IDs', () => {
+    it('should generate unique exercise IDs', async () => {
       const exercise1 = generator.generateExercise('visual_discrimination');
+      // Small delay to ensure different timestamps
+      await new Promise(resolve => setTimeout(resolve, 2));
       const exercise2 = generator.generateExercise('visual_discrimination');
 
+      expect(exercise1).not.toBeNull();
+      expect(exercise2).not.toBeNull();
       expect(exercise1?.id).not.toBe(exercise2?.id);
     });
 

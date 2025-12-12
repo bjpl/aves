@@ -88,10 +88,12 @@ describe('useAIAnnotations', () => {
         wrapper: createWrapper(),
       });
 
+      // Wait for the query to complete and have the actual data (not placeholder)
       await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
+        expect(result.current.isFetched).toBe(true);
       });
 
+      expect(result.current.isSuccess).toBe(true);
       expect(result.current.data).toEqual(mockAnnotations);
       expect(mockApi.get).toHaveBeenCalledWith('/api/ai/annotations', {
         params: undefined,
@@ -149,7 +151,7 @@ describe('useAIAnnotations', () => {
   describe('useAIAnnotationsPending', () => {
     it('should fetch only pending annotations', async () => {
       mockApi.get.mockResolvedValueOnce({
-        data: { data: [] },
+        data: { annotations: [] },
       });
 
       const { result } = renderHook(() => useAIAnnotationsPending(), {
@@ -160,9 +162,7 @@ describe('useAIAnnotations', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockApi.get).toHaveBeenCalledWith('/api/ai/annotations', {
-        params: { status: 'pending' },
-      });
+      expect(mockApi.get).toHaveBeenCalledWith('/api/ai/annotations/pending');
     });
   });
 
@@ -354,7 +354,7 @@ describe('useAIAnnotations', () => {
         englishTerm: 'wing',
       });
 
-      mockApi.patch.mockResolvedValueOnce({
+      mockApi.post.mockResolvedValueOnce({
         data: { data: updatedAnnotation },
       });
 

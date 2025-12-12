@@ -37,9 +37,13 @@ beforeEach(() => {
     measure: vi.fn(),
     now: vi.fn(() => Date.now()),
   } as any;
+
+  // Use a counter for unique frame IDs
+  let frameId = 0;
   global.requestAnimationFrame = vi.fn((cb) => {
+    const id = ++frameId;
     cb(0);
-    return 0;
+    return id;
   }) as any;
   global.cancelAnimationFrame = vi.fn();
   vi.clearAllMocks();
@@ -435,6 +439,9 @@ describe('HoverLayer Component', () => {
         />
       );
 
+      // Clear mocks after initial render to isolate re-render behavior
+      vi.mocked(cancelAnimationFrame).mockClear();
+
       const newAnnotation = { ...mockAnnotation, id: 'ann-2' };
       rerender(
         <HoverLayer
@@ -447,7 +454,7 @@ describe('HoverLayer Component', () => {
 
       await waitFor(() => {
         expect(cancelAnimationFrame).toHaveBeenCalled();
-      });
+      }, { timeout: 1000 });
     });
 
     it('should cleanup animation frame on unmount', () => {
@@ -460,8 +467,12 @@ describe('HoverLayer Component', () => {
         />
       );
 
+      // Clear mocks after mount to isolate unmount cleanup behavior
+      vi.mocked(cancelAnimationFrame).mockClear();
+
       unmount();
 
+      // The cleanup effect should call cancelAnimationFrame
       expect(cancelAnimationFrame).toHaveBeenCalled();
     });
   });

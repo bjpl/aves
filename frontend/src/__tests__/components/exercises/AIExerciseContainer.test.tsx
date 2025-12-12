@@ -36,6 +36,13 @@ vi.mock('../../../hooks/useAIExercise', () => ({
   })),
 }));
 
+// Import the actual hooks after vi.mock to get typed mocked versions
+import { useGenerateAIExercise, useAIExerciseAvailability } from '../../../hooks/useAIExercise';
+
+// Create mocked versions using vi.mocked()
+const mockUseGenerateAIExercise = vi.mocked(useGenerateAIExercise);
+const mockUseAIExerciseAvailability = vi.mocked(useAIExerciseAvailability);
+
 // Mock ExerciseRenderer
 vi.mock('../../../components/practice/ExerciseRenderer', () => ({
   ExerciseRenderer: ({ onAnswer }: any) => (
@@ -52,6 +59,34 @@ describe('AIExerciseContainer', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Reset to default mock implementations
+    mockUseAIExerciseAvailability.mockReturnValue({
+      isAvailable: true,
+      reason: '',
+    });
+
+    mockUseGenerateAIExercise.mockReturnValue({
+      mutate: mockGenerateExercise,
+      data: {
+        exercise: {
+          id: 'ai-ex-1',
+          type: 'fill_in_blank',
+          prompt: '___  es un pájaro grande.',
+          correctAnswer: 'El flamenco',
+          options: ['El flamenco', 'La águila', 'El gorrión', 'El búho'],
+          explanation: 'Flamingos are large wading birds.',
+        },
+        metadata: {
+          generated: true,
+          difficulty: 3,
+          cached: false,
+        },
+      },
+      isPending: false,
+      error: null,
+      reset: mockReset,
+    });
   });
 
   describe('Rendering - Available State', () => {
@@ -88,14 +123,12 @@ describe('AIExerciseContainer', () => {
 
   describe('Auto-generation', () => {
     it('should auto-generate exercise on mount when autoGenerate is true', () => {
-      const { useGenerateAIExercise, useAIExerciseAvailability } = require('../../../hooks/useAIExercise');
-
-      useAIExerciseAvailability.mockReturnValue({
+      mockUseAIExerciseAvailability.mockReturnValue({
         isAvailable: true,
         reason: '',
       });
 
-      useGenerateAIExercise.mockReturnValue({
+      mockUseGenerateAIExercise.mockReturnValue({
         mutate: mockGenerateExercise,
         data: null,
         isPending: false,
@@ -113,9 +146,7 @@ describe('AIExerciseContainer', () => {
     });
 
     it('should not auto-generate when autoGenerate is false', () => {
-      const { useGenerateAIExercise } = require('../../../hooks/useAIExercise');
-
-      useGenerateAIExercise.mockReturnValue({
+      mockUseGenerateAIExercise.mockReturnValue({
         mutate: mockGenerateExercise,
         data: null,
         isPending: false,
@@ -131,14 +162,12 @@ describe('AIExerciseContainer', () => {
     });
 
     it('should pass exerciseType to generator', () => {
-      const { useGenerateAIExercise, useAIExerciseAvailability } = require('../../../hooks/useAIExercise');
-
-      useAIExerciseAvailability.mockReturnValue({
+      mockUseAIExerciseAvailability.mockReturnValue({
         isAvailable: true,
         reason: '',
       });
 
-      useGenerateAIExercise.mockReturnValue({
+      mockUseGenerateAIExercise.mockReturnValue({
         mutate: mockGenerateExercise,
         data: null,
         isPending: false,
@@ -166,9 +195,7 @@ describe('AIExerciseContainer', () => {
 
   describe('Loading State', () => {
     it('should display loading spinner when generating', () => {
-      const { useGenerateAIExercise } = require('../../../hooks/useAIExercise');
-
-      useGenerateAIExercise.mockReturnValue({
+      mockUseGenerateAIExercise.mockReturnValue({
         mutate: mockGenerateExercise,
         data: null,
         isPending: true,
@@ -182,9 +209,7 @@ describe('AIExerciseContainer', () => {
     });
 
     it('should show AI-powered message during loading', () => {
-      const { useGenerateAIExercise } = require('../../../hooks/useAIExercise');
-
-      useGenerateAIExercise.mockReturnValue({
+      mockUseGenerateAIExercise.mockReturnValue({
         mutate: mockGenerateExercise,
         data: null,
         isPending: true,
@@ -200,9 +225,7 @@ describe('AIExerciseContainer', () => {
 
   describe('Error State', () => {
     it('should display error message when generation fails', () => {
-      const { useGenerateAIExercise } = require('../../../hooks/useAIExercise');
-
-      useGenerateAIExercise.mockReturnValue({
+      mockUseGenerateAIExercise.mockReturnValue({
         mutate: mockGenerateExercise,
         data: null,
         isPending: false,
@@ -217,9 +240,7 @@ describe('AIExerciseContainer', () => {
     });
 
     it('should show Try Again button on error', () => {
-      const { useGenerateAIExercise } = require('../../../hooks/useAIExercise');
-
-      useGenerateAIExercise.mockReturnValue({
+      mockUseGenerateAIExercise.mockReturnValue({
         mutate: mockGenerateExercise,
         data: null,
         isPending: false,
@@ -234,10 +255,9 @@ describe('AIExerciseContainer', () => {
 
     it('should call onError callback when error occurs', () => {
       const mockOnError = vi.fn();
-      const { useGenerateAIExercise } = require('../../../hooks/useAIExercise');
 
       const testError = new Error('Test error');
-      useGenerateAIExercise.mockReturnValue({
+      mockUseGenerateAIExercise.mockReturnValue({
         mutate: mockGenerateExercise,
         data: null,
         isPending: false,
@@ -253,9 +273,7 @@ describe('AIExerciseContainer', () => {
 
   describe('Unavailable State', () => {
     it('should display unavailable message when AI not available', () => {
-      const { useAIExerciseAvailability } = require('../../../hooks/useAIExercise');
-
-      useAIExerciseAvailability.mockReturnValue({
+      mockUseAIExerciseAvailability.mockReturnValue({
         isAvailable: false,
         reason: 'Backend server not connected',
       });
@@ -267,9 +285,7 @@ describe('AIExerciseContainer', () => {
     });
 
     it('should explain requirement for backend connection', () => {
-      const { useAIExerciseAvailability } = require('../../../hooks/useAIExercise');
-
-      useAIExerciseAvailability.mockReturnValue({
+      mockUseAIExerciseAvailability.mockReturnValue({
         isAvailable: false,
         reason: 'Static mode',
       });
@@ -361,9 +377,7 @@ describe('AIExerciseContainer', () => {
     });
 
     it('should mark loading state with aria-live', () => {
-      const { useGenerateAIExercise } = require('../../../hooks/useAIExercise');
-
-      useGenerateAIExercise.mockReturnValue({
+      mockUseGenerateAIExercise.mockReturnValue({
         mutate: mockGenerateExercise,
         data: null,
         isPending: true,
@@ -378,9 +392,7 @@ describe('AIExerciseContainer', () => {
     });
 
     it('should mark error with aria-live assertive', () => {
-      const { useGenerateAIExercise } = require('../../../hooks/useAIExercise');
-
-      useGenerateAIExercise.mockReturnValue({
+      mockUseGenerateAIExercise.mockReturnValue({
         mutate: mockGenerateExercise,
         data: null,
         isPending: false,

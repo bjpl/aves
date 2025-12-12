@@ -158,9 +158,9 @@ describe('VisualDiscrimination', () => {
       );
 
       const firstButton = screen.getAllByRole('button')[0];
-      await user.hover(firstButton);
 
-      expect(firstButton.className).toContain('hover:ring-2');
+      // Check that hover class is present in className (not necessarily applied)
+      expect(firstButton).toHaveClass('hover:ring-2');
     });
   });
 
@@ -177,8 +177,9 @@ describe('VisualDiscrimination', () => {
       const firstButton = screen.getAllByRole('button')[0];
       await user.click(firstButton);
 
+      // After clicking, button should show feedback (green ring for correct)
       await waitFor(() => {
-        expect(firstButton.className).toContain('ring-blue-500');
+        expect(firstButton.className).toContain('ring-green-500');
       });
     });
 

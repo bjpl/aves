@@ -170,6 +170,20 @@ describe('useMobileDetect', () => {
         value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)',
       });
 
+      // Mock touch capability for mobile detection
+      Object.defineProperty(navigator, 'maxTouchPoints', {
+        writable: true,
+        configurable: true,
+        value: 5,
+      });
+
+      // Set mobile width (< 768px)
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 375, // iPhone width
+      });
+
       window.matchMedia = createMatchMedia(true);
 
       const { result } = renderHook(() => useMobileDetect());
@@ -182,6 +196,20 @@ describe('useMobileDetect', () => {
         writable: true,
         configurable: true,
         value: 'Mozilla/5.0 (Linux; Android 11; SM-G991B)',
+      });
+
+      // Mock touch capability for mobile detection
+      Object.defineProperty(navigator, 'maxTouchPoints', {
+        writable: true,
+        configurable: true,
+        value: 5,
+      });
+
+      // Set mobile width (< 768px)
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 412, // Android phone width
       });
 
       window.matchMedia = createMatchMedia(true);

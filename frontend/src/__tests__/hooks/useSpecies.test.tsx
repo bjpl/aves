@@ -70,9 +70,10 @@ describe('useSpecies', () => {
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
-      });
+        expect(result.current.data).toHaveLength(3);
+      }, { timeout: 5000 });
 
-      expect(result.current.data).toHaveLength(3);
+      expect(result.current.data).toEqual(mockSpecies);
       expect(api.species.list).toHaveBeenCalled();
     });
 

@@ -32,15 +32,19 @@ const {
   mockClearCache: vi.fn(),
 }));
 
-vi.mock('../../services/aiExerciseService', () => ({
-  aiExerciseService: {
+vi.mock('../../services/aiExerciseService', () => {
+  const mockService = {
     generateExercise: mockGenerateExercise,
     getStats: mockGetStats,
     isAvailable: mockIsAvailable,
     prefetchExercises: mockPrefetchExercises,
     clearCache: mockClearCache,
-  },
-}));
+  };
+  return {
+    aiExerciseService: mockService,
+    default: mockService,
+  };
+});
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -229,18 +233,30 @@ describe('useAIExercise Hooks', () => {
     });
 
     it('should handle stats fetch errors', async () => {
-      mockGetStats.mockRejectedValueOnce(
+      // Clear and reset mocks
+      mockGetStats.mockClear();
+      mockIsAvailable.mockClear();
+
+      // Setup: isAvailable returns true, getStats rejects
+      mockIsAvailable.mockReturnValue(true);
+      mockGetStats.mockRejectedValue(
         new Error('Stats unavailable')
       );
-      mockIsAvailable.mockReturnValueOnce(true);
 
       const { result } = renderHook(() => useAIExerciseStats(), {
         wrapper: createWrapper(),
       });
 
-      await waitFor(() => {
-        expect(result.current.isError).toBe(true);
-      });
+      // Wait for error state (note: wrapper disables retry)
+      await waitFor(
+        () => {
+          expect(result.current.isError).toBe(true);
+        },
+        { timeout: 5000, interval: 50 }
+      );
+
+      expect(result.current.error).toBeDefined();
+      expect(result.current.error?.message).toBe('Stats unavailable');
     });
   });
 
@@ -389,8 +405,9 @@ describe('useAIExercise Hooks', () => {
         },
       };
 
-      mockGenerateExercise.mockResolvedValueOnce(
-        mockResponse
+      // Use delayed promise to catch loading state
+      mockGenerateExercise.mockImplementation(
+        () => new Promise(resolve => setTimeout(() => resolve(mockResponse), 100))
       );
 
       const { result } = renderHook(() => useGenerateAIExerciseOptimistic('user-1'), {
@@ -399,11 +416,19 @@ describe('useAIExercise Hooks', () => {
 
       const generatePromise = result.current.generate({ type: 'adaptive' });
 
-      expect(result.current.isLoading).toBe(true);
+      // Check loading state after mutation starts
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(true);
+      });
 
-      await waitFor(async () => {
-        const response = await generatePromise;
-        expect(response).toEqual(mockResponse);
+      // Wait for completion
+      const response = await generatePromise;
+      expect(response).toEqual(mockResponse);
+
+      // Verify final state
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+        expect(result.current.data).toEqual(mockResponse);
       });
     });
 
