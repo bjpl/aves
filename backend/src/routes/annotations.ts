@@ -73,31 +73,34 @@ router.get('/annotations', async (req: Request, res: Response) => {
   try {
     const { imageId } = req.query;
 
+    // Join with images table to get imageUrl for each annotation
     let query = `
       SELECT
-        id,
-        image_id as "imageId",
-        bounding_box as "boundingBox",
-        annotation_type as "type",
-        spanish_term as "spanishTerm",
-        english_term as "englishTerm",
-        pronunciation,
-        difficulty_level as "difficultyLevel",
-        is_visible as "isVisible",
-        created_at as "createdAt",
-        updated_at as "updatedAt"
-      FROM annotations
-      WHERE is_visible = true
+        a.id,
+        a.image_id as "imageId",
+        a.bounding_box as "boundingBox",
+        a.annotation_type as "type",
+        a.spanish_term as "spanishTerm",
+        a.english_term as "englishTerm",
+        a.pronunciation,
+        a.difficulty_level as "difficultyLevel",
+        a.is_visible as "isVisible",
+        a.created_at as "createdAt",
+        a.updated_at as "updatedAt",
+        COALESCE(i.url, i.thumbnail_url) as "imageUrl"
+      FROM annotations a
+      LEFT JOIN images i ON a.image_id = i.id
+      WHERE a.is_visible = true
     `;
 
     const values: string[] = [];
 
     if (imageId && typeof imageId === 'string') {
-      query += ' AND image_id = $1';
+      query += ' AND a.image_id = $1';
       values.push(imageId);
     }
 
-    query += ' ORDER BY created_at ASC';
+    query += ' ORDER BY a.created_at ASC';
 
     const result = await pool.query(query, values);
 

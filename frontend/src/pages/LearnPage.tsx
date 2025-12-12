@@ -9,7 +9,7 @@ import { AudioPlayer } from '../components/audio/AudioPlayer';
 import { Annotation } from '../types';
 import { useProgress } from '../hooks/useProgress';
 import { useMobileDetect } from '../hooks/useMobileDetect';
-import { usePendingAnnotations } from '../hooks/useSupabaseAnnotations';
+import { useAnnotations } from '../hooks/useAnnotations';
 import { info } from '../utils/logger';
 
 // Fallback sample annotations with real bird images for when database is empty
@@ -192,8 +192,8 @@ export const LearnPage: React.FC = () => {
   const [showPracticePrompt, setShowPracticePrompt] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // Fetch approved annotations from pipeline
-  const { data: approvedAnnotations = [], isLoading: loading } = usePendingAnnotations();
+  // Fetch approved annotations from production annotations table
+  const { data: approvedAnnotations = [], isLoading: loading } = useAnnotations();
   const { progress, recordTermDiscovery } = useProgress();
   const { isMobile } = useMobileDetect();
 
@@ -201,8 +201,9 @@ export const LearnPage: React.FC = () => {
   const annotationsByImage = useMemo(() => {
     const grouped = new Map<string, { imageUrl: string; annotations: Annotation[] }>();
 
-    // Filter and group approved annotations with images
-    const filteredAnnotations = approvedAnnotations.filter(a => a.status === 'approved' && a.imageUrl);
+    // Filter annotations that have imageUrl (from JOIN with images table)
+    // All annotations from useAnnotations are already visible/approved
+    const filteredAnnotations = approvedAnnotations.filter(a => a.imageUrl);
 
     filteredAnnotations.forEach(annotation => {
       const key = annotation.imageUrl!;
@@ -214,7 +215,7 @@ export const LearnPage: React.FC = () => {
 
     const groupedArray = Array.from(grouped.values());
 
-    // Use fallback data if no approved annotations with images exist
+    // Use fallback data if no annotations with images exist
     if (groupedArray.length === 0) {
       return FALLBACK_LEARNING_DATA;
     }
