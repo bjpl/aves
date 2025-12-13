@@ -148,17 +148,18 @@ test.describe('Responsive Design - Viewport Transitions', () => {
 
     // Mobile viewport - navigate
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.click('text=Learn');
+    // Use specific selector to avoid strict mode violation
+    await page.getByRole('link', { name: 'Learn' }).first().click();
     await page.waitForURL(/\/learn/);
 
     // Tablet viewport - navigate
     await page.setViewportSize({ width: 768, height: 1024 });
-    await page.click('text=Practice');
+    await page.getByRole('link', { name: 'Practice' }).first().click();
     await page.waitForURL(/\/practice/);
 
     // Desktop viewport - navigate
     await page.setViewportSize({ width: 1920, height: 1080 });
-    await page.click('text=Species');
+    await page.getByRole('link', { name: 'Species' }).first().click();
     await page.waitForURL(/\/species/);
 
     // Verify final page loaded

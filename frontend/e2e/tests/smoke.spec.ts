@@ -39,11 +39,17 @@ test.describe('Smoke Tests', () => {
   test('should have working navigation', async ({ page }) => {
     await page.goto('/');
 
-    // Verify all nav links are present and clickable
-    const navLinks = ['Learn', 'Practice', 'Species'];
+    // Verify main nav links are present and clickable
+    // Use specific selectors to avoid strict mode violations (multiple matches)
+    const navLinks = [
+      { name: 'Learn', href: '/learn' },
+      { name: 'Practice', href: '/practice' },
+      { name: 'Species', href: '/species' }
+    ];
 
     for (const link of navLinks) {
-      const element = page.locator(`text=${link}`);
+      // Use role-based selector for the navigation link
+      const element = page.getByRole('link', { name: link.name }).first();
       await expect(element).toBeVisible();
     }
   });
@@ -54,7 +60,8 @@ test.describe('Smoke Tests', () => {
     // Measure navigation time
     const startTime = Date.now();
 
-    await page.click('text=Learn');
+    // Use specific selector to avoid strict mode violation
+    await page.getByRole('link', { name: 'Learn' }).first().click();
     await page.waitForURL(/\/learn/);
 
     const endTime = Date.now();
