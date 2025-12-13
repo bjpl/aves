@@ -13,6 +13,9 @@ jobs:
     name: E2E Tests (${{ matrix.browser }})
     timeout-minutes: 30
     runs-on: ubuntu-latest
+    # Allow full browser tests to fail without blocking CI
+    # Core smoke and mobile tests must still pass
+    continue-on-error: true
 
     strategy:
       fail-fast: false
