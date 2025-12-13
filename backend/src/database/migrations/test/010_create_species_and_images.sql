@@ -1,6 +1,9 @@
 -- Test Migration 010: Create Simplified Species and Images Tables
 -- Purpose: Simplified schema for fast test execution
 
+-- Set search path to ensure tables are created in test schema
+SET search_path TO aves_test, public;
+
 -- ============================================================================
 -- SPECIES TABLE (Simplified for testing)
 -- ============================================================================

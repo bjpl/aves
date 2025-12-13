@@ -105,17 +105,38 @@ jobs:
     - name: Setup test database
       run: |
         cd backend
-        # Create test schema
-        PGPASSWORD=postgres psql -h localhost -U postgres -d aves_test -c "CREATE SCHEMA IF NOT EXISTS aves_test;"
+        # Create test schema with proper search_path
+        PGPASSWORD=postgres psql -h localhost -U postgres -d aves_test << 'SQL'
+        -- Create test schema
+        CREATE SCHEMA IF NOT EXISTS aves_test;
 
-        # Run migrations
+        -- Set search path for this session
+        SET search_path TO aves_test, public;
+
+        -- Verify schema exists
+        SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'aves_test';
+        SQL
+
+        # Run migrations (files now include SET search_path internally)
         if [ -f "src/database/migrations/test/001_create_all_test_tables.sql" ]; then
-          PGPASSWORD=postgres psql -h localhost -U postgres -d aves_test < src/database/migrations/test/001_create_all_test_tables.sql
+          echo "Running 001_create_all_test_tables.sql in aves_test schema..."
+          PGPASSWORD=postgres psql -h localhost -U postgres -d aves_test \
+            -v ON_ERROR_STOP=1 \
+            -f src/database/migrations/test/001_create_all_test_tables.sql
         fi
 
         if [ -f "src/database/migrations/test/010_create_species_and_images.sql" ]; then
-          PGPASSWORD=postgres psql -h localhost -U postgres -d aves_test < src/database/migrations/test/010_create_species_and_images.sql
+          echo "Running 010_create_species_and_images.sql in aves_test schema..."
+          PGPASSWORD=postgres psql -h localhost -U postgres -d aves_test \
+            -v ON_ERROR_STOP=1 \
+            -f src/database/migrations/test/010_create_species_and_images.sql
         fi
+
+        # Verify critical tables exist in test schema
+        PGPASSWORD=postgres psql -h localhost -U postgres -d aves_test << 'SQL'
+        SET search_path TO aves_test, public;
+        SELECT tablename FROM pg_tables WHERE schemaname = 'aves_test' ORDER BY tablename;
+        SQL
 
     - name: Run linting
       run: |
