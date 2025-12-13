@@ -199,13 +199,14 @@ describe('ExerciseCache', () => {
 
     it('should clean expired entries', async () => {
       // Use longer TTL values for more reliable timing in CI/WSL environments
-      cache.set('key1', [mockExercise], 100);
-      cache.set('key2', [mockExercise], 100);
-      cache.set('key3', [mockExercise], 2000);
+      // WSL2/Windows timer precision can be imprecise, so use generous margins
+      cache.set('key1', [mockExercise], 50);
+      cache.set('key2', [mockExercise], 50);
+      cache.set('key3', [mockExercise], 5000);
 
-      // Wait long enough to ensure entries with 100ms TTL have expired
-      // Adding generous buffer to account for timing precision on different platforms
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Wait significantly longer than short TTL to ensure expiration
+      // 500ms wait for 50ms TTL gives 10x buffer for timer imprecision
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       const cleaned = cache.cleanExpired();
 
