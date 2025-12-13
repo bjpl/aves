@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ProgressSection } from '../components/learn/ProgressSection';
 import { BirdSelector } from '../components/learn/BirdSelector';
 import { InteractiveBirdImage } from '../components/learn/InteractiveBirdImage';
 import { VocabularyPanel } from '../components/learn/VocabularyPanel';
+import { LearningPathSelector } from '../components/learn/LearningPathSelector';
+import { useLearnContent, useLearningModules, LearningModule } from '../hooks/useLearnContent';
+import { useSpacedRepetition } from '../hooks/useSpacedRepetition';
 
-// Rich bird learning data with multiple images and annotations
-const birdLearningData = [
+// Fallback bird learning data for when API is unavailable
+const fallbackBirdLearningData = [
   {
     id: 'flamingo',
     name: 'Greater Flamingo',
@@ -170,22 +173,137 @@ const birdLearningData = [
 ];
 
 export const EnhancedLearnPage: React.FC = () => {
-  const [selectedBird, setSelectedBird] = useState(birdLearningData[0]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const moduleIdFromUrl = searchParams.get('moduleId') || undefined;
+
+  const [selectedModuleId, setSelectedModuleId] = useState<string | undefined>(moduleIdFromUrl);
+  const [selectedBirdIndex, setSelectedBirdIndex] = useState(0);
   const [discoveredTerms, setDiscoveredTerms] = useState<Set<string>>(new Set());
   const [hoveredAnnotation, setHoveredAnnotation] = useState<string | null>(null);
   const [selectedAnnotation, setSelectedAnnotation] = useState<any>(null);
 
-  const handleAnnotationClick = (annotation: any) => {
+  // Fetch content with optional module filter
+  const { data: apiContent = [], isLoading, error } = useLearnContent({
+    moduleId: selectedModuleId,
+    limit: 100
+  });
+
+  const { data: modules = [] } = useLearningModules();
+  const { markDiscovered } = useSpacedRepetition();
+
+  // Transform API content into bird learning format
+  const birdLearningData = useMemo(() => {
+    if (!apiContent.length) return fallbackBirdLearningData;
+
+    // Group content by imageUrl
+    const contentByImage = apiContent.reduce((acc, item) => {
+      if (!acc[item.imageUrl]) {
+        acc[item.imageUrl] = {
+          id: item.imageId,
+          name: item.speciesName || 'Bird Species',
+          spanishName: item.speciesName || 'Ave',
+          imageUrl: item.imageUrl,
+          annotations: []
+        };
+      }
+
+      // Transform LearningContent to annotation format
+      acc[item.imageUrl].annotations.push({
+        id: item.id,
+        term: item.spanishTerm,
+        english: item.englishTerm,
+        pronunciation: item.pronunciation || '',
+        x: item.boundingBox.x + (item.boundingBox.width / 2), // Center of bounding box
+        y: item.boundingBox.y + (item.boundingBox.height / 2),
+        description: `${item.type} feature`
+      });
+
+      return acc;
+    }, {} as Record<string, any>);
+
+    return Object.values(contentByImage);
+  }, [apiContent]);
+
+  const selectedBird = birdLearningData[selectedBirdIndex] || fallbackBirdLearningData[0];
+
+  // Sync URL params with selected module
+  useEffect(() => {
+    if (selectedModuleId) {
+      setSearchParams({ moduleId: selectedModuleId });
+    } else {
+      setSearchParams({});
+    }
+  }, [selectedModuleId, setSearchParams]);
+
+  const handleAnnotationClick = async (annotation: any) => {
     setSelectedAnnotation(annotation);
     setDiscoveredTerms(prev => new Set([...prev, annotation.id]));
+
+    // Track discovered term in SRS if user is authenticated
+    try {
+      await markDiscovered(annotation.id);
+    } catch (err) {
+      // Silently fail if not authenticated or network error
+      console.log('Could not track discovered term:', err);
+    }
   };
 
-  const progress = (discoveredTerms.size / (birdLearningData.length * 3)) * 100;
+  const totalTerms = birdLearningData.reduce((sum, bird) => sum + bird.annotations.length, 0);
+  const progress = totalTerms > 0 ? (discoveredTerms.size / totalTerms) * 100 : 0;
 
   const handleBirdSelect = (bird: typeof birdLearningData[0]) => {
-    setSelectedBird(bird);
+    const index = birdLearningData.findIndex(b => b.id === bird.id);
+    setSelectedBirdIndex(index >= 0 ? index : 0);
     setSelectedAnnotation(null);
   };
+
+  const handleModuleSelect = (module: LearningModule) => {
+    setSelectedModuleId(module.id);
+    setSelectedBirdIndex(0);
+    setDiscoveredTerms(new Set());
+    setSelectedAnnotation(null);
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="animate-pulse space-y-6">
+            <div className="h-12 bg-gray-200 rounded w-1/2"></div>
+            <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 h-96 bg-gray-200 rounded-lg"></div>
+              <div className="h-96 bg-gray-200 rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error && !birdLearningData.length) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <svg className="w-16 h-16 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Failed to Load Content</h2>
+            <p className="text-gray-600 mb-4">We couldn't load the learning content. Please try again later.</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
@@ -202,9 +320,20 @@ export const EnhancedLearnPage: React.FC = () => {
           <ProgressSection
             progress={progress}
             discoveredCount={discoveredTerms.size}
-            totalCount={birdLearningData.length * 3}
+            totalCount={totalTerms}
           />
         </div>
+
+        {/* Learning Path Selector */}
+        {modules.length > 0 && (
+          <div className="mb-6">
+            <LearningPathSelector
+              selectedModuleId={selectedModuleId}
+              onModuleSelect={handleModuleSelect}
+              userProgress={{}}
+            />
+          </div>
+        )}
 
         <BirdSelector
           birds={birdLearningData}

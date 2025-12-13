@@ -33,6 +33,8 @@ import annotationMasteryRouter from './routes/annotationMastery';
 import adminImageManagementRouter from './routes/adminImageManagement';
 import healthRouter from './routes/health';
 import docsRouter from './routes/docs';
+import contentRouter from './routes/content';
+import srsRouter from './routes/srs';
 // Temporarily disabled - needs architecture fix (Pool vs Supabase client)
 // import annotationExercisesRouter from './routes/annotationExercises';
 import { testConnection } from './database/connection';
@@ -266,6 +268,8 @@ app.use('/api', batchRouter);
 app.use('/api', mlAnalyticsRouter);
 app.use('/api', feedbackAnalyticsRouter);
 app.use('/api', annotationMasteryRouter);
+app.use('/api/content', contentRouter);
+app.use('/api/srs', srsRouter);
 // Temporarily disabled - needs architecture fix (Pool vs Supabase client)
 // app.use('/api/annotation-exercises', annotationExercisesRouter);
 

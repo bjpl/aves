@@ -20,9 +20,10 @@ export const LoginPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   // Redirect if already logged in
+  // Regular users go to dashboard, admin users can access admin features from there
   useEffect(() => {
     if (user && !loading) {
-      navigate('/admin/annotations');
+      navigate('/dashboard');
     }
   }, [user, loading, navigate]);
 

@@ -98,6 +98,7 @@ const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m
 const AdminAnnotationReviewPage = lazy(() => import('./pages/admin/AdminAnnotationReviewPage').then(m => ({ default: m.AdminAnnotationReviewPage })));
 const ImageManagementPage = lazy(() => import('./pages/admin/ImageManagementPage'));
 const MLAnalyticsPage = lazy(() => import('./pages/admin/MLAnalyticsPage').then(m => ({ default: m.MLAnalyticsPage })));
+const UserDashboardPage = lazy(() => import('./pages/UserDashboardPage'));
 
 function App() {
   // PATTERN: Hardcoded basename for GitHub Pages deployment
@@ -132,6 +133,7 @@ function App() {
                   <NavLink to="/learn" ariaLabel="Learn about bird species and their features">Learn</NavLink>
                   <NavLink to="/practice" ariaLabel="Practice identifying birds with interactive exercises">Practice</NavLink>
                   <NavLink to="/species" ariaLabel="Browse all bird species in the database">Species</NavLink>
+                  <NavLink to="/dashboard" ariaLabel="View your learning progress and dashboard">Dashboard</NavLink>
                 </div>
               </div>
 
@@ -189,6 +191,7 @@ function App() {
             <Route path="/species" element={<SpeciesPage />} />
             <Route path="/species/:id" element={<SpeciesDetailPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/dashboard" element={<UserDashboardPage />} />
             <Route path="/admin/annotations" element={<AdminAnnotationReviewPage />} />
             <Route path="/admin/images" element={<ImageManagementPage />} />
             <Route path="/admin/analytics" element={<MLAnalyticsPage />} />

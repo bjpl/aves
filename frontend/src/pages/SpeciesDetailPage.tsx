@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { Species } from '../../../shared/types/species.types';
 import { LazyImage } from '../components/ui/LazyImage';
 import { useSpeciesById } from '../hooks/useSpecies';
+import { SpeciesLearningSection } from '../components/species/SpeciesLearningSection';
 
 export const SpeciesDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'details' | 'learning'>('details');
 
   // Get species from navigation state or fetch if needed
   const stateSpecies = location.state?.species as Species | undefined;
@@ -225,30 +227,66 @@ export const SpeciesDetailPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Annotations Available */}
-              {species.annotationCount !== undefined && species.annotationCount > 0 && (
-                <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-blue-800">
-                        {species.annotationCount} Learning Annotations Available
-                      </p>
-                      <p className="text-sm text-blue-600">
-                        Interactive vocabulary points to explore
-                      </p>
-                    </div>
-                    <Link
-                      to="/learn"
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Start Learning
-                    </Link>
-                  </div>
+              {/* Tab Navigation for Details/Learning */}
+              <div className="mt-8 border-t pt-6">
+                <div className="flex gap-2 mb-4">
+                  <button
+                    onClick={() => setActiveTab('details')}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      activeTab === 'details'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Details
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('learning')}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      activeTab === 'learning'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Learning ({species.annotationCount || 0} terms)
+                  </button>
                 </div>
-              )}
+
+                {/* Annotations Available - shown in details tab */}
+                {activeTab === 'details' && species.annotationCount !== undefined && species.annotationCount > 0 && (
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-blue-800">
+                          {species.annotationCount} Learning Annotations Available
+                        </p>
+                        <p className="text-sm text-blue-600">
+                          Interactive vocabulary points to explore
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setActiveTab('learning')}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        View Learning Content
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Learning Section - Full Width Below Main Card */}
+        {activeTab === 'learning' && id && (
+          <div className="mt-8">
+            <SpeciesLearningSection
+              speciesId={id}
+              speciesName={species.spanishName}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

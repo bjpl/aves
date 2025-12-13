@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { PracticeStats } from '../components/practice/PracticeStats';
 import { ExerciseRenderer } from '../components/practice/ExerciseRenderer';
 import { FeedbackDisplay } from '../components/practice/FeedbackDisplay';
+import { PracticeModePicker, PracticeMode } from '../components/practice/PracticeModePicker';
 import { practiceExerciseService, PracticeExercise } from '../services/practiceExerciseService';
 
 // Practice exercise types available in the system
@@ -16,6 +17,7 @@ void EXERCISE_TYPES; // Intentionally kept for documentation
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
 export const EnhancedPracticePage: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [exercises, setExercises] = useState<PracticeExercise[]>([]);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -26,6 +28,15 @@ export const EnhancedPracticePage: React.FC = () => {
   const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Mode picker state
+  const [showModePicker, setShowModePicker] = useState(true);
+  const [practiceMode, setPracticeMode] = useState<PracticeMode>('quick');
+  const [selectedSpeciesId, setSelectedSpeciesId] = useState<string | undefined>(
+    searchParams.get('speciesId') || undefined
+  );
+  const [selectedDifficulty, setSelectedDifficulty] = useState<number | undefined>();
+  const [selectedType, setSelectedType] = useState<string | undefined>();
 
   // Store timeout ref for cleanup
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -138,6 +149,17 @@ export const EnhancedPracticePage: React.FC = () => {
     };
   }, []);
 
+  const handleStartPractice = () => {
+    setShowModePicker(false);
+    setLoading(true);
+    // Re-trigger exercise loading with new filters
+    setExercises([]);
+    setCurrentExerciseIndex(0);
+    setScore(0);
+    setTotalAttempts(0);
+    setStreak(0);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -145,21 +167,57 @@ export const EnhancedPracticePage: React.FC = () => {
         <div className="mb-8">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-3xl font-bold text-gray-900">Practice Exercises</h1>
-            <Link
-              to="/learn"
-              className="text-blue-600 hover:text-blue-800 font-medium"
-            >
-              ← Back to Learn
-            </Link>
+            <div className="flex gap-3">
+              {!showModePicker && (
+                <button
+                  onClick={() => setShowModePicker(true)}
+                  className="text-gray-600 hover:text-gray-800 font-medium"
+                >
+                  Change Mode
+                </button>
+              )}
+              <Link
+                to="/learn"
+                className="text-blue-600 hover:text-blue-800 font-medium"
+              >
+                ← Back to Learn
+              </Link>
+            </div>
           </div>
 
-          <PracticeStats
-            score={score}
-            accuracy={accuracy}
-            streak={streak}
-            totalAttempts={totalAttempts}
-          />
+          {!showModePicker && (
+            <PracticeStats
+              score={score}
+              accuracy={accuracy}
+              streak={streak}
+              totalAttempts={totalAttempts}
+            />
+          )}
         </div>
+
+        {/* Mode Picker */}
+        {showModePicker && (
+          <div className="mb-8">
+            <PracticeModePicker
+              selectedMode={practiceMode}
+              onModeSelect={setPracticeMode}
+              selectedSpeciesId={selectedSpeciesId}
+              onSpeciesSelect={setSelectedSpeciesId}
+              selectedDifficulty={selectedDifficulty}
+              onDifficultySelect={setSelectedDifficulty}
+              selectedType={selectedType}
+              onTypeSelect={setSelectedType}
+            />
+            <div className="mt-6 text-center">
+              <button
+                onClick={handleStartPractice}
+                className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-lg"
+              >
+                Start Practice
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Loading state */}
         {loading && (
