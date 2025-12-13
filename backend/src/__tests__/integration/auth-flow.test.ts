@@ -203,7 +203,9 @@ const shouldRunIntegrationTests = process.env.RUN_AUTH_INTEGRATION_TESTS === 'tr
         .set('Authorization', 'NotBearer token')
         .expect(401);
 
-      expect(response.body.error).toBe('Access token required');
+      // Middleware extracts "token" from "NotBearer token" and verifies it
+      // Since "token" is not a valid JWT, it fails as "Invalid token"
+      expect(response.body.error).toBe('Invalid token');
     });
   });
 

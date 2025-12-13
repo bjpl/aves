@@ -155,6 +155,16 @@ jobs:
       env:
         CI: true
         RUN_AUTH_INTEGRATION_TESTS: true
+        # Critical: Set TEST_SCHEMA as env var before module loading
+        # This ensures the pool uses aves_test schema from the start
+        TEST_SCHEMA: aves_test
+        TEST_DB_HOST: localhost
+        TEST_DB_PORT: 5432
+        TEST_DB_NAME: aves_test
+        TEST_DB_USER: postgres
+        TEST_DB_PASSWORD: postgres
+        DB_SSL_ENABLED: false
+        DB_ALLOW_EXIT_ON_IDLE: true
 
     - name: Upload coverage reports
       if: matrix.node-version == '20.x'  # Only upload once
