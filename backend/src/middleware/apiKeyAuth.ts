@@ -269,7 +269,7 @@ export function listApiKeys(): Array<{
     lastUsedAt?: Date;
   }> = [];
 
-  apiKeyStore.forEach((value, key) => {
+  apiKeyStore.forEach((value, _key) => {
     keys.push({
       name: value.name,
       environment: 'unknown', // Would need to store this separately

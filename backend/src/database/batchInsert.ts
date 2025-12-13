@@ -298,6 +298,7 @@ export async function batchInsertTransaction(
 /**
  * Helper: Escape table/column names to prevent SQL injection
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function escapeIdentifier(name: string): string {
   return `"${name.replace(/"/g, '""')}"`;
 }

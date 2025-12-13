@@ -1,0 +1,445 @@
+{
+  "metadata": {
+    "project": "Aves Bird Learning Platform",
+    "generated": "2025-12-13T00:35:00Z",
+    "planner": "GOAP Specialist Agent",
+    "algorithm": "A* Pathfinding",
+    "totalActions": 21,
+    "totalCost": 60,
+    "phases": 7,
+    "estimatedDays": "4-6"
+  },
+  "goalState": {
+    "learn": "Fully integrated with AI-generated content from database",
+    "practice": "Personalized exercises with Spaced Repetition System",
+    "species": "Rich learning content with user progress",
+    "admin": "AI tools publishing to user-facing features",
+    "progress": "Full user tracking across all features"
+  },
+  "currentState": {
+    "frontend": {
+      "EnhancedLearnPage": {
+        "status": "working",
+        "gap": "uses hardcoded data"
+      },
+      "EnhancedPracticePage": {
+        "status": "working",
+        "gap": "not personalized by user mastery"
+      },
+      "SpeciesBrowser": {
+        "status": "complete",
+        "gap": "no learning content integration"
+      },
+      "SpeciesDetailPage": {
+        "status": "complete",
+        "gap": "no annotations displayed"
+      }
+    },
+    "backend": {
+      "speciesAPI": "complete",
+      "annotationsAPI": "complete",
+      "annotationMasteryAPI": "complete",
+      "database": "all tables exist"
+    }
+  },
+  "actions": [
+    {
+      "id": 1,
+      "phase": 1,
+      "action": "CreateBackendRoute",
+      "name": "Learning Content Detail API",
+      "path": "/api/learning-content/:speciesId",
+      "cost": 3,
+      "priority": "critical",
+      "preconditions": ["species table exists", "annotations table exists", "images table exists"],
+      "effects": ["learning-content-api-available"],
+      "dependencies": [],
+      "parallelGroup": 1
+    },
+    {
+      "id": 2,
+      "phase": 1,
+      "action": "CreateBackendRoute",
+      "name": "Learning Content List API",
+      "path": "/api/learning-content/list",
+      "cost": 2,
+      "priority": "critical",
+      "preconditions": ["species table exists", "annotations table exists"],
+      "effects": ["learning-content-list-available"],
+      "dependencies": [],
+      "parallelGroup": 1
+    },
+    {
+      "id": 3,
+      "phase": 2,
+      "action": "CreateService",
+      "name": "Learning Content Service",
+      "file": "frontend/src/services/learningContentService.ts",
+      "cost": 3,
+      "priority": "critical",
+      "preconditions": ["learning-content-api-available", "learning-content-list-available"],
+      "effects": ["frontend-can-fetch-learning-content"],
+      "dependencies": [1, 2],
+      "parallelGroup": 2
+    },
+    {
+      "id": 4,
+      "phase": 2,
+      "action": "ModifyFile",
+      "name": "Learn Page Real Data Integration",
+      "file": "frontend/src/pages/EnhancedLearnPage.tsx",
+      "cost": 4,
+      "priority": "critical",
+      "preconditions": ["frontend-can-fetch-learning-content"],
+      "effects": ["learn-page-uses-real-data"],
+      "dependencies": [3],
+      "parallelGroup": 3
+    },
+    {
+      "id": 5,
+      "phase": 2,
+      "action": "CreateBackendRoute",
+      "name": "Learning Progress Tracking API",
+      "path": "/api/learning-progress/track",
+      "cost": 3,
+      "priority": "high",
+      "preconditions": ["annotation_mastery table exists"],
+      "effects": ["learn-progress-tracking-available"],
+      "dependencies": [],
+      "parallelGroup": 1
+    },
+    {
+      "id": 6,
+      "phase": 2,
+      "action": "CreateBackendRoute",
+      "name": "Learning Progress Fetch API",
+      "path": "/api/learning-progress/:userId",
+      "cost": 2,
+      "priority": "high",
+      "preconditions": ["annotation_mastery table exists"],
+      "effects": ["learn-progress-fetch-available"],
+      "dependencies": [],
+      "parallelGroup": 1
+    },
+    {
+      "id": 7,
+      "phase": 3,
+      "action": "ModifyFile",
+      "name": "Learn Page Progress Integration",
+      "file": "frontend/src/pages/EnhancedLearnPage.tsx",
+      "cost": 3,
+      "priority": "high",
+      "preconditions": ["learn-page-uses-real-data", "learn-progress-tracking-available", "learn-progress-fetch-available"],
+      "effects": ["learn-page-tracks-progress"],
+      "dependencies": [4, 5, 6],
+      "parallelGroup": 4
+    },
+    {
+      "id": 8,
+      "phase": 3,
+      "action": "CreateService",
+      "name": "Practice Exercise Generator",
+      "file": "backend/src/services/PracticeExerciseGenerator.ts",
+      "cost": 5,
+      "priority": "high",
+      "preconditions": ["annotation_mastery table exists", "annotations table exists"],
+      "effects": ["backend-generates-annotation-exercises"],
+      "dependencies": [],
+      "parallelGroup": 1
+    },
+    {
+      "id": 9,
+      "phase": 3,
+      "action": "CreateBackendRoute",
+      "name": "Practice Exercise Generation API",
+      "path": "/api/practice/exercises/generate",
+      "cost": 2,
+      "priority": "high",
+      "preconditions": ["backend-generates-annotation-exercises"],
+      "effects": ["practice-exercises-api-available"],
+      "dependencies": [8],
+      "parallelGroup": 4
+    },
+    {
+      "id": 10,
+      "phase": 4,
+      "action": "ModifyFile",
+      "name": "Practice Exercise Service Update",
+      "file": "frontend/src/services/practiceExerciseService.ts",
+      "cost": 3,
+      "priority": "high",
+      "preconditions": ["practice-exercises-api-available"],
+      "effects": ["frontend-fetches-personalized-exercises"],
+      "dependencies": [9],
+      "parallelGroup": 5
+    },
+    {
+      "id": 11,
+      "phase": 4,
+      "action": "ModifyFile",
+      "name": "Practice Page Personalization",
+      "file": "frontend/src/pages/EnhancedPracticePage.tsx",
+      "cost": 4,
+      "priority": "high",
+      "preconditions": ["frontend-fetches-personalized-exercises", "learn-progress-tracking-available"],
+      "effects": ["practice-page-personalized"],
+      "dependencies": [10, 5],
+      "parallelGroup": 6
+    },
+    {
+      "id": 12,
+      "phase": 4,
+      "action": "CreateComponent",
+      "name": "Mastery Indicator",
+      "file": "frontend/src/components/practice/MasteryIndicator.tsx",
+      "cost": 2,
+      "priority": "medium",
+      "preconditions": [],
+      "effects": ["mastery-indicator-component-available"],
+      "dependencies": [],
+      "parallelGroup": 1
+    },
+    {
+      "id": 13,
+      "phase": 5,
+      "action": "ModifyFile",
+      "name": "Species Page Learning Content",
+      "file": "frontend/src/pages/SpeciesDetailPage.tsx",
+      "cost": 4,
+      "priority": "medium",
+      "preconditions": ["frontend-can-fetch-learning-content", "mastery-indicator-component-available"],
+      "effects": ["species-page-shows-learning-content"],
+      "dependencies": [3, 12],
+      "parallelGroup": 6
+    },
+    {
+      "id": 14,
+      "phase": 5,
+      "action": "CreateHook",
+      "name": "useUserProgress Hook",
+      "file": "frontend/src/hooks/useUserProgress.ts",
+      "cost": 3,
+      "priority": "medium",
+      "preconditions": ["learn-progress-fetch-available", "learn-progress-tracking-available"],
+      "effects": ["reusable-progress-hook-available"],
+      "dependencies": [6, 5],
+      "parallelGroup": 5
+    },
+    {
+      "id": 15,
+      "phase": 5,
+      "action": "CreateComponent",
+      "name": "Progress Dashboard",
+      "file": "frontend/src/components/progress/ProgressDashboard.tsx",
+      "cost": 4,
+      "priority": "medium",
+      "preconditions": ["reusable-progress-hook-available"],
+      "effects": ["progress-dashboard-available"],
+      "dependencies": [14],
+      "parallelGroup": 6
+    },
+    {
+      "id": 16,
+      "phase": 6,
+      "action": "IntegrateFeatures",
+      "name": "Admin-to-Learn Flow Validation",
+      "description": "Test and validate annotation publishing flow",
+      "cost": 2,
+      "priority": "critical",
+      "preconditions": ["learn-page-uses-real-data"],
+      "effects": ["admin-annotations-flow-to-learn"],
+      "dependencies": [4],
+      "parallelGroup": 7
+    },
+    {
+      "id": 17,
+      "phase": 6,
+      "action": "CreateBackendRoute",
+      "name": "Annotation Publish API",
+      "path": "/api/admin/annotations/publish",
+      "cost": 3,
+      "priority": "critical",
+      "preconditions": ["annotations table exists"],
+      "effects": ["admin-can-publish-annotations"],
+      "dependencies": [],
+      "parallelGroup": 1
+    },
+    {
+      "id": 18,
+      "phase": 6,
+      "action": "ModifyFile",
+      "name": "Admin UI Publish Button",
+      "file": "frontend/src/components/admin/AnnotationReviewPanel.tsx",
+      "cost": 3,
+      "priority": "critical",
+      "preconditions": ["admin-can-publish-annotations"],
+      "effects": ["admin-ui-can-publish"],
+      "dependencies": [17],
+      "parallelGroup": 6
+    },
+    {
+      "id": 19,
+      "phase": 7,
+      "action": "CreateBackendRoute",
+      "name": "Analytics API",
+      "path": "/api/analytics/mastery-stats",
+      "cost": 3,
+      "priority": "low",
+      "preconditions": ["annotation_mastery table exists"],
+      "effects": ["analytics-api-available"],
+      "dependencies": [],
+      "parallelGroup": 1
+    },
+    {
+      "id": 20,
+      "phase": 7,
+      "action": "CreateComponent",
+      "name": "Spaced Repetition Scheduler",
+      "file": "frontend/src/components/practice/SpacedRepetitionScheduler.tsx",
+      "cost": 4,
+      "priority": "low",
+      "preconditions": ["reusable-progress-hook-available"],
+      "effects": ["srs-scheduler-available"],
+      "dependencies": [14],
+      "parallelGroup": 7
+    },
+    {
+      "id": 21,
+      "phase": 7,
+      "action": "CreateDatabaseMigration",
+      "name": "User Session Tracking",
+      "file": "backend/src/database/migrations/015_user_session_tracking.sql",
+      "cost": 2,
+      "priority": "low",
+      "preconditions": [],
+      "effects": ["user-session-tracking-available"],
+      "dependencies": [],
+      "parallelGroup": 1
+    }
+  ],
+  "parallelGroups": {
+    "group1": {
+      "name": "Foundation APIs & Components",
+      "actions": [1, 2, 5, 6, 8, 12, 17, 19, 21],
+      "totalCost": 25,
+      "canExecuteInParallel": true
+    },
+    "group2": {
+      "name": "Learning Service",
+      "actions": [3],
+      "totalCost": 3,
+      "dependsOn": "group1"
+    },
+    "group3": {
+      "name": "Learn Page Integration",
+      "actions": [4],
+      "totalCost": 4,
+      "dependsOn": "group2"
+    },
+    "group4": {
+      "name": "Progress & Exercise APIs",
+      "actions": [7, 9],
+      "totalCost": 5,
+      "canExecuteInParallel": true,
+      "dependsOn": "group3"
+    },
+    "group5": {
+      "name": "Frontend Services",
+      "actions": [10, 14],
+      "totalCost": 6,
+      "canExecuteInParallel": true,
+      "dependsOn": "group4"
+    },
+    "group6": {
+      "name": "Page Integrations",
+      "actions": [11, 13, 15, 18],
+      "totalCost": 15,
+      "canExecuteInParallel": true,
+      "dependsOn": "group5"
+    },
+    "group7": {
+      "name": "Validation & Advanced",
+      "actions": [16, 20],
+      "totalCost": 6,
+      "canExecuteInParallel": true,
+      "dependsOn": "group6"
+    }
+  },
+  "criticalPath": {
+    "actions": [1, 3, 4, 7, 17, 18, 16],
+    "totalCost": 21,
+    "estimatedDays": "2-3",
+    "description": "Minimum path to achieve core integration"
+  },
+  "phaseBreakdown": {
+    "phase1": {
+      "name": "Foundation - Learning Content API",
+      "actions": [1, 2],
+      "cost": 5,
+      "priority": "critical"
+    },
+    "phase2": {
+      "name": "Frontend Learning Service Integration",
+      "actions": [3, 4, 5, 6],
+      "cost": 12,
+      "priority": "critical"
+    },
+    "phase3": {
+      "name": "Progress Tracking",
+      "actions": [7, 8, 9],
+      "cost": 10,
+      "priority": "high"
+    },
+    "phase4": {
+      "name": "Personalized Practice Integration",
+      "actions": [10, 11, 12],
+      "cost": 9,
+      "priority": "high"
+    },
+    "phase5": {
+      "name": "Species Page Integration",
+      "actions": [13, 14, 15],
+      "cost": 11,
+      "priority": "medium"
+    },
+    "phase6": {
+      "name": "Admin Pipeline Integration",
+      "actions": [16, 17, 18],
+      "cost": 8,
+      "priority": "critical"
+    },
+    "phase7": {
+      "name": "Analytics & Advanced Features",
+      "actions": [19, 20, 21],
+      "cost": 9,
+      "priority": "low"
+    }
+  },
+  "successMetrics": {
+    "phase1-2": [
+      "Learn page displays real annotations from database",
+      "No hardcoded data in Learn page",
+      "Loading/error states handle API failures gracefully"
+    ],
+    "phase3-4": [
+      "User progress persists across sessions",
+      "Practice exercises personalized based on mastery data",
+      "Mastery scores update after each exercise"
+    ],
+    "phase5-6": [
+      "Species pages show learning content with user progress",
+      "Admin can publish annotations with one click",
+      "Published annotations appear in Learn page within 5 minutes"
+    ],
+    "phase7": [
+      "Analytics dashboard shows meaningful insights",
+      "Spaced repetition scheduler suggests optimal review times",
+      "Session tracking provides usage analytics"
+    ]
+  },
+  "implementationNotes": {
+    "week1": "Foundation & Core Integration (Actions 1-7)",
+    "week2": "Personalization & Admin (Actions 8-18)",
+    "week3": "Advanced Features (Actions 19-21) - Optional"
+  }
+}

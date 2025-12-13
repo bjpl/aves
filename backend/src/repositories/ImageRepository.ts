@@ -13,7 +13,7 @@
  * - Bulk operations support
  */
 
-import { Pool, QueryResult } from 'pg';
+import { Pool } from 'pg';
 import { pool as defaultPool } from '../database/connection';
 import { error as logError, info } from '../utils/logger';
 import { UnsplashPhoto } from '../services/admin/UnsplashService';

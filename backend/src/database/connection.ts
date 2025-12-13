@@ -75,7 +75,7 @@ let connectionCount = 0;
 let errorCount = 0;
 let lastErrorTime: Date | null = null;
 
-pool.on('error', (err, client) => {
+pool.on('error', (err, _client) => {
   errorCount++;
   lastErrorTime = new Date();
   logError('Unexpected error on idle client', err);
@@ -86,7 +86,7 @@ pool.on('error', (err, client) => {
   }
 });
 
-pool.on('connect', (client) => {
+pool.on('connect', (_client) => {
   connectionCount++;
   info('New database connection established', {
     totalConnections: connectionCount,
@@ -96,7 +96,7 @@ pool.on('connect', (client) => {
   });
 });
 
-pool.on('acquire', (client) => {
+pool.on('acquire', (_client) => {
   // Track connection acquisition for debugging
   if (process.env.DB_DEBUG === 'true') {
     info('Client acquired from pool', {
@@ -107,7 +107,7 @@ pool.on('acquire', (client) => {
   }
 });
 
-pool.on('remove', (client) => {
+pool.on('remove', (_client) => {
   info('Client removed from pool', {
     totalCount: pool.totalCount,
     idleCount: pool.idleCount

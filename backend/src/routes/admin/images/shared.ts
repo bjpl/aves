@@ -105,7 +105,7 @@ export interface JobProgress {
   errors: Array<{ item: string; error: string; timestamp: string }>;
   startedAt: string;
   completedAt?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export const jobStore = new Map<string, JobProgress>();

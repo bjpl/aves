@@ -5,7 +5,6 @@ import logger from '../utils/logger';
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { Pool } from 'pg';
 
 // Create Supabase client
 const supabaseUrl = process.env.SUPABASE_URL || 'https://ubqnfiwxghkxltluyczd.supabase.co';
@@ -54,7 +53,8 @@ export class SupabasePoolWrapper {
     // No-op for Supabase client
   }
 
-  on(event: string, callback: Function) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  on(_event: string, _callback: (...args: unknown[]) => void) {
     // No-op for compatibility
   }
 

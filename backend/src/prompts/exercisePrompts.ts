@@ -355,7 +355,7 @@ Return JSON:
 export function getPromptTemplate(
   exerciseType: ExerciseType,
   context: UserContext,
-  options?: { direction?: 'es-en' | 'en-es' }
+  _options?: { direction?: 'es-en' | 'en-es' }
 ): PromptTemplate {
   switch (exerciseType) {
     case 'contextual_fill':

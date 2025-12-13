@@ -214,10 +214,8 @@ export function requestLogger(req: Request, res: Response, next: NextFunction): 
 
   // Intercept response
   const originalSend = res.send;
-  let responseBody: unknown;
 
   res.send = function (data): Response {
-    responseBody = data;
     return originalSend.call(this, data);
   };
 

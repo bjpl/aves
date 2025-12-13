@@ -6,15 +6,13 @@ import { FeedbackDisplay } from '../components/practice/FeedbackDisplay';
 import { PracticeModePicker, PracticeMode } from '../components/practice/PracticeModePicker';
 import { practiceExerciseService, PracticeExercise } from '../services/practiceExerciseService';
 
-// Practice exercise types available in the system
-/* eslint-disable @typescript-eslint/no-unused-vars */
+// Practice exercise types available in the system (kept for documentation)
 const EXERCISE_TYPES = {
   VISUAL_MATCH: 'visual_match',
   FILL_BLANK: 'fill_blank',
   MULTIPLE_CHOICE: 'multiple_choice'
 } as const;
-void EXERCISE_TYPES; // Intentionally kept for documentation
-/* eslint-enable @typescript-eslint/no-unused-vars */
+void EXERCISE_TYPES;
 
 export const EnhancedPracticePage: React.FC = () => {
   const [searchParams] = useSearchParams();
