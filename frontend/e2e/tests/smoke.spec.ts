@@ -25,7 +25,8 @@ test.describe('Smoke Tests', () => {
     });
 
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    // Use 'load' instead of 'networkidle' to avoid timeout when app has ongoing network activity
+    await page.waitForLoadState('load');
 
     // Verify page loaded
     await expect(page.locator('body')).toBeVisible();
@@ -76,7 +77,8 @@ test.describe('Smoke Tests', () => {
 
     for (const url of urls) {
       await page.goto(url);
-      await page.waitForLoadState('networkidle');
+      // Use 'load' instead of 'networkidle' to avoid timeout when app has ongoing network activity
+      await page.waitForLoadState('load');
 
       // Verify page loaded successfully
       const main = page.locator('main');
@@ -93,7 +95,8 @@ test.describe('Smoke Tests', () => {
     });
 
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    // Use 'load' instead of 'networkidle' to avoid timeout when app has ongoing network activity
+    await page.waitForLoadState('load');
 
     // Report failed requests
     if (failedRequests.length > 0) {

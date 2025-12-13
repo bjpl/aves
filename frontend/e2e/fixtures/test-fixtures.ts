@@ -103,7 +103,8 @@ export async function waitForNavigation(page: any, expectedUrl: string | RegExp)
  */
 export async function checkResponsiveLayout(page: any, viewport: { width: number; height: number }) {
   await page.setViewportSize(viewport);
-  await page.waitForLoadState('networkidle');
+  // Use 'load' instead of 'networkidle' to avoid timeout when app has ongoing network activity
+  await page.waitForLoadState('load');
 
   // Verify layout doesn't break
   const body = page.locator('body');
@@ -121,7 +122,8 @@ export async function checkResponsiveLayout(page: any, viewport: { width: number
  * Helper function to test navigation links
  */
 export async function testNavigationLink(page: any, linkText: string, expectedPath: string) {
-  await page.click(`text=${linkText}`);
+  // Use specific selector to avoid strict mode violation when multiple elements match
+  await page.getByRole('link', { name: linkText }).first().click();
   await waitForNavigation(page, new RegExp(expectedPath));
 }
 

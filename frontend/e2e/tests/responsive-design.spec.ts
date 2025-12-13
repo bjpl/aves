@@ -39,7 +39,7 @@ test.describe('Responsive Design - Mobile (375x667)', () => {
 
   test('should have touch-friendly navigation on mobile', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // Check navigation links are large enough for touch
     const navLinks = page.locator('nav a');
@@ -110,7 +110,7 @@ test.describe('Responsive Design - Desktop (1920x1080)', () => {
 
   test('should utilize wide screen space effectively', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // Verify content doesn't stretch too wide (max-width constraint)
     const mainContent = page.locator('main, .container, .max-w-7xl').first();
@@ -129,7 +129,7 @@ test.describe('Responsive Design - Viewport Transitions', () => {
 
     // Start at mobile
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await expect(page.locator('nav')).toBeVisible();
 
     // Resize to tablet
@@ -170,7 +170,7 @@ test.describe('Responsive Design - Viewport Transitions', () => {
 test.describe('Responsive Design - Image Handling', () => {
   test('should load appropriate images for viewport', async ({ page }) => {
     await page.goto('/species');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // Check if any images exist
     const images = page.locator('img');
