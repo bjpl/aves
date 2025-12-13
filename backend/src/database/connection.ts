@@ -65,6 +65,10 @@ export let pool = new Pool({
 
   // Connection Management
   allowExitOnIdle: process.env.DB_ALLOW_EXIT_ON_IDLE === 'true',
+
+  // Test schema support - set search_path for CI integration tests
+  // This ensures queries target the test schema (aves_test) when running integration tests
+  options: process.env.TEST_SCHEMA ? `-c search_path=${process.env.TEST_SCHEMA},public` : undefined,
 });
 
 // ============================================================================
