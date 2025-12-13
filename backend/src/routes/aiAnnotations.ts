@@ -50,7 +50,7 @@ const BoundingBoxSchema = z.object({
   height: z.number().min(0).max(1)
 });
 
-const AnnotationItemSchema = z.object({
+const _AnnotationItemSchema = z.object({
   spanishTerm: z.string().min(1).max(200),
   englishTerm: z.string().min(1).max(200),
   boundingBox: BoundingBoxSchema,
@@ -223,7 +223,7 @@ router.post(
           status: string,
           data: Record<string, unknown> | AIAnnotation[],
           confidenceScore?: number,
-          errorMessage?: string
+          _errorMessage?: string
         ): Promise<void> => {
           const maxStatusUpdateRetries = 3;
           let statusUpdateAttempt = 0;

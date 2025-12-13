@@ -78,7 +78,7 @@ export class AnnotationMasteryService {
     annotationId: string,
     correct: boolean,
     responseTimeMs: number,
-    sessionId?: string
+    _sessionId?: string
   ): Promise<AnnotationMasteryRecord> {
     const client = await this.pool.connect();
 

@@ -1,4 +1,5 @@
-import logger from '../utils/logger';
+// Logger available for future debugging
+// import logger from '../utils/logger';
 import { Pool } from 'pg';
 
 /**

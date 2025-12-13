@@ -664,7 +664,7 @@ export class NeuralPositionOptimizer {
    * Extract image features for neural network input
    * In production, this would use actual image analysis
    */
-  private async extractImageFeatures(imageUrl: string): Promise<ImageFeatures> {
+  private async extractImageFeatures(_imageUrl: string): Promise<ImageFeatures> {
     // Simplified feature extraction
     // In production, would analyze actual image
     return {

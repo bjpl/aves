@@ -354,7 +354,8 @@ interface SpeciesRow {
   spanishName: string;
 }
 
-interface ImageBySpeciesRow {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+interface _ImageBySpeciesRow {
   species: string;
   count: string;
 }

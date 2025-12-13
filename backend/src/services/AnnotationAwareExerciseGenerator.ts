@@ -23,8 +23,7 @@ import {
   SpatialIdentificationExercise,
   ComparativeAnalysisExercise,
   AnnotationSequencingExercise,
-  CategorySortingExercise,
-  ExerciseSelectionStrategy
+  CategorySortingExercise
 } from '../../../shared/types/enhanced-exercise.types';
 import { AnnotationMasteryService, AnnotationRecommendation } from './AnnotationMasteryService';
 import * as logger from '../utils/logger';
@@ -432,7 +431,7 @@ export class AnnotationAwareExerciseGenerator {
     const selectedCategories = viableCategories.slice(0, 3);
 
     // Build terms array
-    const terms = selectedCategories.flatMap(([type, anns]) =>
+    const terms = selectedCategories.flatMap(([_type, anns]) =>
       anns.slice(0, 3).map(ann => ({
         id: ann.id,
         term: ann.spanishTerm,

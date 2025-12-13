@@ -106,7 +106,7 @@ router.post(
           status: string,
           data: Record<string, unknown> | AIAnnotation[],
           confidenceScore?: number,
-          errorMessage?: string
+          _errorMessage?: string
         ): Promise<void> => {
           const maxStatusUpdateRetries = 3;
           let statusUpdateAttempt = 0;
