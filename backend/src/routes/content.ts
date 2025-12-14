@@ -11,6 +11,11 @@ import { error as logError } from '../utils/logger';
 
 const router = Router();
 
+// Simple test endpoint to verify router is working
+router.get('/test', (_req: Request, res: Response) => {
+  res.json({ status: 'ok', message: 'Content router is working', timestamp: new Date().toISOString() });
+});
+
 /**
  * @openapi
  * /api/content/learn:
