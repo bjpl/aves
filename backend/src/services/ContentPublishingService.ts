@@ -92,26 +92,24 @@ class ContentPublishingService {
   async getPublishedContent(filters: ContentFilters = {}): Promise<LearningContent[]> {
     const { difficulty, type, speciesId, moduleId, limit = 50, offset = 0 } = filters;
 
-    // Simplified query that doesn't require learning_modules table or published_at column
-    // This ensures the Learn page works even if migrations haven't fully run
+    // Ultra-simplified query - no JOINs, just basic annotation data
+    // This ensures the Learn page works even if there are database issues
     let query = `
       SELECT
         a.id,
         a.image_id as "imageId",
-        i.url as "imageUrl",
         a.spanish_term as "spanishTerm",
         a.english_term as "englishTerm",
         a.pronunciation,
         a.annotation_type as "type",
         a.bounding_box as "boundingBox",
         a.difficulty_level as "difficultyLevel",
-        i.species_id as "speciesId",
-        s.spanish_name as "speciesName",
+        NULL as "imageUrl",
+        NULL as "speciesId",
+        NULL as "speciesName",
         NULL as "moduleId",
         NULL as "moduleName"
       FROM annotations a
-      JOIN images i ON a.image_id = i.id
-      LEFT JOIN species s ON i.species_id = s.id
       WHERE a.is_visible = true
     `;
 
@@ -128,16 +126,8 @@ class ContentPublishingService {
       params.push(type);
     }
 
-    if (speciesId) {
-      query += ` AND i.species_id = $${paramIndex++}`;
-      params.push(speciesId);
-    }
-
-    // Note: moduleId filter temporarily disabled until learning_modules migration runs
-    // if (moduleId) {
-    //   query += ` AND a.learning_module_id = $${paramIndex++}`;
-    //   params.push(moduleId);
-    // }
+    // Note: speciesId and moduleId filters temporarily disabled
+    // until proper JOINs can be added back
 
     query += ` ORDER BY a.difficulty_level ASC, a.created_at DESC`;
     query += ` LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
