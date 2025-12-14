@@ -301,7 +301,15 @@ app.get('/api/content/mid-router-test', (_req, res) => {
   res.json({ status: 'ok', message: 'Mid-router test works (after speciesRouter)', timestamp: new Date().toISOString() });
 });
 app.use('/api', imagesRouter);
+// Debug: after imagesRouter
+app.get('/api/content/after-images-test', (_req, res) => {
+  res.json({ status: 'ok', message: 'After imagesRouter', timestamp: new Date().toISOString() });
+});
 app.use('/api', batchRouter);
+// Debug: after batchRouter
+app.get('/api/content/after-batch-test', (_req, res) => {
+  res.json({ status: 'ok', message: 'After batchRouter', timestamp: new Date().toISOString() });
+});
 app.use('/api', mlAnalyticsRouter);
 app.use('/api', feedbackAnalyticsRouter);
 app.use('/api', annotationMasteryRouter);
