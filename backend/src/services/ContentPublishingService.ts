@@ -92,45 +92,46 @@ class ContentPublishingService {
   async getPublishedContent(filters: ContentFilters = {}): Promise<LearningContent[]> {
     const { difficulty, type, speciesId, moduleId, limit = 50, offset = 0 } = filters;
 
-    // Query with JOIN to images table to get actual image URLs
+    // Query approved AI annotations with image URLs
+    // Uses ai_annotation_items (approved) joined with images for reliable imageUrl
     let query = `
       SELECT
-        a.id,
-        a.image_id as "imageId",
-        a.spanish_term as "spanishTerm",
-        a.english_term as "englishTerm",
-        a.pronunciation,
-        a.annotation_type as "type",
-        a.bounding_box as "boundingBox",
-        a.difficulty_level as "difficultyLevel",
+        ai.id,
+        ai.image_id as "imageId",
+        ai.spanish_term as "spanishTerm",
+        ai.english_term as "englishTerm",
+        ai.pronunciation,
+        ai.annotation_type as "type",
+        ai.bounding_box as "boundingBox",
+        ai.difficulty_level as "difficultyLevel",
         i.url as "imageUrl",
         i.species_id as "speciesId",
         s.spanish_name as "speciesName",
         NULL as "moduleId",
         NULL as "moduleName"
-      FROM annotations a
-      LEFT JOIN images i ON a.image_id = i.id
+      FROM ai_annotation_items ai
+      LEFT JOIN images i ON ai.image_id = i.id
       LEFT JOIN species s ON i.species_id = s.id
-      WHERE a.is_visible = true
+      WHERE ai.status = 'approved'
     `;
 
     const params: any[] = [];
     let paramIndex = 1;
 
     if (difficulty) {
-      query += ` AND a.difficulty_level = $${paramIndex++}`;
+      query += ` AND ai.difficulty_level = $${paramIndex++}`;
       params.push(difficulty);
     }
 
     if (type) {
-      query += ` AND a.annotation_type = $${paramIndex++}`;
+      query += ` AND ai.annotation_type = $${paramIndex++}`;
       params.push(type);
     }
 
     // Note: speciesId and moduleId filters temporarily disabled
     // until proper JOINs can be added back
 
-    query += ` ORDER BY a.difficulty_level ASC, a.created_at DESC`;
+    query += ` ORDER BY ai.difficulty_level ASC, ai.created_at DESC`;
     query += ` LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
     params.push(limit, offset);
 
