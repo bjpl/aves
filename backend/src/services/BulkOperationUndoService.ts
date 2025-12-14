@@ -71,10 +71,26 @@ export class BulkOperationUndoService {
   private operations: Map<string, UndoOperation> = new Map();
   private timers: Map<string, NodeJS.Timeout> = new Map();
   private gracePeriodMs: number = 30 * 1000; // 30 seconds
+  private cleanupInterval: NodeJS.Timeout | null = null;
 
   constructor(pool: Pool) {
     this.pool = pool;
     this.startCleanupInterval();
+  }
+
+  /**
+   * Clean up resources (for testing and graceful shutdown)
+   */
+  destroy(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
+    for (const timer of this.timers.values()) {
+      clearTimeout(timer);
+    }
+    this.timers.clear();
+    this.operations.clear();
   }
 
   /**
@@ -297,7 +313,7 @@ export class BulkOperationUndoService {
    * Clean up expired operations
    */
   private startCleanupInterval(): void {
-    setInterval(() => {
+    this.cleanupInterval = setInterval(() => {
       const now = Date.now();
       for (const [id, operation] of this.operations.entries()) {
         // Remove operations that are:

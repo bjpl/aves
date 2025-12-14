@@ -29,6 +29,17 @@ module.exports = async () => {
     console.warn('Admin image management cleanup skipped:', (err as Error).message);
   }
 
+  // Step 1c: Cleanup bulk operation undo service (stops cleanup interval timer)
+  try {
+    const { undoService } = await import('../routes/adminImageManagement');
+    if (undoService && typeof undoService.destroy === 'function') {
+      undoService.destroy();
+      console.log('✓ Bulk operation undo service cleaned up');
+    }
+  } catch (err) {
+    console.warn('Undo service cleanup skipped:', (err as Error).message);
+  }
+
   // Step 2: Force clear all Jest timers to prevent hanging
   if (typeof jest !== 'undefined') {
     jest.clearAllTimers();

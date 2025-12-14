@@ -13,6 +13,14 @@ import fs from 'fs';
 // Mock dependencies
 jest.mock('../../database/connection');
 jest.mock('../../services/VisionAIService');
+jest.mock('../../services/BulkOperationUndoService', () => ({
+  BulkOperationUndoService: jest.fn().mockImplementation(() => ({
+    queueBulkDelete: jest.fn(),
+    cancelOperation: jest.fn(),
+    getOperation: jest.fn(),
+    destroy: jest.fn()
+  }))
+}));
 jest.mock('../../middleware/optionalSupabaseAuth', () => ({
   optionalSupabaseAuth: (req: any, res: any, next: any) => {
     req.user = { userId: 'test-admin-123', role: 'admin' };
