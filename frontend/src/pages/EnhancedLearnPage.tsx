@@ -217,6 +217,11 @@ export const EnhancedLearnPage: React.FC = () => {
       // Transform LearningContent to annotation format
       // Database stores nested format: { topLeft: {x,y}, bottomRight: {x,y}, width, height }
       // Convert normalized coords (0-1) to percentages (0-100) for UI display
+      // Skip items without valid bounding box data
+      if (!item.boundingBox || !item.boundingBox.topLeft) {
+        return acc;
+      }
+
       const centerX = (item.boundingBox.topLeft.x + (item.boundingBox.width / 2)) * 100;
       const centerY = (item.boundingBox.topLeft.y + (item.boundingBox.height / 2)) * 100;
 
