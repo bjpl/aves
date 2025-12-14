@@ -5,6 +5,7 @@ import { ExerciseRenderer } from '../components/practice/ExerciseRenderer';
 import { FeedbackDisplay } from '../components/practice/FeedbackDisplay';
 import { PracticeModePicker, PracticeMode } from '../components/practice/PracticeModePicker';
 import { practiceExerciseService, PracticeExercise } from '../services/practiceExerciseService';
+import { useSpacedRepetition } from '../hooks/useSpacedRepetition';
 
 // Practice exercise types available in the system (kept for documentation)
 const EXERCISE_TYPES = {
@@ -38,6 +39,18 @@ export const EnhancedPracticePage: React.FC = () => {
 
   // Store timeout ref for cleanup
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Track response time for SRS quality calculation
+  const exerciseStartTimeRef = useRef<number>(Date.now());
+
+  // Spaced Repetition System integration
+  const {
+    // dueTerms and dueCount available for future 'review' mode integration
+    recordReview,
+    calculateQuality,
+    isRecording,
+    stats: srsStats
+  } = useSpacedRepetition();
 
   // Load exercises from the service
   useEffect(() => {
@@ -75,15 +88,19 @@ export const EnhancedPracticePage: React.FC = () => {
     setSelectedAnswer(null);
     setShowFeedback(false);
     setCurrentExerciseIndex(prev => prev + 1);
+    // Reset timer for next exercise
+    exerciseStartTimeRef.current = Date.now();
   }, []);
 
-  const handleAnswer = useCallback((answer: string) => {
+  const handleAnswer = useCallback(async (answer: string) => {
     setSelectedAnswer(answer);
     const exercise = getCurrentExerciseData();
 
     if (!exercise) return;
 
     const correct = answer.toLowerCase() === exercise.correctAnswer.toLowerCase();
+    const responseTimeMs = Date.now() - exerciseStartTimeRef.current;
+
     setIsCorrect(correct);
     setShowFeedback(true);
     setTotalAttempts(prev => prev + 1);
@@ -95,6 +112,21 @@ export const EnhancedPracticePage: React.FC = () => {
       setStreak(0);
     }
 
+    // Record review in SRS system (if exercise has termId for tracking)
+    if (exercise.termId || exercise.speciesId) {
+      try {
+        const quality = calculateQuality(correct, responseTimeMs);
+        await recordReview({
+          termId: exercise.termId || `species-${exercise.speciesId}`,
+          quality,
+          responseTimeMs,
+        });
+      } catch (err) {
+        // SRS recording is non-critical, log but continue
+        console.warn('Failed to record SRS review:', err);
+      }
+    }
+
     // Clear any existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -104,7 +136,7 @@ export const EnhancedPracticePage: React.FC = () => {
     timeoutRef.current = setTimeout(() => {
       nextExercise();
     }, 2000);
-  }, [getCurrentExerciseData, nextExercise]);
+  }, [getCurrentExerciseData, nextExercise, calculateQuality, recordReview]);
 
   const renderExercise = useCallback(() => {
     const exercise = getCurrentExerciseData();
@@ -147,7 +179,7 @@ export const EnhancedPracticePage: React.FC = () => {
     };
   }, []);
 
-  const handleStartPractice = () => {
+  const handleStartPractice = useCallback(() => {
     setShowModePicker(false);
     setLoading(true);
     // Re-trigger exercise loading with new filters
@@ -156,7 +188,9 @@ export const EnhancedPracticePage: React.FC = () => {
     setScore(0);
     setTotalAttempts(0);
     setStreak(0);
-  };
+    // Reset exercise timer
+    exerciseStartTimeRef.current = Date.now();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
@@ -189,6 +223,8 @@ export const EnhancedPracticePage: React.FC = () => {
               accuracy={accuracy}
               streak={streak}
               totalAttempts={totalAttempts}
+              srsStats={srsStats}
+              isRecording={isRecording}
             />
           )}
         </div>

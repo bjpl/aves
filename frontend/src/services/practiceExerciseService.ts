@@ -14,6 +14,7 @@ export interface PracticeExercise {
   imageUrl?: string;
   imageId?: string;
   speciesId?: string;
+  termId?: string; // For SRS tracking
   translation?: string;
   explanation?: string;
 }
