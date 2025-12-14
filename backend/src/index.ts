@@ -254,7 +254,7 @@ app.use('/api/health', healthRouter);
 app.use('/api', docsRouter); // API documentation (Swagger UI)
 app.use('/api', authRouter);
 
-// Admin routes
+// Admin and Feature routes
 app.use('/api', adminImageManagementRouter);
 app.use('/api', annotationsRouter);
 app.use('/api', aiAnnotationsRouter);
