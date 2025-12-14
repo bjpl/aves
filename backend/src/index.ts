@@ -238,6 +238,11 @@ if (process.env.NODE_ENV === 'development' && process.env.DEV_AUTH_BYPASS === 't
   app.use('/api', devAuthBypass);
 }
 
+// Debug: test route at START of route registrations (before any routers)
+app.get('/api/content/early-test', (_req, res) => {
+  res.json({ status: 'ok', message: 'Early route test works', timestamp: new Date().toISOString() });
+});
+
 // Environment diagnostic endpoint (remove in production)
 app.get('/api/env-check', (_req, res) => {
   res.json({
