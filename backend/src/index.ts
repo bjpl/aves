@@ -192,6 +192,11 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Session-Id']
 }));
 
+// Debug: test route AFTER CORS but BEFORE rate limiter
+app.get('/api/content/post-cors-test', (_req, res) => {
+  res.json({ status: 'ok', message: 'Post-CORS pre-rate-limiter test works', timestamp: new Date().toISOString() });
+});
+
 // Rate limiting - Environment configurable
 // Skip rate limiting for admin and annotation routes (authenticated routes have their own protection)
 const limiter = rateLimit({
@@ -208,6 +213,11 @@ const limiter = rateLimit({
   }
 });
 app.use('/api/', limiter);
+
+// Debug: test route AFTER rate limiter but BEFORE body parsing
+app.get('/api/content/post-limiter-test', (_req, res) => {
+  res.json({ status: 'ok', message: 'Post-rate-limiter test works', timestamp: new Date().toISOString() });
+});
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
