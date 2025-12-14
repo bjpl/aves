@@ -105,8 +105,8 @@ class ContentPublishingService {
         a.difficulty_level as "difficultyLevel",
         i.url as "imageUrl",
         i.species_id as "speciesId",
-        s.common_name_spanish as "speciesName",
-        a.learning_module_id as "moduleId",
+        s.spanish_name as "speciesName",
+        NULL as "moduleId",
         NULL as "moduleName"
       FROM annotations a
       LEFT JOIN images i ON a.image_id = i.id
