@@ -281,8 +281,16 @@ app.use('/api', authRouter);
 
 // Admin routes - mount early to avoid conflicts with other routers
 app.use('/api', adminImageManagementRouter);
+// Debug: after adminImageManagementRouter
+app.get('/api/content/after-admin-test', (_req, res) => {
+  res.json({ status: 'ok', message: 'After adminImageManagementRouter', timestamp: new Date().toISOString() });
+});
 
 app.use('/api', annotationsRouter);
+// Debug: after annotationsRouter
+app.get('/api/content/after-annotations-test', (_req, res) => {
+  res.json({ status: 'ok', message: 'After annotationsRouter', timestamp: new Date().toISOString() });
+});
 app.use('/api', aiAnnotationsRouter);
 app.use('/api', aiExercisesRouter);
 app.use('/api', vocabularyRouter);
