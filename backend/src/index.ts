@@ -29,16 +29,15 @@ import imagesRouter from './routes/images';
 import batchRouter from './routes/batch';
 import mlAnalyticsRouter from './routes/mlAnalytics';
 import feedbackAnalyticsRouter from './routes/feedbackAnalytics';
-import annotationMasteryRouter from './routes/annotationMastery';
+import { createAnnotationMasteryRouter } from './routes/annotationMastery';
 import adminImageManagementRouter from './routes/adminImageManagement';
 import healthRouter from './routes/health';
 import docsRouter from './routes/docs';
-// TEMPORARILY DISABLED FOR DEBUGGING
-// import contentRouter from './routes/content';
+import contentRouter from './routes/content';
 import srsRouter from './routes/srs';
 // Temporarily disabled - needs architecture fix (Pool vs Supabase client)
 // import annotationExercisesRouter from './routes/annotationExercises';
-import { testConnection } from './database/connection';
+import { testConnection, pool } from './database/connection';
 import { error as logError, info } from './utils/logger';
 import { devAuthBypass } from './middleware/devAuth';
 
@@ -124,15 +123,6 @@ app.get('/health', (_req, res) => {
   });
 });
 
-// Debug test endpoint - before CORS to verify routing works
-app.get('/content-debug', (_req, res) => {
-  res.json({
-    status: 'ok',
-    message: 'Pre-CORS content debug works',
-    timestamp: new Date().toISOString()
-  });
-});
-
 // Security middleware with enhanced CSP
 app.use(
   helmet({
@@ -192,11 +182,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Session-Id']
 }));
 
-// Debug: test route AFTER CORS but BEFORE rate limiter
-app.get('/api/content/post-cors-test', (_req, res) => {
-  res.json({ status: 'ok', message: 'Post-CORS pre-rate-limiter test works', timestamp: new Date().toISOString() });
-});
-
 // Rate limiting - Environment configurable
 // Skip rate limiting for admin and annotation routes (authenticated routes have their own protection)
 const limiter = rateLimit({
@@ -213,11 +198,6 @@ const limiter = rateLimit({
   }
 });
 app.use('/api/', limiter);
-
-// Debug: test route AFTER rate limiter but BEFORE body parsing
-app.get('/api/content/post-limiter-test', (_req, res) => {
-  res.json({ status: 'ok', message: 'Post-rate-limiter test works', timestamp: new Date().toISOString() });
-});
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
@@ -237,11 +217,6 @@ if (process.env.NODE_ENV === 'development' && process.env.DEV_AUTH_BYPASS === 't
   info('⚠️  DEV AUTH BYPASS ENABLED - DO NOT USE IN PRODUCTION!');
   app.use('/api', devAuthBypass);
 }
-
-// Debug: test route at START of route registrations (before any routers)
-app.get('/api/content/early-test', (_req, res) => {
-  res.json({ status: 'ok', message: 'Early route test works', timestamp: new Date().toISOString() });
-});
 
 // Environment diagnostic endpoint (remove in production)
 app.get('/api/env-check', (_req, res) => {
@@ -279,58 +254,20 @@ app.use('/api/health', healthRouter);
 app.use('/api', docsRouter); // API documentation (Swagger UI)
 app.use('/api', authRouter);
 
-// Admin routes - mount early to avoid conflicts with other routers
+// Admin routes
 app.use('/api', adminImageManagementRouter);
-// Debug: after adminImageManagementRouter
-app.get('/api/content/after-admin-test', (_req, res) => {
-  res.json({ status: 'ok', message: 'After adminImageManagementRouter', timestamp: new Date().toISOString() });
-});
-
 app.use('/api', annotationsRouter);
-// Debug: after annotationsRouter
-app.get('/api/content/after-annotations-test', (_req, res) => {
-  res.json({ status: 'ok', message: 'After annotationsRouter', timestamp: new Date().toISOString() });
-});
 app.use('/api', aiAnnotationsRouter);
 app.use('/api', aiExercisesRouter);
 app.use('/api', vocabularyRouter);
 app.use('/api', exercisesRouter);
 app.use('/api', speciesRouter);
-// Debug: mid-router test (after speciesRouter)
-app.get('/api/content/mid-router-test', (_req, res) => {
-  res.json({ status: 'ok', message: 'Mid-router test works (after speciesRouter)', timestamp: new Date().toISOString() });
-});
 app.use('/api', imagesRouter);
-// Debug: after imagesRouter
-app.get('/api/content/after-images-test', (_req, res) => {
-  res.json({ status: 'ok', message: 'After imagesRouter', timestamp: new Date().toISOString() });
-});
 app.use('/api', batchRouter);
-// Debug: after batchRouter
-app.get('/api/content/after-batch-test', (_req, res) => {
-  res.json({ status: 'ok', message: 'After batchRouter', timestamp: new Date().toISOString() });
-});
 app.use('/api', mlAnalyticsRouter);
-// Debug: after mlAnalyticsRouter
-app.get('/api/content/after-ml-test', (_req, res) => {
-  res.json({ status: 'ok', message: 'After mlAnalyticsRouter', timestamp: new Date().toISOString() });
-});
 app.use('/api', feedbackAnalyticsRouter);
-// Debug: after feedbackAnalyticsRouter
-app.get('/api/content/after-feedback-test', (_req, res) => {
-  res.json({ status: 'ok', message: 'After feedbackAnalyticsRouter', timestamp: new Date().toISOString() });
-});
-app.use('/api', annotationMasteryRouter);
-// Debug: late-router test (after annotationMasteryRouter)
-app.get('/api/content/late-router-test', (_req, res) => {
-  res.json({ status: 'ok', message: 'Late-router test works (after annotationMasteryRouter)', timestamp: new Date().toISOString() });
-});
-// TEMPORARILY DISABLED FOR DEBUGGING
-// app.use('/api/content', contentRouter);
-// Inline test route to verify path works without content router
-app.get('/api/content/inline-test', (_req, res) => {
-  res.json({ status: 'ok', message: 'Inline content test works', timestamp: new Date().toISOString() });
-});
+app.use('/api/mastery', createAnnotationMasteryRouter(pool));
+app.use('/api/content', contentRouter);
 app.use('/api/srs', srsRouter);
 // Temporarily disabled - needs architecture fix (Pool vs Supabase client)
 // app.use('/api/annotation-exercises', annotationExercisesRouter);
