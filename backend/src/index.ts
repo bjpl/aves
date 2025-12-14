@@ -311,7 +311,15 @@ app.get('/api/content/after-batch-test', (_req, res) => {
   res.json({ status: 'ok', message: 'After batchRouter', timestamp: new Date().toISOString() });
 });
 app.use('/api', mlAnalyticsRouter);
+// Debug: after mlAnalyticsRouter
+app.get('/api/content/after-ml-test', (_req, res) => {
+  res.json({ status: 'ok', message: 'After mlAnalyticsRouter', timestamp: new Date().toISOString() });
+});
 app.use('/api', feedbackAnalyticsRouter);
+// Debug: after feedbackAnalyticsRouter
+app.get('/api/content/after-feedback-test', (_req, res) => {
+  res.json({ status: 'ok', message: 'After feedbackAnalyticsRouter', timestamp: new Date().toISOString() });
+});
 app.use('/api', annotationMasteryRouter);
 // Debug: late-router test (after annotationMasteryRouter)
 app.get('/api/content/late-router-test', (_req, res) => {
