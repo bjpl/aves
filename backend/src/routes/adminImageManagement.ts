@@ -26,6 +26,7 @@ import fs from 'fs';
 import { pool } from '../database/connection';
 import { VisionAIService } from '../services/VisionAIService';
 import { ImageQualityValidator } from '../services/ImageQualityValidator';
+import { birdDetectionService } from '../services/BirdDetectionService';
 import { optionalSupabaseAuth, optionalSupabaseAdmin } from '../middleware/optionalSupabaseAuth';
 import { validateBody, validateParams, validateQuery } from '../middleware/validate';
 import { error as logError, info } from '../utils/logger';
@@ -494,6 +495,66 @@ function generateJobId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
+/**
+ * Verify that an image contains the expected bird species using Claude Vision
+ * @param imageUrl - URL of the image to verify
+ * @param expectedSpeciesName - English name of the expected species
+ * @returns Object with isValid flag and detected species
+ */
+async function verifySpeciesInImage(
+  imageUrl: string,
+  expectedSpeciesName: string
+): Promise<{ isValid: boolean; detectedSpecies: string; confidence: number; reason?: string }> {
+  try {
+    if (!birdDetectionService.isConfigured()) {
+      info('Bird detection not configured, skipping species verification');
+      return { isValid: true, detectedSpecies: 'unverified', confidence: 0, reason: 'API not configured' };
+    }
+
+    const validation = await birdDetectionService.validateImage(imageUrl);
+
+    if (!validation.detection.detected) {
+      return {
+        isValid: false,
+        detectedSpecies: 'none',
+        confidence: 0,
+        reason: 'No bird detected in image'
+      };
+    }
+
+    const detectedSpecies = validation.detection.species || 'unknown';
+    const expectedLower = expectedSpeciesName.toLowerCase().replace(/[^a-z]/g, '');
+    const detectedLower = detectedSpecies.toLowerCase().replace(/[^a-z]/g, '');
+
+    // Check if detected species matches expected species (flexible matching)
+    // Allow partial matches (e.g., "cardinal" matches "Northern Cardinal")
+    const isMatch =
+      detectedLower === expectedLower ||
+      expectedLower.includes(detectedLower) ||
+      detectedLower.includes(expectedLower) ||
+      detectedSpecies === 'unknown'; // If Claude can't identify, allow it with lower confidence
+
+    info('Species verification result', {
+      imageUrl,
+      expectedSpecies: expectedSpeciesName,
+      detectedSpecies,
+      confidence: validation.detection.confidence,
+      isMatch
+    });
+
+    return {
+      isValid: isMatch,
+      detectedSpecies,
+      confidence: validation.detection.confidence,
+      reason: isMatch ? undefined : `Expected "${expectedSpeciesName}" but detected "${detectedSpecies}"`
+    };
+  } catch (error) {
+    logError('Species verification failed', error as Error);
+    // On error, allow the image but mark as unverified
+    return { isValid: true, detectedSpecies: 'error', confidence: 0, reason: 'Verification failed' };
+  }
+}
+
 // ============================================================================
 // API Endpoints
 // ============================================================================
@@ -669,9 +730,39 @@ router.post(
                 continue;
               }
 
-              // Insert each image
+              // Insert each image (with species verification)
               for (const photo of photos) {
                 try {
+                  // SPECIES VERIFICATION: Verify the image contains the expected bird species
+                  const verification = await verifySpeciesInImage(
+                    photo.urls.regular,
+                    speciesData.englishName
+                  );
+
+                  if (!verification.isValid) {
+                    job.errors.push({
+                      item: `${speciesData.englishName}:${photo.id}`,
+                      error: `Species mismatch: ${verification.reason}`,
+                      timestamp: new Date().toISOString()
+                    });
+                    job.failedItems++;
+                    job.processedItems++;
+                    info('Image rejected - species mismatch', {
+                      photo: photo.id,
+                      expectedSpecies: speciesData.englishName,
+                      detectedSpecies: verification.detectedSpecies,
+                      confidence: verification.confidence
+                    });
+                    continue; // Skip this photo, try next one
+                  }
+
+                  info('Image passed species verification', {
+                    photo: photo.id,
+                    species: speciesData.englishName,
+                    detectedSpecies: verification.detectedSpecies,
+                    confidence: verification.confidence
+                  });
+
                   const imageId = await insertImage(speciesId, photo, speciesData.englishName);
 
                   // Run quality check if validator is configured
@@ -2874,6 +2965,159 @@ router.get(
     } catch (err) {
       logError('Error fetching dashboard data', err as Error);
       res.status(500).json({ error: 'Failed to fetch dashboard data' });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/images/verify-species
+ * Verify existing images match their assigned species using AI detection
+ * Identifies and flags mismatched species-image associations
+ */
+router.post(
+  '/admin/images/verify-species',
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { limit = 10, speciesId } = req.body;
+
+      // Validate limit
+      const imageLimit = Math.min(Math.max(1, Number(limit) || 10), 50);
+
+      // Get images to verify
+      let query = `
+        SELECT
+          i.id,
+          i.url,
+          s.id as species_id,
+          s.english_name,
+          s.spanish_name
+        FROM images i
+        JOIN species s ON i.species_id = s.id
+        WHERE i.url IS NOT NULL AND i.url LIKE 'https://%'
+      `;
+      const params: any[] = [];
+      let paramIndex = 1;
+
+      if (speciesId) {
+        query += ` AND i.species_id = $${paramIndex++}`;
+        params.push(speciesId);
+      }
+
+      query += ` ORDER BY i.created_at DESC LIMIT $${paramIndex}`;
+      params.push(imageLimit);
+
+      const imagesResult = await pool.query(query, params);
+
+      if (imagesResult.rows.length === 0) {
+        res.json({
+          message: 'No images found to verify',
+          verified: 0,
+          mismatches: []
+        });
+        return;
+      }
+
+      const results: Array<{
+        imageId: string;
+        imageUrl: string;
+        expectedSpecies: string;
+        detectedSpecies: string;
+        isMatch: boolean;
+        confidence: number;
+        reason?: string;
+      }> = [];
+
+      let verifiedCount = 0;
+      let mismatchCount = 0;
+
+      for (const image of imagesResult.rows) {
+        try {
+          const verification = await verifySpeciesInImage(
+            image.url,
+            image.english_name
+          );
+
+          results.push({
+            imageId: image.id,
+            imageUrl: image.url,
+            expectedSpecies: image.english_name,
+            detectedSpecies: verification.detectedSpecies,
+            isMatch: verification.isValid,
+            confidence: verification.confidence,
+            reason: verification.reason
+          });
+
+          verifiedCount++;
+          if (!verification.isValid) {
+            mismatchCount++;
+          }
+
+          // Rate limit between verifications
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+        } catch (error) {
+          logError('Error verifying image', error as Error);
+          results.push({
+            imageId: image.id,
+            imageUrl: image.url,
+            expectedSpecies: image.english_name,
+            detectedSpecies: 'error',
+            isMatch: false,
+            confidence: 0,
+            reason: 'Verification failed'
+          });
+        }
+      }
+
+      res.json({
+        message: `Verified ${verifiedCount} images, found ${mismatchCount} mismatches`,
+        verified: verifiedCount,
+        mismatches: results.filter(r => !r.isMatch),
+        all: results
+      });
+
+    } catch (err) {
+      logError('Error verifying species', err as Error);
+      res.status(500).json({ error: 'Failed to verify species' });
+    }
+  }
+);
+
+/**
+ * DELETE /api/admin/images/mismatched/:imageId
+ * Delete a mismatched image from the database
+ */
+router.delete(
+  '/admin/images/mismatched/:imageId',
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { imageId } = req.params;
+
+      // Delete the image
+      const result = await pool.query(
+        'DELETE FROM images WHERE id = $1 RETURNING id, url',
+        [imageId]
+      );
+
+      if (result.rowCount === 0) {
+        res.status(404).json({ error: 'Image not found' });
+        return;
+      }
+
+      info('Deleted mismatched image', { imageId, url: result.rows[0].url });
+
+      res.json({
+        message: 'Image deleted successfully',
+        deleted: result.rows[0]
+      });
+
+    } catch (err) {
+      logError('Error deleting image', err as Error);
+      res.status(500).json({ error: 'Failed to delete image' });
     }
   }
 );
