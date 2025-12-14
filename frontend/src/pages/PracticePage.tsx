@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ExerciseContainer } from '../components/exercises/ExerciseContainer';
 import { AIExerciseContainer } from '../components/exercises/AIExerciseContainer';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { useAnnotations } from '../hooks/useAnnotations';
 import { usePrefetchExercises, useAIExerciseAvailability } from '../hooks/useAIExercise';
+import { useSpacedRepetition } from '../hooks/useSpacedRepetition';
 import { debug } from '../utils/logger';
 import type { Exercise, Annotation } from '../types';
 
@@ -202,6 +203,7 @@ const fallbackAnnotations: Annotation[] = [
 export const PracticePage: React.FC = () => {
   // State
   const [useAIExercises, setUseAIExercises] = useState(false);
+  const [reviewMode, setReviewMode] = useState(false);
   const [userId] = useState(() => {
     // Get or create user ID from session storage
     let id = sessionStorage.getItem('aves-user-id');
@@ -217,8 +219,31 @@ export const PracticePage: React.FC = () => {
   const { isAvailable: isAIAvailable } = useAIExerciseAvailability();
   const { mutate: prefetchExercises } = usePrefetchExercises();
 
+  // SRS Hooks
+  const {
+    dueTerms,
+    dueCount,
+    isLoading: srsLoading,
+    recordReview,
+    calculateQuality,
+  } = useSpacedRepetition();
+
   // Use API annotations if available, otherwise fallback to samples
   const annotations = apiAnnotations.length > 0 ? apiAnnotations : fallbackAnnotations;
+
+  // Filter annotations for review mode - prioritize due terms
+  const filteredAnnotations = useMemo(() => {
+    if (!reviewMode || dueCount === 0) {
+      return annotations;
+    }
+
+    // Map due terms to annotations
+    const dueTermIds = new Set(dueTerms.map(term => term.termId));
+    const dueAnnotations = annotations.filter(ann => dueTermIds.has(ann.id));
+
+    // If we have due annotations, use them; otherwise fall back to all
+    return dueAnnotations.length > 0 ? dueAnnotations : annotations;
+  }, [reviewMode, dueTerms, dueCount, annotations]);
 
   // Prefetch exercises on page load if AI mode is enabled
   useEffect(() => {
@@ -228,8 +253,22 @@ export const PracticePage: React.FC = () => {
     }
   }, [useAIExercises, isAIAvailable, userId]);
 
-  const handleExerciseComplete = (correct: boolean, exercise?: Exercise) => {
+  const handleExerciseComplete = async (correct: boolean, exercise?: Exercise) => {
     debug('Exercise completed', { correct, exerciseId: exercise?.id });
+
+    // Record SRS review if we have an annotation ID
+    if (exercise?.annotation?.id) {
+      try {
+        const quality = calculateQuality(correct);
+        await recordReview({
+          termId: exercise.annotation.id,
+          quality,
+        });
+        debug('SRS review recorded', { termId: exercise.annotation.id, quality });
+      } catch (error) {
+        debug('Failed to record SRS review', { error });
+      }
+    }
 
     // Track analytics
     if (typeof window !== 'undefined' && (window as any).analytics) {
@@ -238,6 +277,7 @@ export const PracticePage: React.FC = () => {
         correct,
         exerciseType: exercise?.type,
         mode: useAIExercises ? 'ai' : 'traditional',
+        reviewMode,
       });
     }
   };
@@ -257,6 +297,21 @@ export const PracticePage: React.FC = () => {
     }
   };
 
+  const handleToggleReviewMode = () => {
+    const newReviewMode = !reviewMode;
+    setReviewMode(newReviewMode);
+
+    debug('Review mode toggled', { reviewMode: newReviewMode });
+
+    // Track analytics
+    if (typeof window !== 'undefined' && (window as any).analytics) {
+      (window as any).analytics.track('review_mode_changed', {
+        userId,
+        reviewMode: newReviewMode,
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -267,76 +322,129 @@ export const PracticePage: React.FC = () => {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 Practice Exercises
               </h1>
-              <p className="text-gray-600">
-                Test your Spanish bird vocabulary knowledge
-              </p>
+              <div className="flex items-center gap-4">
+                <p className="text-gray-600">
+                  Test your Spanish bird vocabulary knowledge
+                </p>
+                {!srsLoading && dueCount > 0 && (
+                  <Badge variant="warning" size="sm">
+                    {dueCount} term{dueCount !== 1 ? 's' : ''} due for review
+                  </Badge>
+                )}
+              </div>
             </div>
 
-            {/* AI Toggle - Only show if AI is available */}
-            {isAIAvailable && (
-              <div className="flex items-center gap-3">
-                <Badge
-                  variant={useAIExercises ? 'primary' : 'default'}
-                  size="md"
-                  className="cursor-default"
-                >
-                  {useAIExercises ? 'AI Mode' : 'Traditional'}
-                </Badge>
+            {/* Controls */}
+            <div className="flex items-center gap-3">
+              {/* Review Mode Toggle */}
+              {dueCount > 0 && (
                 <Button
-                  onClick={handleToggleMode}
-                  variant={useAIExercises ? 'primary' : 'outline'}
+                  onClick={handleToggleReviewMode}
+                  variant={reviewMode ? 'primary' : 'outline'}
                   size="md"
                   leftIcon={
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                     </svg>
                   }
-                  aria-label={`Switch to ${useAIExercises ? 'traditional' : 'AI'} exercises`}
+                  aria-label={`${reviewMode ? 'Exit' : 'Enter'} review mode`}
                 >
-                  {useAIExercises ? 'Use Traditional' : 'Use AI Exercises'}
+                  {reviewMode ? 'Exit Review Mode' : 'Review Due Terms'}
                 </Button>
-              </div>
-            )}
+              )}
+
+              {/* AI Toggle - Only show if AI is available */}
+              {isAIAvailable && (
+                <>
+                  <Badge
+                    variant={useAIExercises ? 'primary' : 'default'}
+                    size="md"
+                    className="cursor-default"
+                  >
+                    {useAIExercises ? 'AI Mode' : 'Traditional'}
+                  </Badge>
+                  <Button
+                    onClick={handleToggleMode}
+                    variant={useAIExercises ? 'primary' : 'outline'}
+                    size="md"
+                    leftIcon={
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    }
+                    aria-label={`Switch to ${useAIExercises ? 'traditional' : 'AI'} exercises`}
+                  >
+                    {useAIExercises ? 'Use Traditional' : 'Use AI Exercises'}
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Mode Description */}
-          {isAIAvailable && (
-            <div
-              className={`p-4 rounded-lg border ${
-                useAIExercises
-                  ? 'bg-purple-50 border-purple-200'
-                  : 'bg-blue-50 border-blue-200'
+          <div
+            className={`p-4 rounded-lg border ${
+              reviewMode
+                ? 'bg-orange-50 border-orange-200'
+                : useAIExercises
+                ? 'bg-purple-50 border-purple-200'
+                : 'bg-blue-50 border-blue-200'
+            }`}
+            role="status"
+            aria-live="polite"
+          >
+            <p
+              className={`text-sm ${
+                reviewMode
+                  ? 'text-orange-800'
+                  : useAIExercises
+                  ? 'text-purple-800'
+                  : 'text-blue-800'
               }`}
-              role="status"
-              aria-live="polite"
             >
-              <p
-                className={`text-sm ${
-                  useAIExercises ? 'text-purple-800' : 'text-blue-800'
-                }`}
-              >
-                {useAIExercises ? (
-                  <>
-                    <strong>AI Mode:</strong> Exercises are dynamically generated based on your
-                    performance and learning progress. Each exercise is personalized to help you
-                    improve faster.
-                  </>
-                ) : (
-                  <>
-                    <strong>Traditional Mode:</strong> Practice with our curated set of
-                    exercises covering all difficulty levels from beginner to advanced.
-                  </>
-                )}
-              </p>
-            </div>
-          )}
+              {reviewMode ? (
+                <>
+                  <strong>Review Mode:</strong> Focusing on {dueCount} term{dueCount !== 1 ? 's' : ''} due for review.
+                  The spaced repetition system will track your progress and schedule future reviews
+                  based on your performance.
+                </>
+              ) : useAIExercises ? (
+                <>
+                  <strong>AI Mode:</strong> Exercises are dynamically generated based on your
+                  performance and learning progress. Each exercise is personalized to help you
+                  improve faster.
+                </>
+              ) : (
+                <>
+                  <strong>Traditional Mode:</strong> Practice with our curated set of
+                  exercises covering all difficulty levels from beginner to advanced.
+                </>
+              )}
+            </p>
+          </div>
         </div>
 
         {/* Exercise Container */}
         <div className="bg-white rounded-lg shadow-lg p-8">
-          {annotationsLoading ? (
+          {annotationsLoading || srsLoading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="text-gray-500">Loading exercises...</div>
+              <div className="text-gray-500">
+                {srsLoading ? 'Loading review data...' : 'Loading exercises...'}
+              </div>
+            </div>
+          ) : reviewMode && dueCount === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64">
+              <div className="text-green-600 mb-4 text-xl">🎉 All caught up!</div>
+              <p className="text-gray-600 mb-2">No terms due for review right now.</p>
+              <p className="text-sm text-gray-400">Check back later or practice in traditional mode.</p>
+              <Button
+                onClick={() => setReviewMode(false)}
+                variant="outline"
+                size="md"
+                className="mt-4"
+              >
+                Exit Review Mode
+              </Button>
             </div>
           ) : annotations.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64">
@@ -353,9 +461,22 @@ export const PracticePage: React.FC = () => {
             />
           ) : (
             <ExerciseContainer
-              annotations={annotations}
+              annotations={filteredAnnotations}
               onComplete={(progress) => {
                 debug('Session complete', { progress });
+              }}
+              onExerciseComplete={async (correct, annotationId) => {
+                // Record SRS review
+                try {
+                  const quality = calculateQuality(correct);
+                  await recordReview({
+                    termId: annotationId,
+                    quality,
+                  });
+                  debug('SRS review recorded', { annotationId, quality, correct });
+                } catch (error) {
+                  debug('Failed to record SRS review', { error });
+                }
               }}
             />
           )}

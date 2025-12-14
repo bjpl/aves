@@ -72,6 +72,7 @@ export class EnhancedExerciseGenerator {
     return {
       id: `vi_${Date.now()}`,
       type: 'visual_identification' as ExerciseType,
+      annotation: target,
       prompt: target.spanishTerm,
       pedagogicalLevel: 'recognition',
       learningObjective: 'Identify bird anatomy parts in Spanish',
@@ -104,6 +105,7 @@ export class EnhancedExerciseGenerator {
     return {
       id: `evd_${Date.now()}`,
       type: 'visual_discrimination',
+      annotation: correct,
       prompt: correct.spanishTerm,
       instructions: `Select the image that shows: "${correct.spanishTerm}"`,
       pedagogicalLevel: 'comprehension',
@@ -132,6 +134,7 @@ export class EnhancedExerciseGenerator {
     return {
       id: `ar_${Date.now()}`,
       type: 'audio_recognition' as ExerciseType,
+      annotation: correct,
       prompt: 'Listen and select the correct word',
       instructions: 'Which word do you hear?',
       pedagogicalLevel: 'recognition',
@@ -166,6 +169,7 @@ export class EnhancedExerciseGenerator {
     return {
       id: `etm_${Date.now()}`,
       type: 'term_matching',
+      annotation: selected[0], // Use first annotation as primary
       prompt: 'Match Spanish and English terms',
       instructions: `Match ${selectedType} vocabulary`,
       pedagogicalLevel: 'application',
@@ -199,6 +203,7 @@ export class EnhancedExerciseGenerator {
     return {
       id: `ecf_${Date.now()}`,
       type: 'contextual_fill',
+      annotation: correct,
       prompt: sentence.text.replace('___', '_____'),
       instructions: 'Complete the sentence',
       pedagogicalLevel: 'application',
@@ -243,6 +248,7 @@ export class EnhancedExerciseGenerator {
     return {
       id: `sb_${Date.now()}`,
       type: 'sentence_building' as ExerciseType,
+      annotation: annotation,
       prompt: 'Build a sentence',
       instructions: 'Arrange the words to form a correct sentence',
       pedagogicalLevel: 'synthesis',
@@ -293,9 +299,13 @@ export class EnhancedExerciseGenerator {
 
     const selected = culturalItems[Math.floor(Math.random() * culturalItems.length)];
 
+    // Find a relevant annotation for this cultural context (optional, may be undefined)
+    const annotation = this.annotations.length > 0 ? this.annotations[0] : undefined;
+
     return {
       id: `cc_${Date.now()}`,
       type: 'cultural_context' as ExerciseType,
+      annotation: annotation,
       prompt: selected.question,
       instructions: 'Answer the cultural question',
       pedagogicalLevel: 'analysis',

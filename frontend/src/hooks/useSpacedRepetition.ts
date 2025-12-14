@@ -60,26 +60,39 @@ export const useDueTerms = (limit: number = 20) => {
   return useQuery({
     queryKey: srsQueryKeys.dueTerms(userId || ''),
     queryFn: async (): Promise<TermProgress[]> => {
-      if (!userId) return [];
-
-      try {
-        const response = await fetch(`${API_URL}/api/srs/due?limit=${limit}`, {
-          headers: {
-            'Authorization': `Bearer ${await user?.getIdToken?.() || ''}`,
-          },
-        });
-
-        if (!response.ok) throw new Error('Failed to fetch due terms');
-        const data = await response.json();
-        return data.data || [];
-      } catch (err) {
-        logError('Error fetching due terms', err instanceof Error ? err : new Error(String(err)));
-        return [];
+      if (!userId) {
+        throw new Error('AUTHENTICATION_REQUIRED');
       }
+
+      const response = await fetch(`${API_URL}/api/srs/due?limit=${limit}`, {
+        headers: {
+          'Authorization': `Bearer ${await user?.getIdToken?.() || ''}`,
+        },
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('AUTHENTICATION_FAILED');
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to fetch due terms');
+      }
+
+      const data = await response.json();
+      return data.data || [];
     },
     enabled: !!userId,
     staleTime: 1 * 60 * 1000, // 1 minute - SRS data should be fresh
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+    retry: (failureCount, error) => {
+      // Don't retry auth errors
+      if (error instanceof Error &&
+          (error.message === 'AUTHENTICATION_REQUIRED' || error.message === 'AUTHENTICATION_FAILED')) {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
 };
 
@@ -94,40 +107,37 @@ export const useUserSRSStats = () => {
     queryKey: srsQueryKeys.userStats(userId || ''),
     queryFn: async (): Promise<UserStats> => {
       if (!userId) {
-        return {
-          totalTerms: 0,
-          mastered: 0,
-          learning: 0,
-          dueForReview: 0,
-          averageMastery: 0,
-          streak: 0,
-        };
+        throw new Error('AUTHENTICATION_REQUIRED');
       }
 
-      try {
-        const response = await fetch(`${API_URL}/api/srs/stats`, {
-          headers: {
-            'Authorization': `Bearer ${await user?.getIdToken?.() || ''}`,
-          },
-        });
+      const response = await fetch(`${API_URL}/api/srs/stats`, {
+        headers: {
+          'Authorization': `Bearer ${await user?.getIdToken?.() || ''}`,
+        },
+      });
 
-        if (!response.ok) throw new Error('Failed to fetch stats');
-        const data = await response.json();
-        return data.data;
-      } catch (err) {
-        logError('Error fetching SRS stats', err instanceof Error ? err : new Error(String(err)));
-        return {
-          totalTerms: 0,
-          mastered: 0,
-          learning: 0,
-          dueForReview: 0,
-          averageMastery: 0,
-          streak: 0,
-        };
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('AUTHENTICATION_FAILED');
       }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to fetch stats');
+      }
+
+      const data = await response.json();
+      return data.data;
     },
     enabled: !!userId,
     staleTime: 2 * 60 * 1000,
+    retry: (failureCount, error) => {
+      // Don't retry auth errors
+      if (error instanceof Error &&
+          (error.message === 'AUTHENTICATION_REQUIRED' || error.message === 'AUTHENTICATION_FAILED')) {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
 };
 
@@ -220,14 +230,53 @@ export const useCalculateQuality = () => {
 };
 
 /**
+ * Helper function to format error messages for user display
+ */
+const formatErrorMessage = (error: Error | null): string | null => {
+  if (!error) return null;
+
+  const message = error.message;
+
+  if (message === 'AUTHENTICATION_REQUIRED') {
+    return 'Please log in to access your practice terms';
+  }
+
+  if (message === 'AUTHENTICATION_FAILED') {
+    return 'Your session has expired. Please log in again';
+  }
+
+  if (message.includes('Network') || message.includes('fetch')) {
+    return 'Unable to connect. Please check your internet connection';
+  }
+
+  return message || 'An error occurred';
+};
+
+/**
  * Hook: Combined SRS functionality for practice page
  */
 export const useSpacedRepetition = () => {
-  const { data: dueTerms = [], isLoading: loadingDue, refetch: refetchDue } = useDueTerms();
-  const { data: stats, isLoading: loadingStats, refetch: refetchStats } = useUserSRSStats();
+  const { user } = useSupabaseAuth();
+  const {
+    data: dueTerms = [],
+    isLoading: loadingDue,
+    error: dueError,
+    refetch: refetchDue
+  } = useDueTerms();
+  const {
+    data: stats,
+    isLoading: loadingStats,
+    error: statsError,
+    refetch: refetchStats
+  } = useUserSRSStats();
   const recordReview = useRecordReview();
   const markDiscovered = useMarkTermDiscovered();
   const calculateQuality = useCalculateQuality();
+
+  // Determine primary error (prefer due terms error as it's more critical)
+  const primaryError = dueError || statsError || recordReview.error;
+  const error = formatErrorMessage(primaryError as Error | null);
+  const isAuthenticated = !!user?.id;
 
   return {
     // Data
@@ -237,6 +286,11 @@ export const useSpacedRepetition = () => {
 
     // Loading states
     isLoading: loadingDue || loadingStats,
+
+    // Authentication & Error states
+    isAuthenticated,
+    requiresAuth: !isAuthenticated,
+    error,
 
     // Actions
     recordReview: recordReview.mutateAsync,

@@ -208,14 +208,18 @@ export const EnhancedLearnPage: React.FC = () => {
       }
 
       // Transform LearningContent to annotation format
+      // Database stores nested format: { topLeft: {x,y}, bottomRight: {x,y}, width, height }
       // Convert normalized coords (0-1) to percentages (0-100) for UI display
+      const centerX = (item.boundingBox.topLeft.x + (item.boundingBox.width / 2)) * 100;
+      const centerY = (item.boundingBox.topLeft.y + (item.boundingBox.height / 2)) * 100;
+
       acc[item.imageUrl].annotations.push({
         id: item.id,
         term: item.spanishTerm,
         english: item.englishTerm,
         pronunciation: item.pronunciation || '',
-        x: (item.boundingBox.x + (item.boundingBox.width / 2)) * 100, // Center of bounding box, as percentage
-        y: (item.boundingBox.y + (item.boundingBox.height / 2)) * 100,
+        x: centerX, // Center of bounding box, as percentage
+        y: centerY,
         description: `${item.type} feature`
       });
 

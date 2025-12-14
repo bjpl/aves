@@ -10,10 +10,12 @@ import { EnhancedExerciseGenerator } from '../../services/enhancedExerciseGenera
 interface ExerciseContainerProps {
   annotations: Annotation[];
   onComplete?: (progress: SessionProgress) => void;
+  onExerciseComplete?: (correct: boolean, annotationId: string) => void;
 }
 
 export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
-  annotations
+  annotations,
+  onExerciseComplete
 }) => {
   const [currentExercise, setCurrentExercise] = useState<EnhancedExercise | null>(null);
   const [generator] = useState(() => new EnhancedExerciseGenerator(annotations));
@@ -72,6 +74,11 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
     // Update generator level based on performance
     generator.updateLevel({ correct: newProgress.correctAnswers, total: newProgress.exercisesCompleted });
 
+    // Call onExerciseComplete if provided and we have an annotation ID
+    if (onExerciseComplete && currentExercise.annotation?.id) {
+      onExerciseComplete(isCorrect, currentExercise.annotation.id);
+    }
+
     // Clear any existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -81,7 +88,7 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
     timeoutRef.current = setTimeout(() => {
       generateNewExercise();
     }, 3000);
-  }, [currentExercise, progress, generator, generateNewExercise]);
+  }, [currentExercise, progress, generator, generateNewExercise, onExerciseComplete]);
 
   const renderExercise = useCallback(() => {
     if (!currentExercise) return null;

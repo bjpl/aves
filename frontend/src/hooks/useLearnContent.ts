@@ -19,8 +19,8 @@ export interface LearningContent {
   pronunciation?: string;
   type: 'anatomical' | 'behavioral' | 'color' | 'pattern';
   boundingBox: {
-    x: number;
-    y: number;
+    topLeft: { x: number; y: number };
+    bottomRight: { x: number; y: number };
     width: number;
     height: number;
   };
