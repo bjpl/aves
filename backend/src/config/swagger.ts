@@ -46,7 +46,7 @@ const options: swaggerJsdoc.Options = {
         description: 'Local development server'
       },
       {
-        url: 'https://aves-backend-production.up.railway.app',
+        url: 'https://aves-production.up.railway.app',
         description: 'Production server (Railway)'
       }
     ],
