@@ -66,7 +66,9 @@ async function runMigrations() {
       '019_add_pattern_counts_index.sql',
       '020_seed_production_bird_data.sql',
       '021_seed_production_annotations.sql',
-      '022_publish_seeded_annotations.sql'
+      '023_learning_modules.sql',
+      '024_user_progress.sql',
+      '025_publish_seeded_annotations.sql'
     ];
 
     for (const migration of migrations) {
