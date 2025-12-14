@@ -92,8 +92,7 @@ class ContentPublishingService {
   async getPublishedContent(filters: ContentFilters = {}): Promise<LearningContent[]> {
     const { difficulty, type, speciesId, moduleId, limit = 50, offset = 0 } = filters;
 
-    // Ultra-simplified query - no JOINs, just basic annotation data
-    // This ensures the Learn page works even if there are database issues
+    // Query with JOIN to images table to get actual image URLs
     let query = `
       SELECT
         a.id,
@@ -104,12 +103,14 @@ class ContentPublishingService {
         a.annotation_type as "type",
         a.bounding_box as "boundingBox",
         a.difficulty_level as "difficultyLevel",
-        NULL as "imageUrl",
-        NULL as "speciesId",
-        NULL as "speciesName",
-        NULL as "moduleId",
+        i.url as "imageUrl",
+        i.species_id as "speciesId",
+        s.common_name_spanish as "speciesName",
+        a.learning_module_id as "moduleId",
         NULL as "moduleName"
       FROM annotations a
+      LEFT JOIN images i ON a.image_id = i.id
+      LEFT JOIN species s ON i.species_id = s.id
       WHERE a.is_visible = true
     `;
 
