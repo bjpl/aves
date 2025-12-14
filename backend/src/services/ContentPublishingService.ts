@@ -51,15 +51,21 @@ class ContentPublishingService {
     try {
       for (const id of annotationIds) {
         try {
-          await pool.query(
+          // Note: annotations table uses is_visible instead of status column
+          const result = await pool.query(
             `UPDATE annotations
              SET published_at = CURRENT_TIMESTAMP,
                  learning_module_id = $2,
                  updated_at = CURRENT_TIMESTAMP
-             WHERE id = $1 AND status = 'approved'`,
+             WHERE id = $1 AND is_visible = true
+             RETURNING id`,
             [id, moduleId || null]
           );
-          published++;
+          if (result.rowCount && result.rowCount > 0) {
+            published++;
+          } else {
+            failed.push(id);
+          }
         } catch (err) {
           failed.push(id);
           logError(`Failed to publish annotation ${id}`, err as Error);

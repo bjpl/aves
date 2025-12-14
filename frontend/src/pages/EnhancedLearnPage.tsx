@@ -208,13 +208,14 @@ export const EnhancedLearnPage: React.FC = () => {
       }
 
       // Transform LearningContent to annotation format
+      // Convert normalized coords (0-1) to percentages (0-100) for UI display
       acc[item.imageUrl].annotations.push({
         id: item.id,
         term: item.spanishTerm,
         english: item.englishTerm,
         pronunciation: item.pronunciation || '',
-        x: item.boundingBox.x + (item.boundingBox.width / 2), // Center of bounding box
-        y: item.boundingBox.y + (item.boundingBox.height / 2),
+        x: (item.boundingBox.x + (item.boundingBox.width / 2)) * 100, // Center of bounding box, as percentage
+        y: (item.boundingBox.y + (item.boundingBox.height / 2)) * 100,
         description: `${item.type} feature`
       });
 
