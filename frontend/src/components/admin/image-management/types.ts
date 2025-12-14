@@ -85,6 +85,14 @@ export interface GalleryResponse {
 
 export interface BulkDeleteResponse {
   message: string;
+  operationId: string;
+  expiresAt: string;
+  gracePeriodSeconds: number;
+  imageCount: number;
+}
+
+export interface BulkDeleteLegacyResponse {
+  message: string;
   deleted: number;
   failed: number;
   errors?: Array<{ imageId: string; error: string }>;
@@ -95,6 +103,12 @@ export interface BulkAnnotateResponse {
   status: string;
   message: string;
   totalImages: number;
+}
+
+export interface UndoOperationResponse {
+  message: string;
+  cancelled: boolean;
+  operationId: string;
 }
 
 export type TabType = 'collection' | 'annotation' | 'gallery' | 'statistics' | 'history';

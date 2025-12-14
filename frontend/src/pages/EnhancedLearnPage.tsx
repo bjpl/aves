@@ -5,6 +5,7 @@ import { BirdSelector } from '../components/learn/BirdSelector';
 import { InteractiveBirdImage } from '../components/learn/InteractiveBirdImage';
 import { VocabularyPanel } from '../components/learn/VocabularyPanel';
 import { LearningPathSelector } from '../components/learn/LearningPathSelector';
+import { ReviewScheduleCard } from '../components/srs/ReviewScheduleCard';
 import { useLearnContent, useLearningModules, LearningModule } from '../hooks/useLearnContent';
 import { useSpacedRepetition } from '../hooks/useSpacedRepetition';
 
@@ -189,7 +190,13 @@ export const EnhancedLearnPage: React.FC = () => {
   });
 
   const { data: modules = [] } = useLearningModules();
-  const { markDiscovered } = useSpacedRepetition();
+  const {
+    markDiscovered,
+    dueCount,
+    upcomingReviews,
+    nextReviewDate,
+    isLoading: srsLoading
+  } = useSpacedRepetition();
 
   // Transform API content into bird learning format
   const birdLearningData = useMemo(() => {
@@ -327,6 +334,16 @@ export const EnhancedLearnPage: React.FC = () => {
             discoveredCount={discoveredTerms.size}
             totalCount={totalTerms}
           />
+
+          {/* Review Schedule Section */}
+          <div className="mt-6">
+            <ReviewScheduleCard
+              dueCount={dueCount}
+              upcomingReviews={upcomingReviews}
+              nextReviewDate={nextReviewDate}
+              isLoading={srsLoading}
+            />
+          </div>
         </div>
 
         {/* Learning Path Selector */}

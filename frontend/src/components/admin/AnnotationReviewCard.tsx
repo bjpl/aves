@@ -11,6 +11,8 @@ import { AIAnnotation } from '../../hooks/useAIAnnotations';
 import { useApproveAnnotation, useRejectAnnotation, useEditAnnotation, useUpdateAnnotation } from '../../hooks/useAIAnnotations';
 import { EnhancedRejectModal } from './EnhancedRejectModal';
 import { BoundingBoxEditor } from './BoundingBoxEditor';
+import { AnnotationPreviewModal } from './AnnotationPreviewModal';
+import { AnnotationHistoryModal } from './AnnotationHistoryModal';
 import { RejectionCategoryValue } from '../../constants/annotationQuality';
 
 export interface AnnotationReviewCardProps {
@@ -40,6 +42,8 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [showEnhancedReject, setShowEnhancedReject] = useState(false);
   const [showBboxEditor, setShowBboxEditor] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const approveMutation = useApproveAnnotation();
   const rejectMutation = useRejectAnnotation();
@@ -134,9 +138,23 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
           break;
 
         case 'f':
-          if (!isEditing && !showRejectForm && !showEnhancedReject && !showBboxEditor) {
+          if (!isEditing && !showRejectForm && !showEnhancedReject && !showBboxEditor && !showPreview) {
             e.preventDefault();
             setShowBboxEditor(true);
+          }
+          break;
+
+        case 'p':
+          if (!isEditing && !showRejectForm && !showEnhancedReject && !showBboxEditor && !showPreview && !showHistory) {
+            e.preventDefault();
+            setShowPreview(true);
+          }
+          break;
+
+        case 'h':
+          if (!isEditing && !showRejectForm && !showEnhancedReject && !showBboxEditor && !showPreview && !showHistory) {
+            e.preventDefault();
+            setShowHistory(true);
           }
           break;
 
@@ -146,6 +164,9 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
           setShowEnhancedReject(false);
           setShowBboxEditor(false);
           setShowRejectForm(false);
+          setShowPreview(false);
+          setShowHistory(false);
+          setShowPreview(false);
           if (isEditing) {
             handleCancelEdit();
           }
@@ -160,7 +181,7 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
     return () => {
       window.removeEventListener('keydown', handleKeyPress);
     };
-  }, [isEditing, showRejectForm, showEnhancedReject, showBboxEditor, isLoading]);
+  }, [isEditing, showRejectForm, showEnhancedReject, showBboxEditor, showPreview, isLoading]);
 
   const getConfidenceBadgeVariant = (score?: number) => {
     if (!score) return 'default';
@@ -214,7 +235,7 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
                 Confidence: {(annotation.confidenceScore * 100).toFixed(1)}%
               </Badge>
             )}
-            <Badge variant="info" size="sm">
+            <Badge variant="primary" size="sm">
               Difficulty: {annotation.difficultyLevel}
             </Badge>
 
@@ -473,9 +494,26 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
             )}
           </div>
 
-          {/* Right: Fix Position & Reject */}
+          {/* Right: Preview, History, Fix Position & Reject */}
           {!isEditing && !showRejectForm && (
             <div className="flex gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setShowPreview(true)}
+                disabled={isLoading}
+              >
+                👁️ Preview (P)
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowHistory(true)}
+                disabled={isLoading}
+                title="View annotation edit history"
+              >
+                📜 History (H)
+              </Button>
               <Button
                 variant="warning"
                 size="sm"
@@ -573,6 +611,33 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
             }
           }}
           onCancel={() => setShowBboxEditor(false)}
+        />
+      )}
+
+      {/* Preview as Student Modal */}
+      {showPreview && (
+        <AnnotationPreviewModal
+          annotation={{
+            id: annotation.id,
+            imageUrl: imageUrl,
+            spanishTerm: annotation.spanishTerm,
+            englishTerm: annotation.englishTerm,
+            type: annotation.type,
+            species: annotation.species || 'Bird',
+            boundingBox: annotation.boundingBox,
+            pronunciation: annotation.pronunciation,
+            difficultyLevel: annotation.difficultyLevel
+          }}
+          onClose={() => setShowPreview(false)}
+        />
+      )}
+
+      {/* Annotation History Modal */}
+      {showHistory && (
+        <AnnotationHistoryModal
+          annotationId={annotation.id}
+          annotationLabel={`${annotation.spanishTerm} (${annotation.englishTerm})`}
+          onClose={() => setShowHistory(false)}
         />
       )}
     </Card>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { AnnotationPreviewModal } from './AnnotationPreviewModal';
 
 interface Annotation {
   id: string;
@@ -7,6 +8,15 @@ interface Annotation {
   englishTerm: string;
   type: string;
   species: string;
+  boundingBox?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    shape?: 'rectangle' | 'polygon';
+  };
+  pronunciation?: string;
+  difficultyLevel?: number;
 }
 
 interface Module {
@@ -25,6 +35,7 @@ const AnnotationPublishingPanel: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [fetchingData, setFetchingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [previewAnnotation, setPreviewAnnotation] = useState<Annotation | null>(null);
 
   // Fetch approved but unpublished annotations
   useEffect(() => {
@@ -295,6 +306,7 @@ const AnnotationPublishingPanel: React.FC = () => {
                 <th style={{ padding: '0.75rem', border: '1px solid #ddd', textAlign: 'left' }}>English Term</th>
                 <th style={{ padding: '0.75rem', border: '1px solid #ddd', textAlign: 'left' }}>Type</th>
                 <th style={{ padding: '0.75rem', border: '1px solid #ddd', textAlign: 'left' }}>Species</th>
+                <th style={{ padding: '0.75rem', border: '1px solid #ddd', textAlign: 'left' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -349,11 +361,42 @@ const AnnotationPublishingPanel: React.FC = () => {
                   <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>
                     {annotation.species}
                   </td>
+                  <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>
+                    <button
+                      onClick={() => setPreviewAnnotation(annotation)}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#2196F3',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#1976D2';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#2196F3';
+                      }}
+                    >
+                      👁️ Preview as Student
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Preview Modal */}
+      {previewAnnotation && (
+        <AnnotationPreviewModal
+          annotation={previewAnnotation}
+          onClose={() => setPreviewAnnotation(null)}
+        />
       )}
     </div>
   );

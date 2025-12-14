@@ -1,6 +1,13 @@
 export type SizeCategory = 'small' | 'medium' | 'large';
 export type ConservationStatus = 'LC' | 'NT' | 'VU' | 'EN' | 'CR' | 'EW' | 'EX';
 
+export interface SpeciesImage {
+  id: string;
+  url: string;
+  thumbnailUrl?: string;
+  annotationCount?: number;
+}
+
 export interface Species {
   id: string;
   scientificName: string;
@@ -18,6 +25,7 @@ export interface Species {
   funFact?: string;
   primaryImageUrl?: string;
   annotationCount?: number;
+  images?: SpeciesImage[];
 }
 
 export interface SpeciesFilter {

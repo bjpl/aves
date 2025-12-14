@@ -124,6 +124,25 @@ export const usePrefetchSpecies = () => {
   };
 };
 
+// Hook: Get similar species recommendations
+export const useSimilarSpecies = (id: string, enabled = true) => {
+  return useQuery({
+    queryKey: [...queryKeys.species.detail(id), 'similar'],
+    queryFn: async () => {
+      try {
+        return await api.species.getSimilar(id);
+      } catch (err) {
+        logError('Error fetching similar species', err instanceof Error ? err : new Error(String(err)));
+        return [];
+      }
+    },
+    enabled: enabled && !!id,
+    staleTime: 15 * 60 * 1000, // 15 minutes - recommendations are static
+    gcTime: 30 * 60 * 1000,
+    placeholderData: [],
+  });
+};
+
 // Mutation: Create/Update species (for admin functionality)
 export const useSpeciesMutation = () => {
   const queryClient = useQueryClient();

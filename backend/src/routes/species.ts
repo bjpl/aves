@@ -460,6 +460,108 @@ router.get('/species/stats', async (_req: Request, res: Response) => {
 
 /**
  * @openapi
+ * /api/species/{id}/similar:
+ *   get:
+ *     tags:
+ *       - Species
+ *     summary: Get similar species recommendations
+ *     description: Retrieve 3-4 related species based on taxonomy (family/order) or habitat
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Species ID
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Similar species retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 similarSpecies:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Species'
+ *       404:
+ *         description: Species not found
+ *       500:
+ *         description: Server error
+ */
+router.get('/species/:id/similar', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    // First, get the current species to find similar ones
+    const currentSpeciesQuery = `
+      SELECT family_name, order_name, habitats
+      FROM species
+      WHERE id = $1
+    `;
+
+    const currentResult = await pool.query(currentSpeciesQuery, [id]);
+
+    if (currentResult.rows.length === 0) {
+      res.status(404).json({ error: 'Species not found' });
+      return;
+    }
+
+    const { family_name, order_name, habitats } = currentResult.rows[0];
+
+    // Find similar species: prioritize same family, then same order, then shared habitats
+    const similarQuery = `
+      SELECT
+        s.id,
+        s.scientific_name as "scientificName",
+        s.spanish_name as "spanishName",
+        s.english_name as "englishName",
+        s.order_name as "orderName",
+        s.family_name as "familyName",
+        s.size_category as "sizeCategory",
+        COALESCE(s.primary_colors, '{}') as "primaryColors",
+        COALESCE(s.habitats, '{}') as "habitats",
+        s.conservation_status as "conservationStatus",
+        (
+          SELECT COALESCE(img.url, img.thumbnail_url)
+          FROM images img
+          WHERE img.species_id = s.id
+          ORDER BY img.annotation_count DESC NULLS LAST, img.created_at DESC
+          LIMIT 1
+        ) as "primaryImageUrl",
+        COUNT(DISTINCT i.id) as "annotationCount",
+        CASE
+          WHEN s.family_name = $2 THEN 1
+          WHEN s.order_name = $3 THEN 2
+          ELSE 3
+        END as similarity_score
+      FROM species s
+      LEFT JOIN images i ON i.species_id = s.id
+      WHERE s.id != $1
+        AND (
+          s.family_name = $2
+          OR s.order_name = $3
+          OR s.habitats && $4
+        )
+      GROUP BY s.id
+      ORDER BY similarity_score ASC, RANDOM()
+      LIMIT 4
+    `;
+
+    const similarResult = await pool.query(similarQuery, [id, family_name, order_name, habitats]);
+
+    res.json({
+      similarSpecies: similarResult.rows
+    });
+  } catch (err) {
+    logError('Error fetching similar species', err as Error);
+    res.status(500).json({ error: 'Failed to fetch similar species' });
+  }
+});
+
+/**
+ * @openapi
  * /api/species:
  *   post:
  *     tags:

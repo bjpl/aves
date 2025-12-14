@@ -6,6 +6,7 @@ import { Badge } from '../components/ui/Badge';
 import { useAnnotations } from '../hooks/useAnnotations';
 import { usePrefetchExercises, useAIExerciseAvailability } from '../hooks/useAIExercise';
 import { useSpacedRepetition } from '../hooks/useSpacedRepetition';
+import { ReviewScheduleCard } from '../components/srs/ReviewScheduleCard';
 import { debug } from '../utils/logger';
 import type { Exercise, Annotation } from '../types';
 
@@ -223,6 +224,8 @@ export const PracticePage: React.FC = () => {
   const {
     dueTerms,
     dueCount,
+    upcomingReviews,
+    nextReviewDate,
     isLoading: srsLoading,
     recordReview,
     calculateQuality,
@@ -482,21 +485,22 @@ export const PracticePage: React.FC = () => {
           )}
         </div>
 
-        {/* Info Cards */}
+        {/* Info Cards with Review Schedule */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+          {/* Review Schedule Card */}
+          <ReviewScheduleCard
+            dueCount={dueCount}
+            upcomingReviews={upcomingReviews}
+            nextReviewDate={nextReviewDate}
+            isLoading={srsLoading}
+          />
+
           <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Adaptive Learning</h3>
             <p className="text-sm text-gray-600">
               {useAIExercises
                 ? 'AI adjusts difficulty based on your performance'
                 : 'Progress through beginner, intermediate, and advanced levels'}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Real-time Feedback</h3>
-            <p className="text-sm text-gray-600">
-              Get instant feedback on your answers with helpful hints and explanations
             </p>
           </div>
 

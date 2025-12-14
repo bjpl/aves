@@ -278,11 +278,37 @@ export const useSpacedRepetition = () => {
   const error = formatErrorMessage(primaryError as Error | null);
   const isAuthenticated = !!user?.id;
 
+  // Calculate upcoming review information
+  const now = new Date();
+  const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  const upcomingReviews = {
+    next24h: dueTerms.filter(term => {
+      if (!term.nextReviewAt) return false;
+      const reviewDate = new Date(term.nextReviewAt);
+      return reviewDate > now && reviewDate <= in24Hours;
+    }),
+    next7d: dueTerms.filter(term => {
+      if (!term.nextReviewAt) return false;
+      const reviewDate = new Date(term.nextReviewAt);
+      return reviewDate > in24Hours && reviewDate <= in7Days;
+    })
+  };
+
+  // Find next review date
+  const nextReviewDate = dueTerms
+    .filter(term => term.nextReviewAt && new Date(term.nextReviewAt) > now)
+    .map(term => new Date(term.nextReviewAt!))
+    .sort((a, b) => a.getTime() - b.getTime())[0] || null;
+
   return {
     // Data
     dueTerms,
     stats,
     dueCount: dueTerms.length,
+    upcomingReviews,
+    nextReviewDate,
 
     // Loading states
     isLoading: loadingDue || loadingStats,

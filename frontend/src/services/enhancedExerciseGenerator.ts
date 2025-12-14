@@ -294,6 +294,126 @@ export class EnhancedExerciseGenerator {
         correct: 1,
         explanation: 'Storks traditionally nest on church bell towers in Spain.',
         cultural: 'Stork nests on churches are considered good luck in Spanish villages.'
+      },
+      {
+        question: '¿Cuál es el ave nacional de España?',
+        options: [
+          'El águila imperial ibérica',
+          'El gorrión',
+          'La paloma',
+          'El buitre'
+        ],
+        correct: 0,
+        explanation: 'The Spanish Imperial Eagle is a critically endangered species endemic to Spain.',
+        cultural: 'This majestic bird represents Spanish pride in conservation efforts.'
+      },
+      {
+        question: '¿Por qué migran muchas aves a España en invierno?',
+        options: [
+          'Por el clima templado mediterráneo',
+          'Por las montañas',
+          'Por las playas',
+          'Por las ciudades grandes'
+        ],
+        correct: 0,
+        explanation: 'Spain\'s mild Mediterranean climate provides ideal winter conditions for migratory birds.',
+        cultural: 'The Strait of Gibraltar is one of the world\'s most important bird migration routes.'
+      },
+      {
+        question: '¿Qué significa cuando un búho canta cerca de tu casa?',
+        options: [
+          'Mala suerte según tradiciones antiguas',
+          'Buena suerte',
+          'Va a llover',
+          'Alguien va a visitarte'
+        ],
+        correct: 0,
+        explanation: 'In Spanish folklore, owl calls near homes were traditionally considered omens.',
+        cultural: 'Modern Spain celebrates owls for pest control and ecological importance.'
+      },
+      {
+        question: '¿Cuál es la función principal del pico del colibrí?',
+        options: [
+          'Alcanzar el néctar de las flores',
+          'Defenderse de predadores',
+          'Construir nidos',
+          'Atraer pareja'
+        ],
+        correct: 0,
+        explanation: 'Hummingbird beaks are specially adapted to reach nectar deep inside flowers.',
+        cultural: 'Though rare in Spain, hummingbirds are studied for biomimicry in Spanish engineering.'
+      },
+      {
+        question: '¿Por qué los loros pueden imitar la voz humana?',
+        options: [
+          'Tienen un órgano vocal especial llamado siringe',
+          'Tienen cuerdas vocales como humanos',
+          'Usan el pico para hacer sonidos',
+          'Es un instinto natural'
+        ],
+        correct: 0,
+        explanation: 'Parrots have a unique vocal organ called the syrinx that allows complex sound production.',
+        cultural: 'Talking parrots have been popular pets in Spanish households for centuries.'
+      },
+      {
+        question: '¿Cuál es el ave más pequeña del mundo?',
+        options: [
+          'El colibrí zunzuncito',
+          'El gorrión',
+          'El petirrojo',
+          'El canario'
+        ],
+        correct: 0,
+        explanation: 'The Bee Hummingbird (zunzuncito) is the world\'s smallest bird at about 5 cm long.',
+        cultural: 'Spanish scientists study miniaturization through hummingbird anatomy.'
+      },
+      {
+        question: '¿Por qué los pájaros carpinteros golpean los árboles?',
+        options: [
+          'Para buscar insectos y comunicarse',
+          'Para afilar el pico',
+          'Para marcar territorio solamente',
+          'Por diversión'
+        ],
+        correct: 0,
+        explanation: 'Woodpeckers drum to find food and communicate with other woodpeckers.',
+        cultural: 'Spanish forests host several woodpecker species vital for forest health.'
+      },
+      {
+        question: '¿Qué ave es símbolo de paz en la cultura española?',
+        options: [
+          'La paloma blanca',
+          'El águila',
+          'El gorrión',
+          'La golondrina'
+        ],
+        correct: 0,
+        explanation: 'The white dove has been a universal symbol of peace, prominently used in Spanish art.',
+        cultural: 'Picasso\'s dove became an iconic peace symbol, deeply rooted in Spanish culture.'
+      },
+      {
+        question: '¿Cuántas veces por segundo puede batir sus alas un colibrí?',
+        options: [
+          'Hasta 80 veces',
+          'Hasta 20 veces',
+          'Hasta 200 veces',
+          'Hasta 5 veces'
+        ],
+        correct: 0,
+        explanation: 'Hummingbirds can beat their wings 50-80 times per second during normal flight.',
+        cultural: 'This rapid movement inspires Spanish drone and robotics research.'
+      },
+      {
+        question: '¿Por qué las aves tienen plumas y no pelo?',
+        options: [
+          'Las plumas son mejores para volar y aislamiento',
+          'Las plumas son más bonitas',
+          'El pelo es muy pesado',
+          'Las aves son reptiles'
+        ],
+        correct: 0,
+        explanation: 'Feathers provide insulation, waterproofing, and the aerodynamic properties needed for flight.',
+        cultural: 'Spanish textile designers study feather structure for innovative materials.'
       }
     ];
 
@@ -368,6 +488,66 @@ export class EnhancedExerciseGenerator {
         context: 'scientific identification',
         grammar: 'Plural forms',
         cultural: 'Spain has rich ornithological research traditions'
+      },
+      {
+        text: `Este ${annotation.imageId || 'pájaro'} tiene un ___ muy hermoso.`,
+        context: 'aesthetic observation',
+        grammar: 'Indefinite article + noun',
+        cultural: 'Appreciation of natural beauty is valued in Spanish culture'
+      },
+      {
+        text: `¿Has visto el ___ de ese ${annotation.imageId || 'pájaro'}?`,
+        context: 'asking questions',
+        grammar: 'Question formation with "¿Has visto...?"',
+        cultural: 'Conversational Spanish often uses present perfect tense'
+      },
+      {
+        text: `El ___ ayuda al ${annotation.imageId || 'pájaro'} a volar mejor.`,
+        context: 'explaining function',
+        grammar: 'Verb + infinitive construction',
+        cultural: 'Spanish emphasizes cause-and-effect relationships'
+      },
+      {
+        text: `Sin su ___, el ${annotation.imageId || 'pájaro'} no podría sobrevivir.`,
+        context: 'expressing necessity',
+        grammar: 'Conditional tense + "podría"',
+        cultural: 'Spanish uses subjunctive mood for hypotheticals'
+      },
+      {
+        text: `La ___ del ${annotation.imageId || 'pájaro'} es diferente en cada estación.`,
+        context: 'seasonal changes',
+        grammar: 'Definite article + noun + adjective',
+        cultural: 'Spain\'s diverse ecosystems create seasonal bird variations'
+      },
+      {
+        text: `Me gusta observar el ___ cuando el ${annotation.imageId || 'pájaro'} descansa.`,
+        context: 'personal preference',
+        grammar: '"Me gusta" + infinitive',
+        cultural: 'Birdwatching ("observación de aves") is growing in Spain'
+      },
+      {
+        text: `El color del ___ indica la edad del ${annotation.imageId || 'pájaro'}.`,
+        context: 'biological indicator',
+        grammar: 'Noun phrase as subject',
+        cultural: 'Spanish ornithology has deep scientific traditions'
+      },
+      {
+        text: `Podemos identificar el ${annotation.imageId || 'pájaro'} por su ___.`,
+        context: 'identification method',
+        grammar: '"Por" indicating means/method',
+        cultural: 'Field guides focus on distinguishing features'
+      },
+      {
+        text: `Durante la migración, el ___ del ${annotation.imageId || 'pájaro'} cambia de color.`,
+        context: 'migration patterns',
+        grammar: 'Time expression + verb conjugation',
+        cultural: 'Spain is a crucial migration route for many bird species'
+      },
+      {
+        text: `Los científicos miden el ___ para estudiar la salud del ${annotation.imageId || 'pájaro'}.`,
+        context: 'scientific research',
+        grammar: 'Third person plural verb form',
+        cultural: 'Spanish research institutions lead in avian conservation'
       }
     ];
     return contexts;

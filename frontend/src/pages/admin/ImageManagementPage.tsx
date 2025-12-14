@@ -21,9 +21,11 @@ import {
   SpeciesMultiSelect,
   ToastContainer,
   DeleteConfirmationModal,
+  UndoToast,
   useImageManagement,
   useToast,
   DashboardSkeleton,
+  BulkDeleteResponse,
 } from '../../components/admin/image-management';
 
 export const ImageManagementPage: React.FC = () => {
@@ -42,6 +44,7 @@ export const ImageManagementPage: React.FC = () => {
     annotateMutation,
     bulkDeleteMutation,
     bulkAnnotateMutation,
+    undoMutation,
   } = useImageManagement();
 
   const { toasts, addToast, removeToast } = useToast();
@@ -53,6 +56,7 @@ export const ImageManagementPage: React.FC = () => {
   const [annotateAllPending, setAnnotateAllPending] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [gallerySelectedImages, setGallerySelectedImages] = useState<string[]>([]);
+  const [undoOperation, setUndoOperation] = useState<BulkDeleteResponse | null>(null);
 
   // Note: Smart polling is now handled in useImageManagement hook
   // The hook automatically polls when hasActiveJobs is true
@@ -96,16 +100,40 @@ export const ImageManagementPage: React.FC = () => {
     }
   };
 
-  // Bulk delete handler
+  // Bulk delete handler with undo capability
   const handleBulkDelete = async () => {
     try {
       const result = await bulkDeleteMutation.mutateAsync(gallerySelectedImages);
-      addToast('success', result.message);
-      setGallerySelectedImages([]);
+
+      // Show undo toast
+      setUndoOperation(result);
       setShowDeleteModal(false);
-      refetchStats();
+
+      // Don't clear selection yet - wait for operation to execute or be cancelled
     } catch {
-      addToast('error', 'Failed to delete images');
+      addToast('error', 'Failed to queue delete operation');
+    }
+  };
+
+  // Handle undo
+  const handleUndo = async (operationId: string) => {
+    try {
+      await undoMutation.mutateAsync(operationId);
+      addToast('success', 'Delete operation cancelled');
+      setUndoOperation(null);
+      setGallerySelectedImages([]);
+    } catch {
+      addToast('error', 'Failed to undo operation');
+    }
+  };
+
+  // Handle operation expiry (auto-execute)
+  const handleOperationExpire = () => {
+    if (undoOperation) {
+      addToast('success', `${undoOperation.imageCount} image${undoOperation.imageCount !== 1 ? 's' : ''} deleted`);
+      setUndoOperation(null);
+      setGallerySelectedImages([]);
+      refetchStats();
     }
   };
 
@@ -943,6 +971,17 @@ export const ImageManagementPage: React.FC = () => {
         count={gallerySelectedImages.length}
         isDeleting={bulkDeleteMutation.isPending}
       />
+      {undoOperation && (
+        <UndoToast
+          operationId={undoOperation.operationId}
+          message={undoOperation.message}
+          itemCount={undoOperation.imageCount}
+          expiresAt={undoOperation.expiresAt}
+          onUndo={handleUndo}
+          onExpire={handleOperationExpire}
+          onDismiss={() => setUndoOperation(null)}
+        />
+      )}
     </div>
   );
 };

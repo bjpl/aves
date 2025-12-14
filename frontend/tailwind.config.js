@@ -23,6 +23,15 @@ export default {
       fontFamily: {
         'nature': ['Georgia', 'serif'],
       },
+      keyframes: {
+        'slide-up': {
+          from: { transform: 'translateY(100%)', opacity: '0' },
+          to: { transform: 'translateY(0)', opacity: '1' },
+        },
+      },
+      animation: {
+        'slide-up': 'slide-up 0.3s ease-out',
+      },
     },
   },
   plugins: [],

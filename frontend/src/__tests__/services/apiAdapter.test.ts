@@ -242,17 +242,20 @@ describe('ApiAdapter - Backend Mode', () => {
     });
 
     it('should get species by ID', async () => {
-      const mockResponse = { data: { data: [mockSpecies] } };
+      const mockResponse = { data: mockSpecies };
       mockAxiosInstance.get.mockResolvedValue(mockResponse);
 
       const result = await apiAdapter.getSpeciesById('1');
 
       expect(result).toEqual(mockSpecies);
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/species/1');
     });
 
     it('should return null if species not found by ID', async () => {
-      const mockResponse = { data: { data: [] } };
-      mockAxiosInstance.get.mockResolvedValue(mockResponse);
+      // Mock the direct fetch to fail, then fallback to list
+      mockAxiosInstance.get
+        .mockRejectedValueOnce(new Error('Not found'))
+        .mockResolvedValueOnce({ data: { data: [] } });
 
       const result = await apiAdapter.getSpeciesById('999');
 

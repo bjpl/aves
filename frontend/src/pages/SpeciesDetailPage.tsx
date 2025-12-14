@@ -4,6 +4,9 @@ import { Species } from '../../../shared/types/species.types';
 import { LazyImage } from '../components/ui/LazyImage';
 import { useSpeciesById } from '../hooks/useSpecies';
 import { SpeciesLearningSection } from '../components/species/SpeciesLearningSection';
+import { SpeciesImageGallery } from '../components/species/SpeciesImageGallery';
+import { ConservationStatusBadge } from '../components/species/ConservationStatusBadge';
+import { SimilarSpecies } from '../components/species/SimilarSpecies';
 
 export const SpeciesDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -72,18 +75,6 @@ export const SpeciesDetailPage: React.FC = () => {
     );
   }
 
-  const getConservationInfo = (status?: string) => {
-    const info: Record<string, { color: string; label: string; description: string }> = {
-      'LC': { color: 'bg-green-100 text-green-800', label: 'Least Concern', description: 'Population is stable and widespread' },
-      'NT': { color: 'bg-yellow-100 text-yellow-800', label: 'Near Threatened', description: 'May become threatened in the near future' },
-      'VU': { color: 'bg-orange-100 text-orange-800', label: 'Vulnerable', description: 'High risk of endangerment in the wild' },
-      'EN': { color: 'bg-red-100 text-red-800', label: 'Endangered', description: 'Very high risk of extinction' },
-      'CR': { color: 'bg-red-200 text-red-900', label: 'Critically Endangered', description: 'Extremely high risk of extinction' },
-    };
-    return info[status || ''] || { color: 'bg-gray-100 text-gray-800', label: 'Unknown', description: '' };
-  };
-
-  const conservationInfo = getConservationInfo(species.conservationStatus);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -107,19 +98,23 @@ export const SpeciesDetailPage: React.FC = () => {
           <div className="md:flex">
             {/* Image Section */}
             <div className="md:w-1/2">
-              <div className="aspect-square bg-gradient-to-br from-gray-200 to-gray-300 relative">
-                {species.primaryImageUrl ? (
+              {species.images && species.images.length > 0 ? (
+                <SpeciesImageGallery images={species.images} speciesName={species.spanishName} />
+              ) : species.primaryImageUrl ? (
+                <div className="aspect-square bg-gradient-to-br from-gray-200 to-gray-300 relative">
                   <LazyImage
                     src={species.primaryImageUrl}
                     alt={species.spanishName}
-                    className="w-full h-full"
+                    className="w-full h-full object-cover"
                   />
-                ) : (
+                </div>
+              ) : (
+                <div className="aspect-square bg-gradient-to-br from-gray-200 to-gray-300 relative">
                   <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-50">
                     🦅
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Details Section */}
@@ -174,19 +169,10 @@ export const SpeciesDetailPage: React.FC = () => {
 
               {/* Conservation Status */}
               {species.conservationStatus && (
-                <div className="mb-6">
-                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                    Conservation Status
-                  </h3>
-                  <div className={`inline-flex items-center px-4 py-2 rounded-full ${conservationInfo.color}`}>
-                    <span className="font-semibold">{species.conservationStatus}</span>
-                    <span className="mx-2">-</span>
-                    <span>{conservationInfo.label}</span>
-                  </div>
-                  {conservationInfo.description && (
-                    <p className="text-sm text-gray-600 mt-2">{conservationInfo.description}</p>
-                  )}
-                </div>
+                <ConservationStatusBadge
+                  status={species.conservationStatus}
+                  scientificName={species.scientificName}
+                />
               )}
 
               {/* Colors */}
@@ -287,6 +273,9 @@ export const SpeciesDetailPage: React.FC = () => {
             />
           </div>
         )}
+
+        {/* Similar Species - Always visible below main content */}
+        {id && <SimilarSpecies speciesId={id} className="mt-8" />}
       </div>
     </div>
   );

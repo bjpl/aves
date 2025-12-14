@@ -20,6 +20,7 @@ import {
   GalleryResponse,
   BulkDeleteResponse,
   BulkAnnotateResponse,
+  UndoOperationResponse,
 } from './types';
 
 // ============================================================================
@@ -309,6 +310,24 @@ export const useBulkAnnotateImages = () => {
   });
 };
 
+export const useUndoBulkOperation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (operationId: string): Promise<UndoOperationResponse> => {
+      const response = await axios.post<UndoOperationResponse>('/api/admin/images/bulk/undo', { operationId });
+      return response.data;
+    },
+    onSuccess: () => {
+      // Refresh gallery after undo
+      queryClient.invalidateQueries({ queryKey: imageManagementKeys.all });
+    },
+    onError: (err) => {
+      logError('Error undoing bulk operation:', err instanceof Error ? err : new Error(String(err)));
+    },
+  });
+};
+
 // ============================================================================
 // Unified Hook (Optimized with Combined Dashboard Endpoint)
 // ============================================================================
@@ -336,6 +355,7 @@ export const useImageManagement = () => {
   const annotateMutation = useStartAnnotation();
   const bulkDeleteMutation = useBulkDeleteImages();
   const bulkAnnotateMutation = useBulkAnnotateImages();
+  const undoMutation = useUndoBulkOperation();
 
   // Refetch function that invalidates dashboard
   const refetchStats = () => {
@@ -355,5 +375,6 @@ export const useImageManagement = () => {
     annotateMutation,
     bulkDeleteMutation,
     bulkAnnotateMutation,
+    undoMutation,
   };
 };

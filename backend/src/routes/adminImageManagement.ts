@@ -27,11 +27,15 @@ import { pool } from '../database/connection';
 import { VisionAIService } from '../services/VisionAIService';
 import { ImageQualityValidator } from '../services/ImageQualityValidator';
 import { birdDetectionService } from '../services/BirdDetectionService';
+import { BulkOperationUndoService } from '../services/BulkOperationUndoService';
 import { optionalSupabaseAuth, optionalSupabaseAdmin } from '../middleware/optionalSupabaseAuth';
 import { validateBody, validateParams, validateQuery } from '../middleware/validate';
 import { error as logError, info } from '../utils/logger';
 
 const router = Router();
+
+// Initialize undo service
+const undoService = new BulkOperationUndoService(pool);
 
 // Debug middleware to log all requests to this router
 router.use((req: Request, res: Response, next) => {
@@ -2175,79 +2179,122 @@ router.post(
     try {
       const { imageIds } = req.body as { imageIds: string[] };
 
-      info('Starting bulk image deletion', {
+      info('Queueing bulk image deletion with undo capability', {
         imageCount: imageIds.length,
         userId: req.user?.userId
       });
 
-      let deleted = 0;
-      let failed = 0;
-      const errors: Array<{ imageId: string; error: string }> = [];
-
-      // Use a transaction for atomic deletion
-      const client = await pool.connect();
-      try {
-        await client.query('BEGIN');
-
-        for (const imageId of imageIds) {
-          try {
-            // First delete related annotation items
-            await client.query(
-              'DELETE FROM ai_annotation_items WHERE image_id::text = $1',
-              [imageId]
-            );
-
-            // Delete related annotations
-            await client.query(
-              'DELETE FROM ai_annotations WHERE image_id::text = $1',
-              [imageId]
-            );
-
-            // Delete the image
-            const result = await client.query(
-              'DELETE FROM images WHERE id = $1 RETURNING id',
-              [imageId]
-            );
-
-            if (result.rowCount && result.rowCount > 0) {
-              deleted++;
-            } else {
-              errors.push({ imageId, error: 'Image not found' });
-              failed++;
-            }
-          } catch (deleteError) {
-            errors.push({
-              imageId,
-              error: (deleteError as Error).message
-            });
-            failed++;
-          }
-        }
-
-        await client.query('COMMIT');
-      } catch (txError) {
-        await client.query('ROLLBACK');
-        throw txError;
-      } finally {
-        client.release();
-      }
-
-      info('Bulk image deletion completed', {
-        deleted,
-        failed,
-        userId: req.user?.userId
-      });
+      // Queue the operation with 30-second grace period
+      const { operationId, expiresAt } = await undoService.queueBulkDelete(
+        imageIds,
+        req.user?.userId
+      );
 
       res.json({
-        message: `Successfully deleted ${deleted} image${deleted !== 1 ? 's' : ''}`,
-        deleted,
-        failed,
-        errors: errors.length > 0 ? errors : undefined
+        message: `Queued deletion of ${imageIds.length} image${imageIds.length !== 1 ? 's' : ''}`,
+        operationId,
+        expiresAt: expiresAt.toISOString(),
+        gracePeriodSeconds: 30,
+        imageCount: imageIds.length
       });
 
     } catch (err) {
-      logError('Error in bulk image deletion', err as Error);
-      res.status(500).json({ error: 'Failed to delete images' });
+      logError('Error queueing bulk image deletion', err as Error);
+      res.status(500).json({ error: 'Failed to queue delete operation' });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/images/bulk/undo
+ * Cancel a pending bulk operation (undo within grace period)
+ *
+ * @auth Admin only
+ *
+ * Request body:
+ * {
+ *   "operationId": "undo_bulk_delete_123456_abc"
+ * }
+ *
+ * Response:
+ * {
+ *   "message": "Operation cancelled successfully",
+ *   "cancelled": true
+ * }
+ */
+const UndoCancelSchema = z.object({
+  operationId: z.string().min(1, 'Operation ID is required')
+});
+
+router.post(
+  '/admin/images/bulk/undo',
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
+  validateBody(UndoCancelSchema),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { operationId } = req.body as { operationId: string };
+
+      const cancelled = await undoService.cancelOperation(operationId);
+
+      if (!cancelled) {
+        res.status(404).json({
+          error: 'Operation not found or already executed',
+          message: 'The operation may have already been completed or does not exist'
+        });
+        return;
+      }
+
+      res.json({
+        message: 'Operation cancelled successfully',
+        cancelled: true,
+        operationId
+      });
+
+    } catch (err) {
+      logError('Error cancelling bulk operation', err as Error);
+      res.status(500).json({ error: 'Failed to cancel operation' });
+    }
+  }
+);
+
+/**
+ * GET /api/admin/images/bulk/operations/:operationId
+ * Get status of a pending operation
+ *
+ * @auth Admin only
+ */
+router.get(
+  '/admin/images/bulk/operations/:operationId',
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { operationId } = req.params;
+
+      const operation = undoService.getOperation(operationId);
+
+      if (!operation) {
+        res.status(404).json({ error: 'Operation not found' });
+        return;
+      }
+
+      res.json({
+        data: {
+          id: operation.id,
+          type: operation.type,
+          status: operation.status,
+          itemCount: operation.itemIds.length,
+          createdAt: operation.createdAt,
+          expiresAt: operation.expiresAt,
+          executedAt: operation.executedAt,
+          cancelledAt: operation.cancelledAt
+        }
+      });
+
+    } catch (err) {
+      logError('Error fetching operation status', err as Error);
+      res.status(500).json({ error: 'Failed to fetch operation status' });
     }
   }
 );
@@ -3118,6 +3165,139 @@ router.delete(
     } catch (err) {
       logError('Error deleting image', err as Error);
       res.status(500).json({ error: 'Failed to delete image' });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/migrations/remove-duplicate-species
+ * Run migration to remove duplicate species entries
+ * This merges duplicates and reassigns images to the kept species
+ */
+router.post(
+  '/admin/migrations/remove-duplicate-species',
+  optionalSupabaseAuth,
+  optionalSupabaseAdmin,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      info('Starting duplicate species migration', { userId: req.user?.userId });
+
+      // Step 1: Find duplicates by english_name (case-insensitive)
+      const duplicatesQuery = await pool.query(`
+        SELECT
+          LOWER(english_name) as name_lower,
+          COUNT(*) as count,
+          array_agg(id ORDER BY
+            (SELECT COUNT(*) FROM images WHERE species_id = species.id) DESC,
+            created_at ASC
+          ) as species_ids,
+          array_agg(english_name ORDER BY id) as names
+        FROM species
+        GROUP BY LOWER(english_name)
+        HAVING COUNT(*) > 1
+      `);
+
+      if (duplicatesQuery.rows.length === 0) {
+        res.json({
+          message: 'No duplicate species found - database is clean!',
+          duplicatesRemoved: 0,
+          imagesReassigned: 0
+        });
+        return;
+      }
+
+      const results: Array<{
+        englishName: string;
+        keptId: string;
+        removedId: string;
+        imagesReassigned: number;
+      }> = [];
+
+      let totalImagesReassigned = 0;
+      let totalDuplicatesRemoved = 0;
+
+      for (const duplicate of duplicatesQuery.rows) {
+        const speciesIds = duplicate.species_ids;
+        const keptId = speciesIds[0]; // Keep the one with most images
+
+        // Process each duplicate (skip the first one, which we're keeping)
+        for (let i = 1; i < speciesIds.length; i++) {
+          const duplicateId = speciesIds[i];
+
+          // Get the duplicate info
+          const dupInfo = await pool.query(
+            `SELECT id, english_name,
+              (SELECT COUNT(*) FROM images WHERE species_id = species.id) as image_count
+             FROM species WHERE id = $1`,
+            [duplicateId]
+          );
+
+          if (dupInfo.rows.length === 0) continue;
+
+          // Reassign images from duplicate to kept species
+          const reassignResult = await pool.query(
+            `UPDATE images
+             SET species_id = $1, updated_at = CURRENT_TIMESTAMP
+             WHERE species_id = $2
+             RETURNING id`,
+            [keptId, duplicateId]
+          );
+
+          const imagesReassigned = reassignResult.rowCount || 0;
+          totalImagesReassigned += imagesReassigned;
+
+          // Delete the duplicate species
+          await pool.query('DELETE FROM species WHERE id = $1', [duplicateId]);
+          totalDuplicatesRemoved++;
+
+          results.push({
+            englishName: dupInfo.rows[0].english_name,
+            keptId,
+            removedId: duplicateId,
+            imagesReassigned
+          });
+
+          info('Merged duplicate species', {
+            englishName: dupInfo.rows[0].english_name,
+            keptId,
+            removedId: duplicateId,
+            imagesReassigned
+          });
+        }
+      }
+
+      // Verify no duplicates remain
+      const verifyQuery = await pool.query(`
+        SELECT COUNT(*) as count FROM (
+          SELECT LOWER(english_name) as name_lower
+          FROM species
+          GROUP BY LOWER(english_name)
+          HAVING COUNT(*) > 1
+        ) duplicates
+      `);
+
+      const remainingDuplicates = parseInt(verifyQuery.rows[0].count);
+
+      info('Duplicate species migration complete', {
+        duplicatesRemoved: totalDuplicatesRemoved,
+        imagesReassigned: totalImagesReassigned,
+        remainingDuplicates
+      });
+
+      res.json({
+        message: 'Duplicate species migration completed successfully',
+        duplicatesRemoved: totalDuplicatesRemoved,
+        imagesReassigned: totalImagesReassigned,
+        details: results,
+        verification: {
+          passed: remainingDuplicates === 0,
+          remainingDuplicates
+        }
+      });
+
+    } catch (err) {
+      logError('Error running duplicate species migration', err as Error);
+      res.status(500).json({ error: 'Failed to run migration' });
     }
   }
 );

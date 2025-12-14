@@ -147,8 +147,69 @@ class ApiAdapter {
   }
 
   async getSpeciesById(id: string): Promise<Species | null> {
-    const allSpecies = await this.getSpecies();
-    return allSpecies.find(s => s.id === id) || null;
+    if (this.useClientStorage) {
+      const allSpecies = await this.getSpecies();
+      return allSpecies.find(s => s.id === id) || null;
+    }
+
+    try {
+      const response = await this.axiosInstance!.get<Species>(`/api/species/${id}`);
+      return response.data;
+    } catch (error) {
+      logError('API error fetching species by ID, falling back to list:', error instanceof Error ? error : new Error(String(error)));
+      this.handleApiError(error);
+      const allSpecies = await this.getSpecies();
+      return allSpecies.find(s => s.id === id) || null;
+    }
+  }
+
+  async getSimilarSpecies(id: string): Promise<Species[]> {
+    if (this.useClientStorage) {
+      // Client-side similar species logic
+      const allSpecies = await this.getSpecies();
+      const currentSpecies = allSpecies.find(s => s.id === id);
+
+      if (!currentSpecies) return [];
+
+      // Find species with same family or order
+      const similar = allSpecies
+        .filter(s => s.id !== id && (
+          s.familyName === currentSpecies.familyName ||
+          s.orderName === currentSpecies.orderName ||
+          s.habitats?.some(h => currentSpecies.habitats?.includes(h))
+        ))
+        .sort((a, b) => {
+          // Prioritize same family
+          if (a.familyName === currentSpecies.familyName && b.familyName !== currentSpecies.familyName) return -1;
+          if (b.familyName === currentSpecies.familyName && a.familyName !== currentSpecies.familyName) return 1;
+          // Then same order
+          if (a.orderName === currentSpecies.orderName && b.orderName !== currentSpecies.orderName) return -1;
+          if (b.orderName === currentSpecies.orderName && a.orderName !== currentSpecies.orderName) return 1;
+          return 0;
+        })
+        .slice(0, 4);
+
+      return similar;
+    }
+
+    try {
+      const response = await this.axiosInstance!.get<{ similarSpecies: Species[] }>(`/api/species/${id}/similar`);
+      return response.data.similarSpecies;
+    } catch (error) {
+      logError('API error fetching similar species, using client logic:', error instanceof Error ? error : new Error(String(error)));
+      this.handleApiError(error);
+      // Fallback to client-side logic
+      const allSpecies = await this.getSpecies();
+      const currentSpecies = allSpecies.find(s => s.id === id);
+      if (!currentSpecies) return [];
+
+      return allSpecies
+        .filter(s => s.id !== id && (
+          s.familyName === currentSpecies.familyName ||
+          s.orderName === currentSpecies.orderName
+        ))
+        .slice(0, 4);
+    }
   }
 
   // Exercise methods
@@ -334,6 +395,7 @@ export const api = {
   species: {
     list: (filters?: SpeciesFilter): Promise<Species[]> => apiAdapter.getSpecies(filters),
     get: (id: string): Promise<Species | null> => apiAdapter.getSpeciesById(id),
+    getSimilar: (id: string): Promise<Species[]> => apiAdapter.getSimilarSpecies(id),
   },
   exercises: {
     list: (type?: string): Promise<Exercise[]> => apiAdapter.getExercises(type),

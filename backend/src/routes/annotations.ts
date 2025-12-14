@@ -659,4 +659,172 @@ router.post('/annotations/:id/interaction', async (req: Request, res: Response) 
   }
 });
 
+/**
+ * @openapi
+ * /api/annotations/{id}/history:
+ *   get:
+ *     tags:
+ *       - Annotations
+ *     summary: Get annotation edit history
+ *     description: Retrieve version history for an annotation showing all changes over time
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Annotation ID
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: History retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 history:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       changedAt:
+ *                         type: string
+ *                         format: date-time
+ *                       changedByEmail:
+ *                         type: string
+ *                       changeType:
+ *                         type: string
+ *                         enum: [create, update, delete, approve, reject]
+ *                       changesSummary:
+ *                         type: string
+ *                       changedFields:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             field:
+ *                               type: string
+ *                             oldValue:
+ *                               type: string
+ *                             newValue:
+ *                               type: string
+ *             example:
+ *               history:
+ *                 - id: 850e8400-e29b-41d4-a716-446655440003
+ *                   changedAt: 2025-01-15T11:00:00Z
+ *                   changedByEmail: admin@aves.com
+ *                   changeType: update
+ *                   changesSummary: Updated spanish_term, english_term
+ *                   changedFields:
+ *                     - field: spanish_term
+ *                       oldValue: pico
+ *                       newValue: pico amarillo
+ *                     - field: english_term
+ *                       oldValue: beak
+ *                       newValue: yellow beak
+ *       404:
+ *         description: Annotation not found
+ *       500:
+ *         description: Server error
+ */
+router.get('/annotations/:id/history', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    // First verify the annotation exists
+    const annotationCheck = await pool.query('SELECT id FROM annotations WHERE id = $1', [id]);
+    if (annotationCheck.rows.length === 0) {
+      res.status(404).json({ error: 'Annotation not found' });
+      return;
+    }
+
+    // Get history using the helper function
+    const historyQuery = `
+      SELECT
+        id,
+        changed_at as "changedAt",
+        changed_by_email as "changedByEmail",
+        change_type as "changeType",
+        changes_summary as "changesSummary",
+        previous_values as "previousValues",
+        new_values as "newValues"
+      FROM get_annotation_history($1)
+    `;
+
+    const result = await pool.query(historyQuery, [id]);
+
+    // Process each history entry to extract changed fields
+    const history = result.rows.map((row: Record<string, unknown>) => {
+      const changedFields: Array<{ field: string; oldValue: string; newValue: string }> = [];
+
+      if (row.changeType === 'update') {
+        const prevValues = row.previousValues as Record<string, unknown>;
+        const newValues = row.newValues as Record<string, unknown>;
+
+        // Compare fields to identify what changed
+        const fieldsToTrack = [
+          'spanish_term',
+          'english_term',
+          'pronunciation',
+          'bounding_box',
+          'annotation_type',
+          'difficulty_level',
+          'is_visible'
+        ];
+
+        for (const field of fieldsToTrack) {
+          const oldVal = prevValues[field];
+          const newVal = newValues[field];
+
+          if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+            changedFields.push({
+              field: field
+                .split('_')
+                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' '),
+              oldValue: formatValue(oldVal),
+              newValue: formatValue(newVal)
+            });
+          }
+        }
+      }
+
+      return {
+        id: row.id,
+        changedAt: row.changedAt,
+        changedByEmail: row.changedByEmail || 'System',
+        changeType: row.changeType,
+        changesSummary: row.changesSummary,
+        changedFields
+      };
+    });
+
+    res.json({ history });
+  } catch (err) {
+    const error = err as Error;
+    logError('Error fetching annotation history', error, {
+      message: error.message,
+      stack: error.stack?.slice(0, 200)
+    });
+    res.status(500).json({ error: 'Failed to fetch annotation history', details: error.message });
+  }
+});
+
+/**
+ * Helper function to format field values for display
+ */
+function formatValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return 'N/A';
+  }
+  if (typeof value === 'object') {
+    return JSON.stringify(value, null, 2);
+  }
+  return String(value);
+}
+
 export default router;
