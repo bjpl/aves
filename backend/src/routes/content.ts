@@ -6,15 +6,39 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { contentPublishingService, ContentFilters } from '../services/ContentPublishingService';
-import { error as logError } from '../utils/logger';
+import { error as logError, info } from '../utils/logger';
 
 const router = Router();
 
+// Log when this module is loaded
+info('Content router module loading...');
+
 // Simple test endpoint to verify router is working
 router.get('/test', (_req: Request, res: Response) => {
+  info('Content test endpoint hit');
   res.json({ status: 'ok', message: 'Content router is working', timestamp: new Date().toISOString() });
 });
+
+// Lazy-load ContentPublishingService to avoid import-time issues
+let contentPublishingService: any = null;
+async function getContentService() {
+  if (!contentPublishingService) {
+    const module = await import('../services/ContentPublishingService');
+    contentPublishingService = module.contentPublishingService;
+    info('ContentPublishingService lazy-loaded successfully');
+  }
+  return contentPublishingService;
+}
+
+// Type for ContentFilters
+interface ContentFilters {
+  difficulty?: number;
+  type?: 'anatomical' | 'behavioral' | 'color' | 'pattern';
+  speciesId?: string;
+  moduleId?: string;
+  limit?: number;
+  offset?: number;
+}
 
 /**
  * @openapi
@@ -51,6 +75,7 @@ router.get('/test', (_req: Request, res: Response) => {
  */
 router.get('/learn', async (req: Request, res: Response) => {
   try {
+    const service = await getContentService();
     const filters: ContentFilters = {
       difficulty: req.query.difficulty ? parseInt(req.query.difficulty as string) : undefined,
       type: req.query.type as ContentFilters['type'],
@@ -60,7 +85,7 @@ router.get('/learn', async (req: Request, res: Response) => {
       offset: req.query.offset ? parseInt(req.query.offset as string) : 0
     };
 
-    const content = await contentPublishingService.getPublishedContent(filters);
+    const content = await service.getPublishedContent(filters);
 
     res.json({
       success: true,
@@ -83,7 +108,8 @@ router.get('/learn', async (req: Request, res: Response) => {
  */
 router.get('/modules', async (_req: Request, res: Response) => {
   try {
-    const modules = await contentPublishingService.getLearningModules();
+    const service = await getContentService();
+    const modules = await service.getLearningModules();
 
     res.json({
       success: true,
@@ -106,7 +132,8 @@ router.get('/modules', async (_req: Request, res: Response) => {
  */
 router.get('/stats', async (_req: Request, res: Response) => {
   try {
-    const stats = await contentPublishingService.getContentStats();
+    const service = await getContentService();
+    const stats = await service.getContentStats();
 
     res.json({
       success: true,
@@ -128,8 +155,9 @@ router.get('/stats', async (_req: Request, res: Response) => {
  */
 router.get('/by-species/:speciesId', async (req: Request, res: Response) => {
   try {
+    const service = await getContentService();
     const { speciesId } = req.params;
-    const content = await contentPublishingService.getPublishedContent({
+    const content = await service.getPublishedContent({
       speciesId,
       limit: 100
     });
@@ -177,6 +205,7 @@ router.get('/by-species/:speciesId', async (req: Request, res: Response) => {
  */
 router.post('/publish', async (req: Request, res: Response) => {
   try {
+    const service = await getContentService();
     const { annotationIds, moduleId, generateExercises } = req.body;
 
     if (!annotationIds || !Array.isArray(annotationIds) || annotationIds.length === 0) {
@@ -184,7 +213,7 @@ router.post('/publish', async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await contentPublishingService.publishAnnotations({
+    const result = await service.publishAnnotations({
       annotationIds,
       moduleId,
       generateExercises
