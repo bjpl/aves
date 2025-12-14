@@ -33,7 +33,8 @@ import annotationMasteryRouter from './routes/annotationMastery';
 import adminImageManagementRouter from './routes/adminImageManagement';
 import healthRouter from './routes/health';
 import docsRouter from './routes/docs';
-import contentRouter from './routes/content';
+// TEMPORARILY DISABLED FOR DEBUGGING
+// import contentRouter from './routes/content';
 import srsRouter from './routes/srs';
 // Temporarily disabled - needs architecture fix (Pool vs Supabase client)
 // import annotationExercisesRouter from './routes/annotationExercises';
@@ -268,7 +269,12 @@ app.use('/api', batchRouter);
 app.use('/api', mlAnalyticsRouter);
 app.use('/api', feedbackAnalyticsRouter);
 app.use('/api', annotationMasteryRouter);
-app.use('/api/content', contentRouter);
+// TEMPORARILY DISABLED FOR DEBUGGING
+// app.use('/api/content', contentRouter);
+// Inline test route to verify path works without content router
+app.get('/api/content/inline-test', (_req, res) => {
+  res.json({ status: 'ok', message: 'Inline content test works', timestamp: new Date().toISOString() });
+});
 app.use('/api/srs', srsRouter);
 // Temporarily disabled - needs architecture fix (Pool vs Supabase client)
 // app.use('/api/annotation-exercises', annotationExercisesRouter);
