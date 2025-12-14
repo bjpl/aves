@@ -92,8 +92,8 @@ class ContentPublishingService {
   async getPublishedContent(filters: ContentFilters = {}): Promise<LearningContent[]> {
     const { difficulty, type, speciesId, moduleId, limit = 50, offset = 0 } = filters;
 
-    // Simplified query that doesn't require learning_modules table
-    // This ensures the Learn page works even if modules haven't been set up
+    // Simplified query that doesn't require learning_modules table or published_at column
+    // This ensures the Learn page works even if migrations haven't fully run
     let query = `
       SELECT
         a.id,
@@ -107,13 +107,12 @@ class ContentPublishingService {
         a.difficulty_level as "difficultyLevel",
         i.species_id as "speciesId",
         s.spanish_name as "speciesName",
-        a.learning_module_id as "moduleId",
+        NULL as "moduleId",
         NULL as "moduleName"
       FROM annotations a
       JOIN images i ON a.image_id = i.id
       LEFT JOIN species s ON i.species_id = s.id
-      WHERE a.published_at IS NOT NULL
-        AND a.is_visible = true
+      WHERE a.is_visible = true
     `;
 
     const params: any[] = [];
@@ -134,12 +133,13 @@ class ContentPublishingService {
       params.push(speciesId);
     }
 
-    if (moduleId) {
-      query += ` AND a.learning_module_id = $${paramIndex++}`;
-      params.push(moduleId);
-    }
+    // Note: moduleId filter temporarily disabled until learning_modules migration runs
+    // if (moduleId) {
+    //   query += ` AND a.learning_module_id = $${paramIndex++}`;
+    //   params.push(moduleId);
+    // }
 
-    query += ` ORDER BY a.difficulty_level ASC, a.published_at DESC`;
+    query += ` ORDER BY a.difficulty_level ASC, a.created_at DESC`;
     query += ` LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
     params.push(limit, offset);
 
@@ -258,11 +258,11 @@ class ContentPublishingService {
     };
 
     try {
-      // Get total count
+      // Get total count - use is_visible only since published_at might not exist
       const totalResult = await pool.query(`
         SELECT COUNT(*) as total
         FROM annotations
-        WHERE published_at IS NOT NULL AND is_visible = true
+        WHERE is_visible = true
       `);
       stats.totalPublished = parseInt(totalResult.rows[0]?.total || '0');
 
@@ -270,7 +270,7 @@ class ContentPublishingService {
       const difficultyResult = await pool.query(`
         SELECT difficulty_level, COUNT(*) as count
         FROM annotations
-        WHERE published_at IS NOT NULL AND is_visible = true
+        WHERE is_visible = true
         GROUP BY difficulty_level
       `);
       difficultyResult.rows.forEach(row => {
@@ -283,7 +283,7 @@ class ContentPublishingService {
       const typeResult = await pool.query(`
         SELECT annotation_type, COUNT(*) as count
         FROM annotations
-        WHERE published_at IS NOT NULL AND is_visible = true
+        WHERE is_visible = true
         GROUP BY annotation_type
       `);
       typeResult.rows.forEach(row => {
