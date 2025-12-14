@@ -92,6 +92,8 @@ class ContentPublishingService {
   async getPublishedContent(filters: ContentFilters = {}): Promise<LearningContent[]> {
     const { difficulty, type, speciesId, moduleId, limit = 50, offset = 0 } = filters;
 
+    // Simplified query that doesn't require learning_modules table
+    // This ensures the Learn page works even if modules haven't been set up
     let query = `
       SELECT
         a.id,
@@ -106,11 +108,10 @@ class ContentPublishingService {
         i.species_id as "speciesId",
         s.spanish_name as "speciesName",
         a.learning_module_id as "moduleId",
-        lm.title as "moduleName"
+        NULL as "moduleName"
       FROM annotations a
       JOIN images i ON a.image_id = i.id
       LEFT JOIN species s ON i.species_id = s.id
-      LEFT JOIN learning_modules lm ON a.learning_module_id = lm.id
       WHERE a.published_at IS NOT NULL
         AND a.is_visible = true
     `;
@@ -171,18 +172,33 @@ class ContentPublishingService {
 
   /**
    * Get learning modules with content counts
+   * Returns empty array if table doesn't exist yet
    */
   async getLearningModules(): Promise<any[]> {
     try {
+      // Check if table exists first
+      const tableCheck = await pool.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables
+          WHERE table_name = 'learning_modules'
+        )
+      `);
+
+      if (!tableCheck.rows[0].exists) {
+        return [];
+      }
+
       const result = await pool.query(`
         SELECT
-          lm.*,
-          COUNT(a.id) as "contentCount",
-          AVG(a.difficulty_level) as "avgDifficulty"
+          lm.id,
+          lm.title,
+          lm.title_spanish as "titleSpanish",
+          lm.description,
+          lm.difficulty_level as "difficultyLevel",
+          lm.order_index as "orderIndex",
+          lm.is_active as "isActive"
         FROM learning_modules lm
-        LEFT JOIN annotations a ON a.learning_module_id = lm.id AND a.published_at IS NOT NULL
         WHERE lm.is_active = true
-        GROUP BY lm.id
         ORDER BY lm.order_index ASC
       `);
       return result.rows;
@@ -226,6 +242,7 @@ class ContentPublishingService {
 
   /**
    * Get content statistics
+   * Uses simple queries to avoid depending on columns that might not exist
    */
   async getContentStats(): Promise<{
     totalPublished: number;
@@ -233,49 +250,56 @@ class ContentPublishingService {
     byType: Record<string, number>;
     byModule: Record<string, number>;
   }> {
+    const stats = {
+      totalPublished: 0,
+      byDifficulty: {} as Record<number, number>,
+      byType: {} as Record<string, number>,
+      byModule: {} as Record<string, number>
+    };
+
     try {
-      const result = await pool.query(`
-        SELECT
-          COUNT(*) as total,
-          difficulty_level,
-          annotation_type,
-          learning_module_id
+      // Get total count
+      const totalResult = await pool.query(`
+        SELECT COUNT(*) as total
         FROM annotations
-        WHERE published_at IS NOT NULL
-        GROUP BY GROUPING SETS (
-          (difficulty_level),
-          (annotation_type),
-          (learning_module_id),
-          ()
-        )
+        WHERE published_at IS NOT NULL AND is_visible = true
       `);
+      stats.totalPublished = parseInt(totalResult.rows[0]?.total || '0');
 
-      const stats = {
-        totalPublished: 0,
-        byDifficulty: {} as Record<number, number>,
-        byType: {} as Record<string, number>,
-        byModule: {} as Record<string, number>
-      };
+      // Get by difficulty
+      const difficultyResult = await pool.query(`
+        SELECT difficulty_level, COUNT(*) as count
+        FROM annotations
+        WHERE published_at IS NOT NULL AND is_visible = true
+        GROUP BY difficulty_level
+      `);
+      difficultyResult.rows.forEach(row => {
+        if (row.difficulty_level) {
+          stats.byDifficulty[row.difficulty_level] = parseInt(row.count);
+        }
+      });
 
-      result.rows.forEach(row => {
-        if (row.difficulty_level && !row.annotation_type && !row.learning_module_id) {
-          stats.byDifficulty[row.difficulty_level] = parseInt(row.total);
-        } else if (row.annotation_type && !row.difficulty_level && !row.learning_module_id) {
-          stats.byType[row.annotation_type] = parseInt(row.total);
-        } else if (row.learning_module_id && !row.difficulty_level && !row.annotation_type) {
-          stats.byModule[row.learning_module_id] = parseInt(row.total);
-        } else if (!row.difficulty_level && !row.annotation_type && !row.learning_module_id) {
-          stats.totalPublished = parseInt(row.total);
+      // Get by type
+      const typeResult = await pool.query(`
+        SELECT annotation_type, COUNT(*) as count
+        FROM annotations
+        WHERE published_at IS NOT NULL AND is_visible = true
+        GROUP BY annotation_type
+      `);
+      typeResult.rows.forEach(row => {
+        if (row.annotation_type) {
+          stats.byType[row.annotation_type] = parseInt(row.count);
         }
       });
 
       return stats;
     } catch (err) {
       logError('Error getting content stats', err as Error);
-      return { totalPublished: 0, byDifficulty: {}, byType: {}, byModule: {} };
+      return stats;
     }
   }
 }
+
 
 export const contentPublishingService = new ContentPublishingService();
 export default contentPublishingService;
