@@ -288,11 +288,19 @@ app.use('/api', aiExercisesRouter);
 app.use('/api', vocabularyRouter);
 app.use('/api', exercisesRouter);
 app.use('/api', speciesRouter);
+// Debug: mid-router test (after speciesRouter)
+app.get('/api/content/mid-router-test', (_req, res) => {
+  res.json({ status: 'ok', message: 'Mid-router test works (after speciesRouter)', timestamp: new Date().toISOString() });
+});
 app.use('/api', imagesRouter);
 app.use('/api', batchRouter);
 app.use('/api', mlAnalyticsRouter);
 app.use('/api', feedbackAnalyticsRouter);
 app.use('/api', annotationMasteryRouter);
+// Debug: late-router test (after annotationMasteryRouter)
+app.get('/api/content/late-router-test', (_req, res) => {
+  res.json({ status: 'ok', message: 'Late-router test works (after annotationMasteryRouter)', timestamp: new Date().toISOString() });
+});
 // TEMPORARILY DISABLED FOR DEBUGGING
 // app.use('/api/content', contentRouter);
 // Inline test route to verify path works without content router
