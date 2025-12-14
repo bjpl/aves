@@ -124,6 +124,15 @@ app.get('/health', (_req, res) => {
   });
 });
 
+// Debug test endpoint - before CORS to verify routing works
+app.get('/content-debug', (_req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'Pre-CORS content debug works',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Security middleware with enhanced CSP
 app.use(
   helmet({
