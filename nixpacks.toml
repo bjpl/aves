@@ -9,4 +9,5 @@ cmds = ["npm ci --include=dev"]
 cmds = ["npm run build --workspace=backend"]
 
 [start]
-cmd = "npm run start --workspace=backend"
+# Run migrations before starting the server to ensure database is up to date
+cmd = "npm run migrate --workspace=backend && npm run start --workspace=backend"

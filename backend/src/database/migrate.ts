@@ -61,7 +61,12 @@ async function runMigrations() {
       '014_annotation_mastery_tracking.sql',
       '015_add_quality_score_to_images.sql',
       '016_add_local_upload_columns.sql',
-      '018_create_exercise_pipeline_tables.sql'
+      '017_fix_annotation_count_trigger.sql',
+      '018_create_exercise_pipeline_tables.sql',
+      '019_add_pattern_counts_index.sql',
+      '020_seed_production_bird_data.sql',
+      '021_seed_production_annotations.sql',
+      '022_publish_seeded_annotations.sql'
     ];
 
     for (const migration of migrations) {
