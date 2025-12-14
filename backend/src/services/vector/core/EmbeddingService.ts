@@ -245,8 +245,8 @@ export class EmbeddingService {
       // Parse the response into a vector
       const vector = content.text
         .split(',')
-        .map(n => parseFloat(n.trim()))
-        .filter(n => !isNaN(n));
+        .map((n: string) => parseFloat(n.trim()))
+        .filter((n: number) => !isNaN(n));
 
       // Pad or truncate to match configured dimensions
       return this.adjustVectorDimensions(vector);
