@@ -1,16 +1,18 @@
 import { Router, Request, Response } from 'express';
 import { pool } from '../database/connection';
 import { ExerciseService, ExerciseResult } from '../services';
+import { ExerciseValidationService } from '../services/exerciseValidationService';
 import { validateBody, validateParams } from '../middleware/validate';
 import {
   exerciseSessionStartSchema,
   exerciseResultSchema,
   exerciseSessionProgressSchema
 } from '../validation/schemas';
-import { error as logError } from '../utils/logger';
+import { error as logError, info as logInfo } from '../utils/logger';
 
 const router = Router();
 const exerciseService = new ExerciseService(pool);
+const validationService = new ExerciseValidationService();
 
 /**
  * @openapi
@@ -72,27 +74,125 @@ router.post(
   }
 });
 
-// POST /api/exercises/result
+/**
+ * @openapi
+ * /api/exercises/result:
+ *   post:
+ *     tags:
+ *       - Exercises
+ *     summary: Record exercise result with validation
+ *     description: Validates and records user's exercise result, calculating accurate scores
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *               - exerciseType
+ *               - userAnswer
+ *               - exercise
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *               exerciseType:
+ *                 type: string
+ *               annotationId:
+ *                 type: number
+ *               spanishTerm:
+ *                 type: string
+ *               userAnswer:
+ *                 type: object
+ *               exercise:
+ *                 type: object
+ *                 description: Complete exercise object for validation
+ *               timeTaken:
+ *                 type: number
+ *               attemptsCount:
+ *                 type: number
+ *               hintsUsed:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Result validated and recorded
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 validation:
+ *                   type: object
+ *                   properties:
+ *                     isValid:
+ *                       type: boolean
+ *                     score:
+ *                       type: number
+ *                     feedback:
+ *                       type: string
+ *                     accuracy:
+ *                       type: number
+ *       400:
+ *         description: Validation failed
+ */
 router.post(
   '/exercises/result',
   validateBody(exerciseResultSchema),
   async (req: Request, res: Response) => {
   try {
-    const { sessionId, exerciseType, annotationId, spanishTerm, userAnswer, isCorrect, timeTaken } = req.body;
+    const {
+      sessionId,
+      exerciseType,
+      annotationId,
+      spanishTerm,
+      userAnswer,
+      exercise,
+      timeTaken,
+      attemptsCount,
+      hintsUsed
+    } = req.body;
 
+    // Validate the exercise result
+    const validationResult = validationService.validateExerciseResult({
+      exerciseType,
+      userAnswer,
+      exercise,
+      timeTaken,
+      attemptsCount,
+      hintsUsed
+    });
+
+    logInfo('Exercise validation completed', {
+      exerciseType,
+      isValid: validationResult.isValid,
+      score: validationResult.score
+    });
+
+    // Record result with validation data
     const resultData: ExerciseResult = {
       sessionId,
       exerciseType,
       annotationId,
       spanishTerm,
       userAnswer,
-      isCorrect,
-      timeTaken
+      isCorrect: validationResult.isValid,
+      timeTaken: timeTaken || 0
     };
 
     await exerciseService.recordResult(resultData);
 
-    res.json({ success: true });
+    res.json({
+      success: true,
+      validation: {
+        isValid: validationResult.isValid,
+        score: validationResult.score,
+        feedback: validationResult.feedback,
+        accuracy: validationService.calculateAccuracy(validationResult),
+        metadata: validationResult.metadata
+      }
+    });
   } catch (err) {
     logError('Error recording exercise result', err as Error);
     res.status(500).json({ error: 'Failed to record exercise result' });

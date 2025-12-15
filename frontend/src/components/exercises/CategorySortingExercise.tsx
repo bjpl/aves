@@ -4,6 +4,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { audioService } from '../../services/audioService';
+import type { ExerciseResultCallback } from '../../types';
 
 interface SortableItem {
   id: string;
@@ -22,7 +23,7 @@ interface Category {
 interface CategorySortingExerciseProps {
   categories: Category[];
   items: SortableItem[];
-  onComplete: (score: number, total: number) => void;
+  onComplete: ExerciseResultCallback;
 }
 
 export const CategorySortingExercise: React.FC<CategorySortingExerciseProps> = ({
@@ -40,6 +41,7 @@ export const CategorySortingExercise: React.FC<CategorySortingExerciseProps> = (
   const [selectedItem, setSelectedItem] = useState<SortableItem | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState<Map<string, boolean>>(new Map());
+  const [startTime] = useState(Date.now());
 
   // Select an item to sort
   const handleItemSelect = useCallback(async (item: SortableItem) => {
@@ -102,8 +104,23 @@ export const CategorySortingExercise: React.FC<CategorySortingExerciseProps> = (
 
     setResults(newResults);
     setShowResults(true);
-    onComplete(correctCount, items.length);
-  }, [sortedItems, items.length, onComplete]);
+
+    const timeTaken = Date.now() - startTime;
+    const totalCount = items.length;
+    const score = totalCount > 0 ? correctCount / totalCount : 0;
+
+    onComplete({
+      exerciseId: 'category-sorting-' + Date.now(),
+      exerciseType: 'category_sorting',
+      correct: score >= 0.7,
+      score,
+      timeTaken,
+      metadata: {
+        categoriesCorrect: correctCount,
+        totalCategories: totalCount,
+      },
+    });
+  }, [sortedItems, items.length, startTime, onComplete]);
 
   // Get category color classes
   const getCategoryColorClasses = (color: string, isSelected: boolean) => {

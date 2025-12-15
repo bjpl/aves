@@ -4,6 +4,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { audioService } from '../../services/audioService';
+import type { ExerciseResultCallback } from '../../types';
 
 interface AnatomyPoint {
   id: string;
@@ -19,7 +20,7 @@ interface SpatialIdentificationExerciseProps {
   imageAlt: string;
   targetPoint: AnatomyPoint;
   allPoints: AnatomyPoint[];
-  onComplete: (correct: boolean, clickDistance: number) => void;
+  onComplete: ExerciseResultCallback;
 }
 
 export const SpatialIdentificationExercise: React.FC<SpatialIdentificationExerciseProps> = ({
@@ -34,6 +35,7 @@ export const SpatialIdentificationExercise: React.FC<SpatialIdentificationExerci
   const [isCorrect, setIsCorrect] = useState(false);
   const [showAllPoints, setShowAllPoints] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [startTime] = useState(Date.now());
 
   // Calculate distance between two points (percentage-based)
   const calculateDistance = (x1: number, y1: number, x2: number, y2: number) => {
@@ -62,8 +64,19 @@ export const SpatialIdentificationExercise: React.FC<SpatialIdentificationExerci
       audioService.speakTerm(targetPoint.spanish, targetPoint.pronunciation);
     }
 
-    onComplete(correct, distance);
-  }, [showResult, targetPoint, onComplete]);
+    const timeTaken = Date.now() - startTime;
+    onComplete({
+      exerciseId: 'spatial-identification-' + Date.now(),
+      exerciseType: 'spatial_identification',
+      correct,
+      score: correct ? 1 : 0,
+      timeTaken,
+      hintsUsed: showAllPoints ? 1 : 0,
+      metadata: {
+        clickDistance: distance,
+      },
+    });
+  }, [showResult, targetPoint, showAllPoints, startTime, onComplete]);
 
   // Play target term pronunciation
   const playTargetTerm = useCallback(async () => {

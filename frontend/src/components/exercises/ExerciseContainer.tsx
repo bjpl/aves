@@ -5,12 +5,20 @@ import { EnhancedExercise } from '../../../../shared/types/enhanced-exercise.typ
 import { VisualDiscrimination } from './VisualDiscrimination';
 import { ContextualFill } from './ContextualFill';
 import { VisualIdentification } from './VisualIdentification';
+import { TermMatchingExercise } from './TermMatchingExercise';
+import { AudioRecognitionExercise } from './AudioRecognitionExercise';
+import { SentenceBuildingExercise } from './SentenceBuildingExercise';
+import { CategorySortingExercise } from './CategorySortingExercise';
+import { SpatialIdentificationExercise } from './SpatialIdentificationExercise';
+import { ComparativeAnalysisExercise } from './ComparativeAnalysisExercise';
 import { EnhancedExerciseGenerator } from '../../services/enhancedExerciseGenerator';
+import type { ExerciseResult } from '../../types/exercise-result.types';
+import { createExerciseResult } from '../../types/exercise-result.types';
 
 interface ExerciseContainerProps {
   annotations: Annotation[];
   onComplete?: (progress: SessionProgress) => void;
-  onExerciseComplete?: (correct: boolean, annotationId: string) => void;
+  onExerciseComplete?: (result: ExerciseResult) => void;
 }
 
 export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
@@ -37,6 +45,8 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Track if initial exercise has been generated
   const initialGenerationDone = useRef(false);
+  // Track exercise start time for timing metrics
+  const exerciseStartTime = useRef<number>(Date.now());
 
   // Generate initial exercise on mount or when annotations change
   useEffect(() => {
@@ -65,6 +75,8 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
       setCurrentExercise(exercise);
       setShowFeedback(false);
       setLastResult(null);
+      // Reset exercise timer
+      exerciseStartTime.current = Date.now();
     }
   }, [generator]);
 
@@ -73,6 +85,7 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
 
     const isCorrect = EnhancedExerciseGenerator.checkAnswer(currentExercise, answer);
     const feedback = EnhancedExerciseGenerator.generateFeedback(isCorrect, currentExercise);
+    const timeTaken = Date.now() - exerciseStartTime.current;
 
     const newProgress = {
       ...progress,
@@ -88,9 +101,15 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
     // Update generator level based on performance
     generator.updateLevel({ correct: newProgress.correctAnswers, total: newProgress.exercisesCompleted });
 
-    // Call onExerciseComplete if provided and we have an annotation ID
+    // Call onExerciseComplete with ExerciseResult if provided and we have an annotation ID
     if (onExerciseComplete && currentExercise.annotation?.id) {
-      onExerciseComplete(isCorrect, currentExercise.annotation.id);
+      const result = createExerciseResult(
+        currentExercise.annotation.id,
+        currentExercise.type,
+        isCorrect,
+        timeTaken
+      );
+      onExerciseComplete(result);
     }
 
     // Clear any existing timeout
@@ -142,6 +161,64 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
             exercise={currentExercise as any}
             onAnswer={handleAnswer}
             disabled={showFeedback}
+          />
+        );
+        break;
+      case 'term_matching':
+        exerciseComponent = (
+          <TermMatchingExercise
+            pairs={(currentExercise as any).pairs || []}
+            onComplete={(result) => handleAnswer(result.correct)}
+          />
+        );
+        break;
+      case 'audio_recognition':
+        exerciseComponent = (
+          <AudioRecognitionExercise
+            correctAnswer={(currentExercise as any).correctAnswer}
+            options={(currentExercise as any).options || []}
+            onComplete={(result) => handleAnswer(result.correct)}
+          />
+        );
+        break;
+      case 'sentence_building':
+        exerciseComponent = (
+          <SentenceBuildingExercise
+            targetSentence={(currentExercise as any).targetSentence || ''}
+            englishTranslation={(currentExercise as any).englishTranslation || ''}
+            words={(currentExercise as any).words || []}
+            hint={(currentExercise as any).hint}
+            onComplete={(result) => handleAnswer(result.correct)}
+          />
+        );
+        break;
+      case 'category_sorting':
+        exerciseComponent = (
+          <CategorySortingExercise
+            categories={(currentExercise as any).categories || []}
+            items={(currentExercise as any).items || []}
+            onComplete={(result) => handleAnswer(result.correct)}
+          />
+        );
+        break;
+      case 'spatial_identification':
+        exerciseComponent = (
+          <SpatialIdentificationExercise
+            imageUrl={(currentExercise as any).imageUrl || ''}
+            imageAlt="Bird anatomy"
+            targetPoint={(currentExercise as any).targetPoint}
+            allPoints={(currentExercise as any).allPoints || []}
+            onComplete={(result) => handleAnswer(result.correct)}
+          />
+        );
+        break;
+      case 'comparative_analysis':
+        exerciseComponent = (
+          <ComparativeAnalysisExercise
+            birdA={(currentExercise as any).birdA}
+            birdB={(currentExercise as any).birdB}
+            questions={(currentExercise as any).questions || []}
+            onComplete={(result) => handleAnswer(result.correct)}
           />
         );
         break;

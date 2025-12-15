@@ -109,7 +109,8 @@ export const useRecordExerciseResult = () => {
         exerciseId: exercise.id,
         exerciseType: exercise.type,
         userAnswer,
-        isCorrect,
+        correct: isCorrect,
+        score: isCorrect ? 1 : 0,
         timeTaken
       };
 

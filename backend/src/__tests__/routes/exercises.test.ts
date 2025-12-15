@@ -115,7 +115,11 @@ describe('Exercise API Routes', () => {
         .send(resultData)
         .expect(200);
 
-      expect(response.body).toEqual({ success: true });
+      expect(response.body.success).toBe(true);
+      // Response may include validation data
+      if (response.body.validation) {
+        expect(response.body.validation).toHaveProperty('isValid');
+      }
       expect(mockClient.query).toHaveBeenCalledWith('BEGIN');
       expect(mockClient.query).toHaveBeenCalledWith('COMMIT');
     });

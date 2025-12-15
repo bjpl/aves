@@ -4,6 +4,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { audioService } from '../../services/audioService';
+import type { ExerciseResultCallback } from '../../types';
 
 interface BirdComparison {
   id: string;
@@ -30,7 +31,7 @@ interface ComparativeAnalysisExerciseProps {
   birdA: BirdComparison;
   birdB: BirdComparison;
   questions: ComparisonQuestion[];
-  onComplete: (score: number, total: number) => void;
+  onComplete: ExerciseResultCallback;
 }
 
 export const ComparativeAnalysisExercise: React.FC<ComparativeAnalysisExerciseProps> = ({
@@ -44,6 +45,7 @@ export const ComparativeAnalysisExercise: React.FC<ComparativeAnalysisExercisePr
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const [startTime] = useState(Date.now());
 
   const currentQuestion = questions[currentQuestionIndex];
   const isCorrect = selectedAnswer === currentQuestion?.correctBirdId;
@@ -79,9 +81,25 @@ export const ComparativeAnalysisExercise: React.FC<ComparativeAnalysisExercisePr
       setShowResult(false);
     } else {
       setIsComplete(true);
-      onComplete(score + (isCorrect ? 1 : 0), questions.length);
+
+      const finalScore = score + (isCorrect ? 1 : 0);
+      const timeTaken = Date.now() - startTime;
+      const totalQuestions = questions.length;
+      const scoreRatio = totalQuestions > 0 ? finalScore / totalQuestions : 0;
+
+      onComplete({
+        exerciseId: 'comparative-analysis-' + Date.now(),
+        exerciseType: 'comparative_analysis',
+        correct: scoreRatio >= 0.7,
+        score: scoreRatio,
+        timeTaken,
+        metadata: {
+          questionsAnswered: finalScore,
+          totalQuestions,
+        },
+      });
     }
-  }, [currentQuestionIndex, questions.length, score, isCorrect, onComplete]);
+  }, [currentQuestionIndex, questions.length, score, isCorrect, startTime, onComplete]);
 
   // Get bird card styles
   const getBirdCardClass = (birdId: string) => {

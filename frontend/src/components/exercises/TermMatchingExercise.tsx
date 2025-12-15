@@ -4,6 +4,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { audioService } from '../../services/audioService';
+import type { ExerciseResultCallback } from '../../types';
 
 interface MatchPair {
   id: string;
@@ -14,7 +15,7 @@ interface MatchPair {
 
 interface TermMatchingExerciseProps {
   pairs: MatchPair[];
-  onComplete: (score: number, total: number) => void;
+  onComplete: ExerciseResultCallback;
   showFeedback?: boolean;
 }
 
@@ -36,6 +37,7 @@ export const TermMatchingExercise: React.FC<TermMatchingExerciseProps> = ({
   const [correctMatches, setCorrectMatches] = useState<Set<string>>(new Set());
   const [incorrectAttempts, setIncorrectAttempts] = useState<Set<string>>(new Set());
   const [isComplete, setIsComplete] = useState(false);
+  const [startTime] = useState(Date.now());
 
   // Play pronunciation when Spanish term selected
   const handleSpanishSelect = useCallback(async (pair: MatchPair) => {
@@ -72,8 +74,22 @@ export const TermMatchingExercise: React.FC<TermMatchingExerciseProps> = ({
       // Check if complete
       if (newCorrect.size === pairs.length) {
         setIsComplete(true);
-        const score = pairs.length - incorrectAttempts.size;
-        onComplete(Math.max(0, score), pairs.length);
+        const timeTaken = Date.now() - startTime;
+        const correctCount = pairs.length;
+        const totalCount = pairs.length;
+        const score = totalCount > 0 ? correctCount / totalCount : 0;
+
+        onComplete({
+          exerciseId: 'term-matching-' + Date.now(),
+          exerciseType: 'term_matching',
+          correct: score >= 0.7,
+          score,
+          timeTaken,
+          metadata: {
+            matchedPairs: correctCount,
+            totalPairs: totalCount,
+          },
+        });
       }
     } else {
       // Incorrect
@@ -83,7 +99,7 @@ export const TermMatchingExercise: React.FC<TermMatchingExerciseProps> = ({
     }
 
     setSelectedSpanish(null);
-  }, [selectedSpanish, pairs, matches, correctMatches, incorrectAttempts, onComplete]);
+  }, [selectedSpanish, pairs, matches, correctMatches, incorrectAttempts, startTime, onComplete]);
 
   const getSpanishButtonClass = (pair: MatchPair) => {
     const base = 'w-full p-3 rounded-lg font-medium transition-all duration-200 text-left flex items-center gap-2';

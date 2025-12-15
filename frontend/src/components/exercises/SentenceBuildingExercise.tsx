@@ -4,13 +4,14 @@
 
 import React, { useState, useCallback } from 'react';
 import { audioService } from '../../services/audioService';
+import type { ExerciseResultCallback } from '../../types';
 
 interface SentenceBuildingExerciseProps {
   targetSentence: string;
   englishTranslation: string;
   words: string[]; // Shuffled words
   hint?: string;
-  onComplete: (correct: boolean, attempts: number) => void;
+  onComplete: ExerciseResultCallback;
 }
 
 export const SentenceBuildingExercise: React.FC<SentenceBuildingExerciseProps> = ({
@@ -26,6 +27,7 @@ export const SentenceBuildingExercise: React.FC<SentenceBuildingExerciseProps> =
   const [isCorrect, setIsCorrect] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [showHint, setShowHint] = useState(false);
+  const [startTime] = useState(Date.now());
 
   // Add word to sentence
   const handleWordSelect = useCallback((word: string, index: number) => {
@@ -52,7 +54,8 @@ export const SentenceBuildingExercise: React.FC<SentenceBuildingExerciseProps> =
     const builtSentence = selectedWords.join(' ');
     const correct = builtSentence.toLowerCase().trim() === targetSentence.toLowerCase().trim();
 
-    setAttempts(prev => prev + 1);
+    const currentAttempt = attempts + 1;
+    setAttempts(currentAttempt);
     setIsCorrect(correct);
     setShowResult(true);
 
@@ -63,22 +66,47 @@ export const SentenceBuildingExercise: React.FC<SentenceBuildingExerciseProps> =
       } catch {
         // Silently handle TTS errors
       }
-      onComplete(true, attempts + 1);
+
+      const timeTaken = Date.now() - startTime;
+      onComplete({
+        exerciseId: 'sentence-building-' + Date.now(),
+        exerciseType: 'sentence_building',
+        correct: true,
+        score: 1,
+        timeTaken,
+        attemptsCount: currentAttempt,
+        hintsUsed: showHint ? 1 : 0,
+        metadata: {
+          correctSequence: true,
+        },
+      });
     }
-  }, [selectedWords, targetSentence, attempts, onComplete]);
+  }, [selectedWords, targetSentence, attempts, showHint, startTime, onComplete]);
 
   // Try again
   const handleTryAgain = useCallback(() => {
     if (attempts >= 3) {
       // After 3 attempts, show the answer and mark as complete
-      onComplete(false, attempts);
+      const timeTaken = Date.now() - startTime;
+      onComplete({
+        exerciseId: 'sentence-building-' + Date.now(),
+        exerciseType: 'sentence_building',
+        correct: false,
+        score: 0,
+        timeTaken,
+        attemptsCount: attempts,
+        hintsUsed: showHint ? 1 : 0,
+        metadata: {
+          correctSequence: false,
+        },
+      });
       return;
     }
 
     setShowResult(false);
     setIsCorrect(false);
     // Don't reset the sentence, let them fix it
-  }, [attempts, onComplete]);
+  }, [attempts, showHint, startTime, onComplete]);
 
   // Play sentence audio
   const playSentence = useCallback(async () => {

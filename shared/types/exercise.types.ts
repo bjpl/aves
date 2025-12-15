@@ -81,11 +81,23 @@ export type Exercise =
 export interface ExerciseResult {
   exerciseId: string;
   exerciseType: ExerciseType;
-  userAnswer: any;
-  isCorrect: boolean;
-  timeTaken: number;
+  correct: boolean;
+  score: number;        // 0-1 for partial credit (1 = full credit)
+  timeTaken: number;    // milliseconds
+  attemptsCount?: number;
+  hintsUsed?: number;
+  userAnswer?: any;     // Preserve for backward compatibility
   feedback?: string;
+  metadata?: {
+    clickDistance?: number;      // for spatial identification
+    matchedPairs?: number;       // for term matching
+    correctSequence?: boolean;   // for sentence building
+    categoriesCorrect?: number;  // for category sorting
+    playCount?: number;          // for audio recognition
+  };
 }
+
+export type ExerciseResultCallback = (result: ExerciseResult) => void;
 
 export interface SessionProgress {
   sessionId: string;

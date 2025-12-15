@@ -4,6 +4,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { audioService } from '../../services/audioService';
+import type { ExerciseResultCallback } from '../../types';
 
 interface AudioOption {
   id: string;
@@ -15,7 +16,7 @@ interface AudioOption {
 interface AudioRecognitionExerciseProps {
   correctAnswer: AudioOption;
   options: AudioOption[];
-  onComplete: (correct: boolean, timeTaken: number) => void;
+  onComplete: ExerciseResultCallback;
   autoPlayOnLoad?: boolean;
 }
 
@@ -76,8 +77,17 @@ export const AudioRecognitionExercise: React.FC<AudioRecognitionExerciseProps> =
       // Could play a success sound here
     }
 
-    onComplete(isCorrect, timeTaken);
-  }, [showResult, startTime, correctAnswer.id, onComplete]);
+    onComplete({
+      exerciseId: 'audio-recognition-' + Date.now(),
+      exerciseType: 'audio_recognition',
+      correct: isCorrect,
+      score: isCorrect ? 1 : 0,
+      timeTaken,
+      metadata: {
+        playCount,
+      },
+    });
+  }, [showResult, startTime, correctAnswer.id, playCount, onComplete]);
 
   const getOptionClass = (option: AudioOption) => {
     const base = 'w-full p-4 rounded-xl border-2 transition-all duration-200 text-left';

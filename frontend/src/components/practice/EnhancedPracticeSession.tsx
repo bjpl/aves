@@ -2,21 +2,30 @@
 // WHY: Provides varied learning experience balancing Spanish and bird knowledge
 // PATTERN: Session manager that cycles through different exercise types
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { TermMatchingExercise } from '../exercises/TermMatchingExercise';
 import { AudioRecognitionExercise } from '../exercises/AudioRecognitionExercise';
 import { SentenceBuildingExercise } from '../exercises/SentenceBuildingExercise';
 import { CategorySortingExercise } from '../exercises/CategorySortingExercise';
 import { SpatialIdentificationExercise } from '../exercises/SpatialIdentificationExercise';
 import { EnhancedExerciseGenerator } from '../exercises/EnhancedExerciseGenerator';
+import { ExerciseErrorBoundary } from '../exercises/ExerciseErrorBoundary';
+import { ExerciseFeedback } from './ExerciseFeedback';
+import { SessionProgress } from './SessionProgress';
 import type { Exercise } from '../exercises/EnhancedExerciseGenerator';
-import type { Annotation } from '../../types';
+import type { Annotation, ExerciseResult } from '../../types';
 
 interface EnhancedPracticeSessionProps {
   annotations: Annotation[];
   imageUrl?: string;
   onComplete: (score: number, total: number) => void;
-  onExerciseComplete?: (correct: boolean, exerciseId: string) => void;
+  onExerciseComplete?: (result: ExerciseResult) => void;
+}
+
+// Extended result type for feedback display
+interface ExtendedExerciseResult extends ExerciseResult {
+  correctAnswer?: string;
+  userAnswer?: string;
 }
 
 export const EnhancedPracticeSession: React.FC<EnhancedPracticeSessionProps> = ({
@@ -28,6 +37,13 @@ export const EnhancedPracticeSession: React.FC<EnhancedPracticeSessionProps> = (
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [lastResult, setLastResult] = useState<ExtendedExerciseResult | null>(null);
+  const [streak, setStreak] = useState(0);
+  const [exerciseStartTime, setExerciseStartTime] = useState(Date.now());
+  const [sessionStartTime] = useState(Date.now());
+  const [totalTime, setTotalTime] = useState(0);
+  const [exerciseTimes, setExerciseTimes] = useState<number[]>([]);
 
   // Generate exercise set
   const exercises = useMemo(() => {
@@ -38,28 +54,77 @@ export const EnhancedPracticeSession: React.FC<EnhancedPracticeSessionProps> = (
   const currentExercise = exercises[currentIndex];
   const totalExercises = exercises.length;
 
+  // Update timer
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTotalTime((Date.now() - sessionStartTime) / 1000);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [sessionStartTime]);
+
+  // Reset exercise timer when moving to next exercise
+  useEffect(() => {
+    setExerciseStartTime(Date.now());
+  }, [currentIndex]);
+
   // Handle exercise completion
-  const handleExerciseComplete = useCallback((correct: boolean, points: number = 1) => {
-    if (correct) {
-      setScore(prev => prev + points);
-    }
+  const handleExerciseComplete = useCallback((result: ExerciseResult) => {
+    const timeTaken = (Date.now() - exerciseStartTime) / 1000;
 
-    if (currentExercise) {
-      onExerciseComplete?.(correct, currentExercise.id);
-    }
+    // Update score based on result score (0-1)
+    setScore(prev => prev + result.score);
 
-    // Move to next or show results
-    if (currentIndex < totalExercises - 1) {
-      setTimeout(() => {
-        setCurrentIndex(prev => prev + 1);
-      }, 1500); // Brief delay for feedback
+    // Update streak
+    if (result.score >= 0.9) { // Consider 90%+ as correct for streak
+      setStreak(prev => prev + 1);
     } else {
-      setTimeout(() => {
-        setShowResults(true);
-        onComplete(score + (correct ? points : 0), totalExercises);
-      }, 1500);
+      setStreak(0);
     }
-  }, [currentIndex, totalExercises, currentExercise, score, onComplete, onExerciseComplete]);
+
+    // Store exercise time
+    setExerciseTimes(prev => [...prev, timeTaken]);
+
+    // Store result and show feedback (with additional fields for feedback display)
+    const extendedResult: ExtendedExerciseResult = {
+      ...result,
+      timeTaken,
+      // These could be populated from the exercise if available in future updates
+      correctAnswer: (result.metadata as any)?.correctAnswer as string | undefined,
+      userAnswer: (result.metadata as any)?.userAnswer as string | undefined,
+    };
+    setLastResult(extendedResult);
+    setShowFeedback(true);
+
+    // Pass result to parent callback
+    if (currentExercise) {
+      onExerciseComplete?.(result);
+    }
+
+    // Move to next or show results after feedback
+    setTimeout(() => {
+      setShowFeedback(false);
+
+      if (currentIndex < totalExercises - 1) {
+        setCurrentIndex(prev => prev + 1);
+      } else {
+        setShowResults(true);
+        onComplete(score + result.score, totalExercises);
+      }
+    }, 2000); // Longer delay to show feedback
+  }, [currentIndex, totalExercises, currentExercise, score, exerciseStartTime, onComplete, onExerciseComplete]);
+
+  // Handle skipping an exercise (when error boundary is triggered)
+  const handleSkipExercise = useCallback(() => {
+    console.log(`Skipping exercise ${currentIndex + 1} due to error`);
+
+    // Move to next exercise or show results
+    if (currentIndex < totalExercises - 1) {
+      setCurrentIndex(prev => prev + 1);
+    } else {
+      setShowResults(true);
+      onComplete(score, totalExercises);
+    }
+  }, [currentIndex, totalExercises, score, onComplete]);
 
   // Render current exercise based on type
   const renderExercise = useCallback((exercise: Exercise) => {
@@ -68,9 +133,7 @@ export const EnhancedPracticeSession: React.FC<EnhancedPracticeSessionProps> = (
         return (
           <TermMatchingExercise
             pairs={exercise.pairs}
-            onComplete={(correctCount, total) => {
-              handleExerciseComplete(correctCount === total, correctCount);
-            }}
+            onComplete={(result) => handleExerciseComplete(result)}
           />
         );
 
@@ -79,7 +142,7 @@ export const EnhancedPracticeSession: React.FC<EnhancedPracticeSessionProps> = (
           <AudioRecognitionExercise
             correctAnswer={exercise.correctAnswer}
             options={exercise.options}
-            onComplete={(correct) => handleExerciseComplete(correct)}
+            onComplete={(result) => handleExerciseComplete(result)}
           />
         );
 
@@ -90,7 +153,7 @@ export const EnhancedPracticeSession: React.FC<EnhancedPracticeSessionProps> = (
             englishTranslation={exercise.englishTranslation}
             words={exercise.words}
             hint={exercise.hint}
-            onComplete={(correct) => handleExerciseComplete(correct)}
+            onComplete={(result) => handleExerciseComplete(result)}
           />
         );
 
@@ -99,9 +162,7 @@ export const EnhancedPracticeSession: React.FC<EnhancedPracticeSessionProps> = (
           <CategorySortingExercise
             categories={exercise.categories}
             items={exercise.items}
-            onComplete={(correctCount, total) => {
-              handleExerciseComplete(correctCount >= total * 0.7, correctCount);
-            }}
+            onComplete={(result) => handleExerciseComplete(result)}
           />
         );
 
@@ -112,7 +173,7 @@ export const EnhancedPracticeSession: React.FC<EnhancedPracticeSessionProps> = (
             imageAlt="Bird anatomy"
             targetPoint={exercise.targetPoint}
             allPoints={exercise.allPoints}
-            onComplete={(correct) => handleExerciseComplete(correct)}
+            onComplete={(result) => handleExerciseComplete(result)}
           />
         );
 
@@ -195,42 +256,54 @@ export const EnhancedPracticeSession: React.FC<EnhancedPracticeSessionProps> = (
     );
   }
 
+  // Calculate average time for progress estimation
+  const averageTime = exerciseTimes.length > 0
+    ? exerciseTimes.reduce((a, b) => a + b, 0) / exerciseTimes.length
+    : undefined;
+
   return (
     <div className="space-y-6">
-      {/* Progress Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-gray-600">
-            Exercise {currentIndex + 1} of {totalExercises}
-          </span>
-          <span className="text-sm text-gray-400">|</span>
-          <span className="text-sm text-green-600 font-medium">
-            Score: {score}
-          </span>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="flex-1 max-w-xs ml-4">
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-blue-400 to-purple-500 transition-all duration-500"
-              style={{ width: `${((currentIndex + 1) / totalExercises) * 100}%` }}
-            />
-          </div>
-        </div>
-      </div>
+      {/* Session Progress Component */}
+      <SessionProgress
+        currentExercise={currentIndex}
+        totalExercises={totalExercises}
+        currentScore={score}
+        streak={streak}
+        averageTime={averageTime}
+        elapsedTime={totalTime}
+      />
 
       {/* Exercise Content */}
       <div className="bg-white rounded-xl shadow-sm p-6 min-h-[400px]">
-        {currentExercise && renderExercise(currentExercise)}
+        {!showFeedback && currentExercise && (
+          <ExerciseErrorBoundary
+            exerciseType={currentExercise.type}
+            onSkip={handleSkipExercise}
+          >
+            {renderExercise(currentExercise)}
+          </ExerciseErrorBoundary>
+        )}
+
+        {/* Show feedback after exercise completion */}
+        {showFeedback && lastResult && (
+          <ExerciseFeedback
+            isCorrect={lastResult.score >= 0.9}
+            correctAnswer={lastResult.correctAnswer}
+            userAnswer={lastResult.userAnswer}
+            timeTaken={lastResult.timeTaken}
+            showCelebration={score + lastResult.score === totalExercises && lastResult.score >= 0.9}
+          />
+        )}
       </div>
 
       {/* Exercise Type Indicator */}
-      <div className="flex justify-center">
-        <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs capitalize">
-          {currentExercise?.type.replace(/_/g, ' ')}
-        </span>
-      </div>
+      {!showFeedback && (
+        <div className="flex justify-center">
+          <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs capitalize">
+            {currentExercise?.type.replace(/_/g, ' ')}
+          </span>
+        </div>
+      )}
     </div>
   );
 };

@@ -26,6 +26,7 @@ export * from './guards';
 export * from './api.types';
 export * from './error.types';
 export * from './storage.types';
+export * from './exercise-result.types';
 
 // Local frontend-specific types
 export interface AppConfig {

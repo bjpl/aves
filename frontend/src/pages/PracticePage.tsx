@@ -1,3 +1,12 @@
+// CONCEPT: Practice page with AI-integrated exercise generation
+// WHY: Provides three modes - traditional, enhanced, and AI-powered exercises
+// PATTERN: Container component with mode switching and proper loading/error states
+// INTEGRATION:
+//   - useAnnotations: Fetches real annotations from API with fallbacks
+//   - AIExerciseContainer: Handles AI exercise generation when backend available
+//   - EnhancedExerciseGenerator: Local exercise generation as fallback
+//   - exerciseTransformer: Used by backend to transform annotations to exercises
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { ExerciseContainer } from '../components/exercises/ExerciseContainer';
 import { AIExerciseContainer } from '../components/exercises/AIExerciseContainer';
@@ -7,9 +16,10 @@ import { Badge } from '../components/ui/Badge';
 import { useAnnotations } from '../hooks/useAnnotations';
 import { usePrefetchExercises, useAIExerciseAvailability } from '../hooks/useAIExercise';
 import { useSpacedRepetition } from '../hooks/useSpacedRepetition';
+import { useExerciseSRS } from '../hooks/useExerciseSRS';
 import { ReviewScheduleCard } from '../components/srs/ReviewScheduleCard';
 import { debug } from '../utils/logger';
-import type { Exercise, Annotation } from '../types';
+import type { Exercise, Annotation, ExerciseResult } from '../types';
 
 type PracticeMode = 'traditional' | 'enhanced' | 'ai';
 
@@ -219,7 +229,7 @@ export const PracticePage: React.FC = () => {
   });
 
   // Hooks
-  const { data: apiAnnotations = [], isLoading: annotationsLoading } = useAnnotations();
+  const { data: apiAnnotations = [], isLoading: annotationsLoading, error: annotationsError } = useAnnotations();
   const { isAvailable: isAIAvailable } = useAIExerciseAvailability();
   const { mutate: prefetchExercises } = usePrefetchExercises();
 
@@ -230,9 +240,10 @@ export const PracticePage: React.FC = () => {
     upcomingReviews,
     nextReviewDate,
     isLoading: srsLoading,
-    recordReview,
-    calculateQuality,
   } = useSpacedRepetition();
+
+  // Exercise SRS integration
+  const { recordExerciseReview } = useExerciseSRS();
 
   // Use API annotations if available, otherwise fallback to samples
   const annotations = apiAnnotations.length > 0 ? apiAnnotations : fallbackAnnotations;
@@ -261,20 +272,6 @@ export const PracticePage: React.FC = () => {
 
   const handleExerciseComplete = async (correct: boolean, exercise?: Exercise) => {
     debug('Exercise completed', { correct, exerciseId: exercise?.id });
-
-    // Record SRS review if we have an annotation ID
-    if (exercise?.annotation?.id) {
-      try {
-        const quality = calculateQuality(correct);
-        await recordReview({
-          termId: exercise.annotation.id,
-          quality,
-        });
-        debug('SRS review recorded', { termId: exercise.annotation.id, quality });
-      } catch (error) {
-        debug('Failed to record SRS review', { error });
-      }
-    }
 
     // Track analytics
     if (typeof window !== 'undefined' && (window as any).analytics) {
@@ -434,17 +431,40 @@ export const PracticePage: React.FC = () => {
                   <strong>AI Mode:</strong> Exercises are dynamically generated based on your
                   performance and learning progress. Each exercise is personalized to help you
                   improve faster.
+                  {apiAnnotations.length > 0 && !annotationsError ? (
+                    <span className="block mt-1 text-sm">
+                      Using {apiAnnotations.length} real annotation{apiAnnotations.length !== 1 ? 's' : ''} from the database.
+                    </span>
+                  ) : (
+                    <span className="block mt-1 text-sm">
+                      AI will generate exercises based on your learning patterns.
+                    </span>
+                  )}
                 </>
               ) : practiceMode === 'enhanced' ? (
                 <>
                   <strong>Enhanced Mode:</strong> Varied exercise types including audio recognition,
                   sentence building, term matching, and spatial identification. Balance your Spanish
                   vocabulary with bird anatomy knowledge.
+                  {apiAnnotations.length > 0 && !annotationsError ? (
+                    <span className="block mt-1 text-sm">
+                      Using {apiAnnotations.length} annotation{apiAnnotations.length !== 1 ? 's' : ''} from the database.
+                    </span>
+                  ) : (
+                    <span className="block mt-1 text-sm">
+                      Using fallback annotations for practice.
+                    </span>
+                  )}
                 </>
               ) : (
                 <>
                   <strong>Traditional Mode:</strong> Practice with our curated set of
                   exercises covering all difficulty levels from beginner to advanced.
+                  {apiAnnotations.length > 0 && !annotationsError && (
+                    <span className="block mt-1 text-sm">
+                      Using {apiAnnotations.length} annotation{apiAnnotations.length !== 1 ? 's' : ''} from the database.
+                    </span>
+                  )}
                 </>
               )}
             </p>
@@ -454,10 +474,21 @@ export const PracticePage: React.FC = () => {
         {/* Exercise Container */}
         <div className="bg-white rounded-lg shadow-lg p-8">
           {annotationsLoading || srsLoading ? (
-            <div className="flex items-center justify-center h-64">
+            <div className="flex flex-col items-center justify-center h-64 space-y-4">
+              <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
               <div className="text-gray-500">
-                {srsLoading ? 'Loading review data...' : 'Loading exercises...'}
+                {srsLoading ? 'Loading review data...' : 'Loading annotations...'}
               </div>
+            </div>
+          ) : annotationsError ? (
+            <div className="flex flex-col items-center justify-center h-64 space-y-4">
+              <div className="text-red-500 text-xl mb-4">⚠️ Error Loading Annotations</div>
+              <p className="text-gray-600 mb-2">Failed to fetch annotations from the server.</p>
+              <p className="text-sm text-gray-400">
+                {practiceMode === 'ai' && isAIAvailable
+                  ? 'AI mode will use generated content instead.'
+                  : 'Using fallback annotations for practice.'}
+              </p>
             </div>
           ) : reviewMode && dueCount === 0 ? (
             <div className="flex flex-col items-center justify-center h-64">
@@ -473,10 +504,21 @@ export const PracticePage: React.FC = () => {
                 Exit Review Mode
               </Button>
             </div>
-          ) : annotations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64">
-              <div className="text-gray-500 mb-4">No annotations available for practice.</div>
-              <p className="text-sm text-gray-400">Please add annotations in the admin panel first.</p>
+          ) : annotations.length === 0 && !isAIAvailable ? (
+            <div className="flex flex-col items-center justify-center h-64 space-y-4">
+              <div className="text-gray-500 text-xl mb-4">📝 No Annotations Available</div>
+              <p className="text-gray-600 mb-2">No annotations found for practice.</p>
+              <p className="text-sm text-gray-400">
+                Please add annotations in the Learn page or admin panel first.
+              </p>
+              <Button
+                onClick={() => window.location.href = '/learn'}
+                variant="primary"
+                size="md"
+                className="mt-4"
+              >
+                Go to Learn Page
+              </Button>
             </div>
           ) : practiceMode === 'ai' && isAIAvailable ? (
             <AIExerciseContainer
@@ -492,18 +534,9 @@ export const PracticePage: React.FC = () => {
               onComplete={(score, total) => {
                 debug('Enhanced session complete', { score, total });
               }}
-              onExerciseComplete={async (correct, exerciseId) => {
-                // Record SRS review
-                try {
-                  const quality = calculateQuality(correct);
-                  await recordReview({
-                    termId: exerciseId,
-                    quality,
-                  });
-                  debug('SRS review recorded', { exerciseId, quality, correct });
-                } catch (error) {
-                  debug('Failed to record SRS review', { error });
-                }
+              onExerciseComplete={async (result: ExerciseResult) => {
+                // Record SRS review using new integrated hook
+                await recordExerciseReview(result);
               }}
             />
           ) : (
@@ -512,18 +545,9 @@ export const PracticePage: React.FC = () => {
               onComplete={(progress) => {
                 debug('Session complete', { progress });
               }}
-              onExerciseComplete={async (correct, annotationId) => {
-                // Record SRS review
-                try {
-                  const quality = calculateQuality(correct);
-                  await recordReview({
-                    termId: annotationId,
-                    quality,
-                  });
-                  debug('SRS review recorded', { annotationId, quality, correct });
-                } catch (error) {
-                  debug('Failed to record SRS review', { error });
-                }
+              onExerciseComplete={async (result: ExerciseResult) => {
+                // Record SRS review using new integrated hook
+                await recordExerciseReview(result);
               }}
             />
           )}
