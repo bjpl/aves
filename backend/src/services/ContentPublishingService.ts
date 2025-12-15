@@ -90,7 +90,7 @@ class ContentPublishingService {
    * Get published learning content with optional filters
    */
   async getPublishedContent(filters: ContentFilters = {}): Promise<LearningContent[]> {
-    const { difficulty, type, speciesId, moduleId, limit = 50, offset = 0 } = filters;
+    const { difficulty, type, speciesId: _speciesId, moduleId: _moduleId, limit = 50, offset = 0 } = filters;
 
     // Query approved AI annotations with image URLs
     // Uses ai_annotation_items (approved) joined with images for reliable imageUrl
@@ -128,7 +128,7 @@ class ContentPublishingService {
       params.push(type);
     }
 
-    // Note: speciesId and moduleId filters temporarily disabled
+    // Note: _speciesId and _moduleId filters temporarily disabled
     // until proper JOINs can be added back
 
     query += ` ORDER BY ai.difficulty_level ASC, ai.created_at DESC`;
