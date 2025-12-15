@@ -179,7 +179,9 @@ export const LessonView: React.FC<LessonViewProps> = ({
             onLoad={() => setImageLoaded(true)}
             onError={(e) => {
               console.error('Image failed to load:', imageUrl);
-              e.currentTarget.src = 'https://via.placeholder.com/800x600?text=Image+Not+Available';
+              // Use a real bird image as fallback for better UX
+              e.currentTarget.onerror = null; // Prevent infinite loop
+              e.currentTarget.src = 'https://images.unsplash.com/photo-1444464666168-49d633b86797?w=800&h=600&fit=crop&q=80';
             }}
           />
 
@@ -195,15 +197,33 @@ export const LessonView: React.FC<LessonViewProps> = ({
             const isHovered = hoveredAnnotation === annotation.id;
             const isSelected = selectedAnnotation?.id === annotation.id;
 
+            // Handle both bounding box formats:
+            // New format: { topLeft: {x, y}, width, height }
+            // Old format: { x, y, width, height }
+            const box = annotation.boundingBox;
+            const boxX = box.topLeft?.x ?? (box as any).x ?? 0;
+            const boxY = box.topLeft?.y ?? (box as any).y ?? 0;
+            const boxWidth = box.width ?? 10;
+            const boxHeight = box.height ?? 10;
+
+            // Skip invalid bounding boxes
+            if (boxWidth <= 0 || boxHeight <= 0) return null;
+
+            // Convert normalized (0-1) to percentage (0-100) if needed
+            const left = boxX <= 1 ? boxX * 100 : boxX;
+            const top = boxY <= 1 ? boxY * 100 : boxY;
+            const width = boxWidth <= 1 ? boxWidth * 100 : boxWidth;
+            const height = boxHeight <= 1 ? boxHeight * 100 : boxHeight;
+
             return (
               <div
                 key={annotation.id}
                 className="absolute cursor-pointer transition-all duration-200"
                 style={{
-                  left: `${annotation.boundingBox.x}%`,
-                  top: `${annotation.boundingBox.y}%`,
-                  width: `${annotation.boundingBox.width}%`,
-                  height: `${annotation.boundingBox.height}%`,
+                  left: `${left}%`,
+                  top: `${top}%`,
+                  width: `${width}%`,
+                  height: `${height}%`,
                 }}
                 onMouseEnter={() => setHoveredAnnotation(annotation.id)}
                 onMouseLeave={() => setHoveredAnnotation(null)}
