@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ExerciseContainer } from '../components/exercises/ExerciseContainer';
 import { AIExerciseContainer } from '../components/exercises/AIExerciseContainer';
+import { EnhancedPracticeSession } from '../components/practice/EnhancedPracticeSession';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { useAnnotations } from '../hooks/useAnnotations';
@@ -9,6 +10,8 @@ import { useSpacedRepetition } from '../hooks/useSpacedRepetition';
 import { ReviewScheduleCard } from '../components/srs/ReviewScheduleCard';
 import { debug } from '../utils/logger';
 import type { Exercise, Annotation } from '../types';
+
+type PracticeMode = 'traditional' | 'enhanced' | 'ai';
 
 // Fallback image URLs for annotations when database is empty
 const FALLBACK_IMAGE_URLS: Record<string, string> = {
@@ -203,7 +206,7 @@ const fallbackAnnotations: Annotation[] = [
 
 export const PracticePage: React.FC = () => {
   // State
-  const [useAIExercises, setUseAIExercises] = useState(false);
+  const [practiceMode, setPracticeMode] = useState<PracticeMode>('enhanced');
   const [reviewMode, setReviewMode] = useState(false);
   const [userId] = useState(() => {
     // Get or create user ID from session storage
@@ -250,11 +253,11 @@ export const PracticePage: React.FC = () => {
 
   // Prefetch exercises on page load if AI mode is enabled
   useEffect(() => {
-    if (useAIExercises && isAIAvailable) {
+    if (practiceMode === 'ai' && isAIAvailable) {
       debug('Prefetching AI exercises', { userId, count: 5 });
       prefetchExercises({ userId, count: 5 });
     }
-  }, [useAIExercises, isAIAvailable, userId]);
+  }, [practiceMode, isAIAvailable, userId, prefetchExercises]);
 
   const handleExerciseComplete = async (correct: boolean, exercise?: Exercise) => {
     debug('Exercise completed', { correct, exerciseId: exercise?.id });
@@ -279,23 +282,21 @@ export const PracticePage: React.FC = () => {
         userId,
         correct,
         exerciseType: exercise?.type,
-        mode: useAIExercises ? 'ai' : 'traditional',
+        mode: practiceMode,
         reviewMode,
       });
     }
   };
 
-  const handleToggleMode = () => {
-    const newMode = !useAIExercises;
-    setUseAIExercises(newMode);
-
-    debug('Exercise mode toggled', { mode: newMode ? 'ai' : 'traditional' });
+  const handleModeChange = (mode: PracticeMode) => {
+    setPracticeMode(mode);
+    debug('Exercise mode changed', { mode });
 
     // Track analytics
     if (typeof window !== 'undefined' && (window as any).analytics) {
       (window as any).analytics.track('exercise_mode_changed', {
         userId,
-        mode: newMode ? 'ai' : 'traditional',
+        mode,
       });
     }
   };
@@ -356,31 +357,44 @@ export const PracticePage: React.FC = () => {
                 </Button>
               )}
 
-              {/* AI Toggle - Only show if AI is available */}
-              {isAIAvailable && (
-                <>
-                  <Badge
-                    variant={useAIExercises ? 'primary' : 'default'}
-                    size="md"
-                    className="cursor-default"
+              {/* Mode Selector */}
+              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => handleModeChange('traditional')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    practiceMode === 'traditional'
+                      ? 'bg-white text-blue-700 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  Traditional
+                </button>
+                <button
+                  onClick={() => handleModeChange('enhanced')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    practiceMode === 'enhanced'
+                      ? 'bg-white text-green-700 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  Enhanced
+                </button>
+                {isAIAvailable && (
+                  <button
+                    onClick={() => handleModeChange('ai')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1 ${
+                      practiceMode === 'ai'
+                        ? 'bg-white text-purple-700 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-800'
+                    }`}
                   >
-                    {useAIExercises ? 'AI Mode' : 'Traditional'}
-                  </Badge>
-                  <Button
-                    onClick={handleToggleMode}
-                    variant={useAIExercises ? 'primary' : 'outline'}
-                    size="md"
-                    leftIcon={
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                    }
-                    aria-label={`Switch to ${useAIExercises ? 'traditional' : 'AI'} exercises`}
-                  >
-                    {useAIExercises ? 'Use Traditional' : 'Use AI Exercises'}
-                  </Button>
-                </>
-              )}
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    AI
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -389,8 +403,10 @@ export const PracticePage: React.FC = () => {
             className={`p-4 rounded-lg border ${
               reviewMode
                 ? 'bg-orange-50 border-orange-200'
-                : useAIExercises
+                : practiceMode === 'ai'
                 ? 'bg-purple-50 border-purple-200'
+                : practiceMode === 'enhanced'
+                ? 'bg-green-50 border-green-200'
                 : 'bg-blue-50 border-blue-200'
             }`}
             role="status"
@@ -400,8 +416,10 @@ export const PracticePage: React.FC = () => {
               className={`text-sm ${
                 reviewMode
                   ? 'text-orange-800'
-                  : useAIExercises
+                  : practiceMode === 'ai'
                   ? 'text-purple-800'
+                  : practiceMode === 'enhanced'
+                  ? 'text-green-800'
                   : 'text-blue-800'
               }`}
             >
@@ -411,11 +429,17 @@ export const PracticePage: React.FC = () => {
                   The spaced repetition system will track your progress and schedule future reviews
                   based on your performance.
                 </>
-              ) : useAIExercises ? (
+              ) : practiceMode === 'ai' ? (
                 <>
                   <strong>AI Mode:</strong> Exercises are dynamically generated based on your
                   performance and learning progress. Each exercise is personalized to help you
                   improve faster.
+                </>
+              ) : practiceMode === 'enhanced' ? (
+                <>
+                  <strong>Enhanced Mode:</strong> Varied exercise types including audio recognition,
+                  sentence building, term matching, and spatial identification. Balance your Spanish
+                  vocabulary with bird anatomy knowledge.
                 </>
               ) : (
                 <>
@@ -454,13 +478,33 @@ export const PracticePage: React.FC = () => {
               <div className="text-gray-500 mb-4">No annotations available for practice.</div>
               <p className="text-sm text-gray-400">Please add annotations in the admin panel first.</p>
             </div>
-          ) : useAIExercises && isAIAvailable ? (
+          ) : practiceMode === 'ai' && isAIAvailable ? (
             <AIExerciseContainer
               userId={userId}
               exerciseType="adaptive"
               onComplete={handleExerciseComplete}
               autoGenerate={true}
               showAIBadge={true}
+            />
+          ) : practiceMode === 'enhanced' ? (
+            <EnhancedPracticeSession
+              annotations={filteredAnnotations}
+              onComplete={(score, total) => {
+                debug('Enhanced session complete', { score, total });
+              }}
+              onExerciseComplete={async (correct, exerciseId) => {
+                // Record SRS review
+                try {
+                  const quality = calculateQuality(correct);
+                  await recordReview({
+                    termId: exerciseId,
+                    quality,
+                  });
+                  debug('SRS review recorded', { exerciseId, quality, correct });
+                } catch (error) {
+                  debug('Failed to record SRS review', { error });
+                }
+              }}
             />
           ) : (
             <ExerciseContainer
@@ -498,8 +542,10 @@ export const PracticePage: React.FC = () => {
           <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Adaptive Learning</h3>
             <p className="text-sm text-gray-600">
-              {useAIExercises
+              {practiceMode === 'ai'
                 ? 'AI adjusts difficulty based on your performance'
+                : practiceMode === 'enhanced'
+                ? 'Multiple exercise types for comprehensive learning'
                 : 'Progress through beginner, intermediate, and advanced levels'}
             </p>
           </div>
@@ -537,7 +583,13 @@ export const PracticePage: React.FC = () => {
               <span className="text-blue-600 mr-2">•</span>
               <span>Review difficult terms multiple times for better retention</span>
             </li>
-            {isAIAvailable && useAIExercises && (
+            {practiceMode === 'enhanced' && (
+              <li className="flex items-start">
+                <span className="text-green-600 mr-2">•</span>
+                <span>Enhanced mode includes audio - tap speaker icons to hear pronunciation!</span>
+              </li>
+            )}
+            {isAIAvailable && practiceMode === 'ai' && (
               <li className="flex items-start">
                 <span className="text-purple-600 mr-2">•</span>
                 <span>AI exercises adapt to your level - don't worry about mistakes!</span>
