@@ -184,9 +184,10 @@ export const EnhancedLearnPage: React.FC = () => {
   const [selectedAnnotation, setSelectedAnnotation] = useState<any>(null);
 
   // Fetch content with optional module filter
+  // Request up to 500 annotations to ensure we get all content
   const { data: apiContent = [], isLoading, error } = useLearnContent({
     moduleId: selectedModuleId,
-    limit: 100
+    limit: 500
   });
 
   const { data: modules = [] } = useLearningModules();
@@ -215,15 +216,31 @@ export const EnhancedLearnPage: React.FC = () => {
       }
 
       // Transform LearningContent to annotation format
-      // Database stores nested format: { topLeft: {x,y}, bottomRight: {x,y}, width, height }
+      // Handle two bounding box formats:
+      // - New format: { topLeft: {x,y}, bottomRight: {x,y}, width, height }
+      // - Old format: { x, y, width, height }
       // Convert normalized coords (0-1) to percentages (0-100) for UI display
-      // Skip items without valid bounding box data
-      if (!item.boundingBox || !item.boundingBox.topLeft) {
+      if (!item.boundingBox) {
         return acc;
       }
 
-      const centerX = (item.boundingBox.topLeft.x + (item.boundingBox.width / 2)) * 100;
-      const centerY = (item.boundingBox.topLeft.y + (item.boundingBox.height / 2)) * 100;
+      // Extract coordinates based on format
+      let startX: number, startY: number;
+      if (item.boundingBox.topLeft) {
+        // New nested format
+        startX = item.boundingBox.topLeft.x;
+        startY = item.boundingBox.topLeft.y;
+      } else if (typeof item.boundingBox.x === 'number') {
+        // Old flat format
+        startX = item.boundingBox.x;
+        startY = item.boundingBox.y;
+      } else {
+        // No valid coordinates
+        return acc;
+      }
+
+      const centerX = (startX + (item.boundingBox.width / 2)) * 100;
+      const centerY = (startY + (item.boundingBox.height / 2)) * 100;
 
       acc[item.imageUrl].annotations.push({
         id: item.id,
