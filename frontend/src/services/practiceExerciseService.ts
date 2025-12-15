@@ -114,24 +114,25 @@ class PracticeExerciseService {
       return [];
     }
 
+    // Templates use {BLANK} for user answer and {CONTEXT} for the given context
     const templates = [
       {
-        es: 'El ___ vive en ___.',
-        en: 'The ___ lives in ___.',
+        es: 'El {BLANK} vive en {CONTEXT}.',
+        en: 'The {BLANK} lives in {CONTEXT}.',
         getBlank: (s: Species) => s.spanishName.toLowerCase(),
         getContext: (s: Species) => s.habitats?.[0] || 'bosques'
       },
       {
-        es: 'El ___ es de color ___.',
-        en: 'The ___ is ___ colored.',
+        es: 'El {BLANK} es de color {CONTEXT}.',
+        en: 'The {BLANK} is {CONTEXT} colored.',
         getBlank: (s: Species) => s.spanishName.toLowerCase(),
         getContext: (s: Species) => s.primaryColors?.[0] || 'variado'
       },
       {
-        es: 'El ___ pertenece a la familia ___.',
-        en: 'The ___ belongs to the ___ family.',
+        es: 'El {BLANK} pertenece a la familia {CONTEXT}.',
+        en: 'The {BLANK} belongs to the {CONTEXT} family.',
         getBlank: (s: Species) => s.spanishName.toLowerCase(),
-        getContext: (s: Species) => s.familyName
+        getContext: (s: Species) => s.familyName || 'desconocida'
       }
     ];
 
@@ -140,8 +141,13 @@ class PracticeExerciseService {
       const template = templates[i % templates.length];
       const distractors = species.slice(i * 4 + 1, i * 4 + 4);
 
-      const sentence = template.es.replace('___', '___').replace('___', template.getContext(targetSpecies));
-      const translation = template.en.replace('___', '___').replace('___', template.getContext(targetSpecies));
+      // Replace {CONTEXT} with the context value, leave {BLANK} as ___ for user to fill
+      const sentence = template.es
+        .replace('{CONTEXT}', template.getContext(targetSpecies))
+        .replace('{BLANK}', '___');
+      const translation = template.en
+        .replace('{CONTEXT}', template.getContext(targetSpecies))
+        .replace('{BLANK}', '___');
 
       const options = [
         template.getBlank(targetSpecies),
