@@ -42,21 +42,32 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({
     return (
       <div className="space-y-6">
         <h3 className="text-xl font-semibold text-center">{question}</h3>
-        {imageUrl && (
-          <div className="relative w-full max-w-md mx-auto">
+        {/* Always show image container for visual_match - this is an image-based exercise */}
+        <div className="relative w-full max-w-md mx-auto">
+          {imageUrl ? (
             <img
               src={imageUrl}
               alt="Bird to identify"
-              className="w-full rounded-lg shadow-md object-cover aspect-video"
+              className="w-full rounded-lg shadow-md object-cover aspect-video bg-gray-100"
               onError={(e) => {
                 // Fallback on image load error
                 const target = e.target as HTMLImageElement;
-                target.src = 'https://via.placeholder.com/400x300?text=Image+Not+Available';
+                target.onerror = null; // Prevent infinite loop
+                target.src = 'https://images.unsplash.com/photo-1444464666168-49d633b86797?w=400&h=300&fit=crop&q=80';
               }}
               loading="lazy"
             />
-          </div>
-        )}
+          ) : (
+            <div className="w-full aspect-video bg-gradient-to-br from-blue-100 to-green-100 rounded-lg shadow-md flex items-center justify-center">
+              <div className="text-center text-gray-500">
+                <svg className="w-16 h-16 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <p className="text-sm">Image loading...</p>
+              </div>
+            </div>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-3">
           {options.map((option) => (
             <button

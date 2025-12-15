@@ -25,6 +25,55 @@ class PracticeExerciseService {
   private cacheDuration = 5 * 60 * 1000; // 5 minutes
 
   /**
+   * Check if a name appears to be Spanish (vs English)
+   * Spanish bird names typically have accents, specific patterns, or Spanish articles
+   */
+  private isLikelySpanish(name: string): boolean {
+    if (!name) return false;
+
+    // Spanish-specific characters and patterns
+    const spanishPatterns = [
+      /[áéíóúüñ]/i,                    // Spanish accents
+      /^(el|la|los|las)\s/i,          // Spanish articles
+      /(illo|illa|ito|ita|ón|ado|ido|ero|era|oso|osa)$/i, // Spanish suffixes
+      /\s(de|del|común|real|grande|pequeño|azul|rojo|negro|blanco|pardo|gris)/i, // Spanish descriptors
+    ];
+
+    // Common English-only patterns (suggests it's NOT Spanish)
+    const englishPatterns = [
+      /\b(owl|hawk|eagle|duck|goose|sparrow|robin|crow|jay|finch|warbler|wren|thrush|swallow|heron|egret|ibis|pelican|gull|tern|dove|pigeon|woodpecker|kingfisher|hummingbird)\b/i,
+      /^[A-Z][a-z]+\s[A-Z][a-z]+$/,   // "Word Word" without accents (likely English common name)
+    ];
+
+    // Check for Spanish patterns
+    for (const pattern of spanishPatterns) {
+      if (pattern.test(name)) return true;
+    }
+
+    // Check for English patterns (if matched, likely NOT Spanish)
+    for (const pattern of englishPatterns) {
+      if (pattern.test(name)) return false;
+    }
+
+    // Default: assume it could be Spanish if short or unknown
+    return name.length > 3;
+  }
+
+  /**
+   * Get the best Spanish name for a species, with fallback
+   */
+  private getDisplayName(species: Species): string {
+    // If spanishName looks Spanish, use it
+    if (this.isLikelySpanish(species.spanishName)) {
+      return species.spanishName;
+    }
+
+    // Otherwise, use englishName with a note that Spanish name is unavailable
+    // Or return the spanishName anyway (it might just be a proper noun)
+    return species.spanishName || species.englishName;
+  }
+
+  /**
    * Get species with images from the API/cache
    */
   private async getSpeciesWithImages(): Promise<Species[]> {
@@ -73,29 +122,45 @@ class PracticeExerciseService {
    */
   async generateVisualMatchExercises(count: number = 10): Promise<PracticeExercise[]> {
     const exercises: PracticeExercise[] = [];
-    const species = await this.getRandomSpecies(count * 4); // Need extras for options
+    const allSpecies = await this.getRandomSpecies(count * 4); // Need extras for options
 
-    if (species.length < 4) {
-      console.warn(`Not enough species for visual match exercises. Found ${species.length}, need at least 4.`);
+    if (allSpecies.length < 4) {
+      console.warn(`Not enough species for visual match exercises. Found ${allSpecies.length}, need at least 4.`);
       return []; // Not enough species with images
     }
+
+    // Filter to only species with valid images
+    const speciesWithImages = allSpecies.filter(s =>
+      s.primaryImageUrl || s.annotationCount && s.annotationCount > 0
+    );
+
+    if (speciesWithImages.length < 4) {
+      console.warn(`Not enough species WITH IMAGES for visual match. Found ${speciesWithImages.length}`);
+      // Fall back to all species
+    }
+
+    const species = speciesWithImages.length >= 4 ? speciesWithImages : allSpecies;
 
     for (let i = 0; i < Math.min(count, Math.floor(species.length / 4)); i++) {
       const targetSpecies = species[i * 4];
       const distractors = species.slice(i * 4 + 1, i * 4 + 4);
 
+      // Use display names that handle English/Spanish detection
+      const targetName = this.getDisplayName(targetSpecies);
       const options = [
-        targetSpecies.spanishName,
-        ...distractors.map(s => s.spanishName)
+        targetName,
+        ...distractors.map(s => this.getDisplayName(s))
       ].sort(() => Math.random() - 0.5);
+
+      const imageUrl = this.getImageUrl(targetSpecies);
 
       exercises.push({
         id: `visual_match_${i}_${Date.now()}`,
         type: 'visual_match',
         question: '¿Qué pájaro es este? (What bird is this?)',
-        correctAnswer: targetSpecies.spanishName,
+        correctAnswer: targetName,
         options,
-        imageUrl: this.getImageUrl(targetSpecies),
+        imageUrl,
         speciesId: targetSpecies.id,
         explanation: `${targetSpecies.spanishName} - ${targetSpecies.englishName}`
       });
@@ -121,19 +186,19 @@ class PracticeExerciseService {
       {
         es: 'El {BLANK} vive en {CONTEXT}.',
         en: 'The {BLANK} lives in {CONTEXT}.',
-        getBlank: (s: Species) => s.spanishName.toLowerCase(),
+        getBlank: (s: Species) => this.getDisplayName(s).toLowerCase(),
         getContext: (s: Species) => s.habitats?.[0] || 'bosques'
       },
       {
         es: 'El {BLANK} es de color {CONTEXT}.',
         en: 'The {BLANK} is {CONTEXT} colored.',
-        getBlank: (s: Species) => s.spanishName.toLowerCase(),
+        getBlank: (s: Species) => this.getDisplayName(s).toLowerCase(),
         getContext: (s: Species) => s.primaryColors?.[0] || 'variado'
       },
       {
         es: 'El {BLANK} pertenece a la familia {CONTEXT}.',
         en: 'The {BLANK} belongs to the {CONTEXT} family.',
-        getBlank: (s: Species) => s.spanishName.toLowerCase(),
+        getBlank: (s: Species) => this.getDisplayName(s).toLowerCase(),
         getContext: (s: Species) => s.familyName || 'desconocida'
       }
     ];
@@ -185,7 +250,7 @@ class PracticeExerciseService {
 
     const questionTemplates = [
       {
-        question: (s: Species) => `¿Dónde vive el ${s.spanishName}?`,
+        question: (s: Species) => `¿Dónde vive el ${this.getDisplayName(s)}?`,
         getCorrect: (s: Species) => s.habitats?.[0] || 'bosques',
         getOptions: (correct: string, others: Species[]) => [
           correct,
@@ -193,10 +258,10 @@ class PracticeExerciseService {
           others[1]?.habitats?.[0] || 'ríos',
           others[2]?.habitats?.[0] || 'costas'
         ],
-        explanation: (s: Species) => `El ${s.spanishName} vive en ${s.habitats?.[0] || 'varios hábitats'}`
+        explanation: (s: Species) => `El ${this.getDisplayName(s)} vive en ${s.habitats?.[0] || 'varios hábitats'}`
       },
       {
-        question: (s: Species) => `¿De qué color es el ${s.spanishName}?`,
+        question: (s: Species) => `¿De qué color es el ${this.getDisplayName(s)}?`,
         getCorrect: (s: Species) => s.primaryColors?.[0] || 'variado',
         getOptions: (correct: string, others: Species[]) => [
           correct,
@@ -204,16 +269,16 @@ class PracticeExerciseService {
           others[1]?.primaryColors?.[0] || 'azul',
           others[2]?.primaryColors?.[0] || 'verde'
         ],
-        explanation: (s: Species) => `El ${s.spanishName} tiene plumaje ${s.primaryColors?.join(' y ') || 'variado'}`
+        explanation: (s: Species) => `El ${this.getDisplayName(s)} tiene plumaje ${s.primaryColors?.join(' y ') || 'variado'}`
       },
       {
-        question: (s: Species) => `¿A qué familia pertenece el ${s.spanishName}?`,
+        question: (s: Species) => `¿A qué familia pertenece el ${this.getDisplayName(s)}?`,
         getCorrect: (s: Species) => s.familyName,
         getOptions: (correct: string, others: Species[]) => [
           correct,
           ...others.map(o => o.familyName).filter(f => f !== correct).slice(0, 3)
         ],
-        explanation: (s: Species) => `El ${s.spanishName} es de la familia ${s.familyName}`
+        explanation: (s: Species) => `El ${this.getDisplayName(s)} es de la familia ${s.familyName}`
       }
     ];
 
@@ -270,9 +335,17 @@ class PracticeExerciseService {
    * Tries multiple sources: primaryImageUrl, API endpoint, fallback
    */
   private getImageUrl(species: Species): string {
-    // Use primaryImageUrl if available
-    if (species.primaryImageUrl) {
+    // Use primaryImageUrl if available and valid
+    if (species.primaryImageUrl && species.primaryImageUrl.startsWith('http')) {
       return species.primaryImageUrl;
+    }
+
+    // Check if species has images array with valid URLs
+    if (species.images && species.images.length > 0) {
+      const firstImage = species.images[0];
+      if (firstImage.url && firstImage.url.startsWith('http')) {
+        return firstImage.url;
+      }
     }
 
     // Construct API endpoint URL for species images
@@ -282,8 +355,14 @@ class PracticeExerciseService {
       return `${apiUrl}/api/species/${species.id}/image`;
     }
 
-    // Fallback to placeholder
-    return `https://via.placeholder.com/400x300?text=${encodeURIComponent(species.spanishName)}`;
+    // Fallback to a real bird image from Unsplash (better UX than placeholder)
+    const birdImages = [
+      'https://images.unsplash.com/photo-1444464666168-49d633b86797?w=400&h=300&fit=crop',
+      'https://images.unsplash.com/photo-1452570053594-1b985d6ea890?w=400&h=300&fit=crop',
+      'https://images.unsplash.com/photo-1480044965905-02098d419e96?w=400&h=300&fit=crop',
+      'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400&h=300&fit=crop',
+    ];
+    return birdImages[Math.floor(Math.random() * birdImages.length)];
   }
 
   /**
