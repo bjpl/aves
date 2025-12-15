@@ -1,16 +1,22 @@
 // Route: /dashboard
-// CONCEPT: Personalized user dashboard showing learning progress and SRS stats
-// WHY: Provides users with immediate feedback on their learning journey, motivates continued practice
-// PATTERN: Dashboard with stats cards, progress visualization, and action prompts
+// CONCEPT: Personalized user dashboard - comprehensive learning metrics and exercise stats
+// WHY: Single source of truth for learning progress, SRS stats, and exercise performance
+// PATTERN: Dashboard with SRS stats, exercise metrics, and actionable insights
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useUserSRSStats } from '../hooks/useSpacedRepetition';
+import { useUserSRSStats, useDueTerms } from '../hooks/useSpacedRepetition';
 import { useLearningModules } from '../hooks/useLearnContent';
+import { useProgress } from '../hooks/useProgress';
+import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 
 export const UserDashboardPage: React.FC = () => {
+  const { user } = useSupabaseAuth();
   const { data: stats, isLoading: loadingStats } = useUserSRSStats();
+  const { data: dueTerms = [] } = useDueTerms(5);
   const { data: modules = [], isLoading: loadingModules } = useLearningModules();
+  const { getStats } = useProgress();
+  const sessionStats = getStats();
 
   const isLoading = loadingStats || loadingModules;
 
@@ -386,19 +392,171 @@ export const UserDashboardPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Recent Activity Section (Placeholder) */}
+            {/* Exercise Performance Section */}
+            <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                Exercise Performance
+              </h2>
+
+              {sessionStats.exercisesCompleted > 0 ? (
+                <div className="space-y-6">
+                  {/* Performance Stats */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-blue-50 rounded-lg p-4 text-center">
+                      <div className="text-3xl font-bold text-blue-600">
+                        {sessionStats.exercisesCompleted}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">Exercises Done</div>
+                    </div>
+                    <div className="bg-green-50 rounded-lg p-4 text-center">
+                      <div className="text-3xl font-bold text-green-600">
+                        {sessionStats.accuracy}%
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">Accuracy</div>
+                    </div>
+                    <div className="bg-purple-50 rounded-lg p-4 text-center">
+                      <div className="text-3xl font-bold text-purple-600">
+                        {sessionStats.currentStreak}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">Current Streak</div>
+                    </div>
+                    <div className="bg-yellow-50 rounded-lg p-4 text-center">
+                      <div className="text-3xl font-bold text-yellow-600">
+                        {sessionStats.longestStreak}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">Best Streak</div>
+                    </div>
+                  </div>
+
+                  {/* Accuracy Bar */}
+                  <div>
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-gray-600">Session Accuracy</span>
+                      <span className="font-medium text-gray-900">{sessionStats.accuracy}%</span>
+                    </div>
+                    <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          sessionStats.accuracy >= 80 ? 'bg-gradient-to-r from-green-500 to-green-600' :
+                          sessionStats.accuracy >= 60 ? 'bg-gradient-to-r from-yellow-500 to-yellow-600' :
+                          'bg-gradient-to-r from-red-500 to-red-600'
+                        }`}
+                        style={{ width: `${sessionStats.accuracy}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Session Time */}
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">⏱️</span>
+                      <div>
+                        <div className="font-medium text-gray-900">Session Time</div>
+                        <div className="text-sm text-gray-500">Time spent learning today</div>
+                      </div>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">
+                      {sessionStats.sessionDuration} min
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 bg-gray-50 rounded-lg">
+                  <div className="text-5xl mb-4">✏️</div>
+                  <p className="text-gray-600 mb-4">
+                    No exercises completed yet this session
+                  </p>
+                  <Link
+                    to="/practice"
+                    className="inline-block px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Start Practicing
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Terms Due for Review Preview */}
+            {dueTerms.length > 0 && (
+              <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Up Next for Review
+                  </h2>
+                  <Link
+                    to="/practice"
+                    className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                  >
+                    Review All →
+                  </Link>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {dueTerms.slice(0, 6).map((term) => (
+                    <div
+                      key={term.id}
+                      className="p-4 bg-gradient-to-br from-blue-50 to-green-50 rounded-lg border border-gray-100"
+                    >
+                      <div className="font-semibold text-gray-900 text-lg">
+                        {term.spanishTerm}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        {term.englishTerm}
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-green-500 to-blue-500 rounded-full"
+                            style={{ width: `${term.masteryLevel}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-gray-500">{term.masteryLevel}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Activity Summary */}
             <div className="bg-white rounded-xl shadow-lg p-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                Recent Activity
+                Learning Summary
               </h2>
-              <div className="text-center py-12 bg-gray-50 rounded-lg">
-                <div className="text-5xl mb-4">📊</div>
-                <p className="text-gray-600 mb-2">
-                  Activity tracking coming soon
-                </p>
-                <p className="text-sm text-gray-500">
-                  Your learning history will appear here
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-700">This Session</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-600">Terms Discovered</span>
+                      <span className="font-bold text-gray-900">{sessionStats.termsLearned}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-600">Exercises Completed</span>
+                      <span className="font-bold text-gray-900">{sessionStats.exercisesCompleted}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-600">Terms Mastered</span>
+                      <span className="font-bold text-gray-900">{sessionStats.masteredTerms}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-700">All Time (SRS)</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-600">Total Vocabulary</span>
+                      <span className="font-bold text-gray-900">{stats?.totalTerms || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-600">Fully Mastered</span>
+                      <span className="font-bold text-green-600">{stats?.mastered || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-600">Average Mastery</span>
+                      <span className="font-bold text-blue-600">{stats?.averageMastery || 0}%</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </>
