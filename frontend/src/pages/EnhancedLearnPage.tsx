@@ -220,13 +220,13 @@ export const EnhancedLearnPage: React.FC = () => {
       // - New format: { topLeft: {x,y}, bottomRight: {x,y}, width, height }
       // - Old format: { x, y, width, height }
       // Convert normalized coords (0-1) to percentages (0-100) for UI display
-      if (!item.boundingBox) {
+      if (!item.boundingBox || typeof item.boundingBox.width !== 'number' || typeof item.boundingBox.height !== 'number') {
         return acc;
       }
 
       // Extract coordinates based on format
       let startX: number, startY: number;
-      if (item.boundingBox.topLeft) {
+      if (item.boundingBox.topLeft && typeof item.boundingBox.topLeft.x === 'number') {
         // New nested format
         startX = item.boundingBox.topLeft.x;
         startY = item.boundingBox.topLeft.y;

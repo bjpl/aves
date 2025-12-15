@@ -18,7 +18,11 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
   onExerciseComplete
 }) => {
   const [currentExercise, setCurrentExercise] = useState<EnhancedExercise | null>(null);
-  const [generator] = useState(() => new EnhancedExerciseGenerator(annotations));
+  // Create generator that updates when annotations change
+  const generator = useMemo(
+    () => new EnhancedExerciseGenerator(annotations),
+    [annotations]
+  );
   const [progress, setProgress] = useState<SessionProgress>({
     sessionId: `session_${Date.now()}`,
     exercisesCompleted: 0,
@@ -31,9 +35,19 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
 
   // Store timeout ID for cleanup
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Track if initial exercise has been generated
+  const initialGenerationDone = useRef(false);
 
+  // Generate initial exercise on mount or when annotations change
   useEffect(() => {
-    generateNewExercise();
+    // Generate new exercise when annotations change
+    const exercise = generator.generateAdaptiveExercise();
+    if (exercise) {
+      setCurrentExercise(exercise);
+      setShowFeedback(false);
+      setLastResult(null);
+    }
+    initialGenerationDone.current = true;
 
     // Cleanup timeout on unmount
     return () => {
@@ -41,7 +55,7 @@ export const ExerciseContainer: React.FC<ExerciseContainerProps> = ({
         clearTimeout(timeoutRef.current);
       }
     };
-  }, []);
+  }, [generator]);
 
   const generateNewExercise = useCallback(() => {
     // Use adaptive exercise generation for better learning progression

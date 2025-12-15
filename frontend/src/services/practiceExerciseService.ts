@@ -76,6 +76,7 @@ class PracticeExerciseService {
     const species = await this.getRandomSpecies(count * 4); // Need extras for options
 
     if (species.length < 4) {
+      console.warn(`Not enough species for visual match exercises. Found ${species.length}, need at least 4.`);
       return []; // Not enough species with images
     }
 
@@ -111,6 +112,7 @@ class PracticeExerciseService {
     const species = await this.getRandomSpecies(count * 4);
 
     if (species.length < 4) {
+      console.warn(`Not enough species for fill-blank exercises. Found ${species.length}, need at least 4.`);
       return [];
     }
 
@@ -177,6 +179,7 @@ class PracticeExerciseService {
     const species = await this.getRandomSpecies(count * 4);
 
     if (species.length < 4) {
+      console.warn(`Not enough species for multiple choice exercises. Found ${species.length}, need at least 4.`);
       return [];
     }
 
@@ -254,6 +257,11 @@ class PracticeExerciseService {
 
     // Combine and shuffle
     const allExercises = [...visualMatch, ...fillBlank, ...multipleChoice];
+
+    if (allExercises.length === 0) {
+      console.warn('No exercises could be generated. Species data may be missing or insufficient.');
+    }
+
     return allExercises.sort(() => Math.random() - 0.5).slice(0, totalCount);
   }
 

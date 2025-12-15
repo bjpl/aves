@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ContextualFillExercise } from '../../../../shared/types/exercise.types';
 
 interface ContextualFillProps {
@@ -14,6 +14,12 @@ export const ContextualFill: React.FC<ContextualFillProps> = ({
 }) => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
+
+  // Reset state when exercise changes
+  useEffect(() => {
+    setSelectedAnswer(null);
+    setHasAnswered(false);
+  }, [exercise.id]);
 
   const handleSelect = (answer: string) => {
     if (disabled || hasAnswered) return;

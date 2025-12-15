@@ -2,7 +2,7 @@
 // WHY: Wrapper for AI-generated exercises with loading states and error handling
 // PATTERN: Container/Presenter pattern with React Query integration
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { ExerciseRenderer } from '../practice/ExerciseRenderer';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
@@ -33,25 +33,41 @@ export const AIExerciseContainer: React.FC<AIExerciseContainerProps> = ({
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
+  // Track if initial auto-generation has been attempted
+  const autoGenerateAttempted = useRef(false);
 
   // Hooks
   const { isAvailable, reason } = useAIExerciseAvailability();
   const { mutate: generateExercise, data, isPending, error, reset } = useGenerateAIExercise();
 
-  // Auto-generate on mount
+  // Memoize onError to prevent unnecessary effect runs
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+
+  // Auto-generate on mount (only once)
   useEffect(() => {
-    if (autoGenerate && isAvailable && !data && !isPending) {
-      handleGenerateExercise();
+    if (autoGenerate && isAvailable && !autoGenerateAttempted.current) {
+      autoGenerateAttempted.current = true;
+      // Reset state and generate
+      setSelectedAnswer(null);
+      setShowFeedback(false);
+      setIsCorrect(false);
+      reset();
+      generateExercise({
+        userId,
+        type: exerciseType,
+        difficulty,
+      });
     }
-  }, [autoGenerate, isAvailable]);
+  }, [autoGenerate, isAvailable, generateExercise, reset, userId, exerciseType, difficulty]);
 
   // Handle error callback
   useEffect(() => {
-    if (error && onError) {
-      onError(error);
+    if (error && onErrorRef.current) {
+      onErrorRef.current(error);
       logError('AI exercise error', error);
     }
-  }, [error, onError]);
+  }, [error]);
 
   const handleGenerateExercise = () => {
     // Reset state
