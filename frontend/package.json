@@ -44,6 +44,8 @@
     "test:visual:tablet": "playwright test --project=visual-tablet",
     "test:visual:desktop": "playwright test --project=visual-desktop",
     "test:visual:report": "playwright show-report",
+    "test:visual:ci": "playwright test --project=visual-mobile --project=visual-tablet --project=visual-desktop --reporter=github,html",
+    "test:visual:diff": "playwright test --project=visual-desktop --reporter=list",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives"
