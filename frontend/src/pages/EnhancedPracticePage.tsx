@@ -6,6 +6,7 @@ import { FeedbackDisplay } from '../components/practice/FeedbackDisplay';
 import { PracticeModePicker, PracticeMode } from '../components/practice/PracticeModePicker';
 import { practiceExerciseService, PracticeExercise } from '../services/practiceExerciseService';
 import { useSpacedRepetition } from '../hooks/useSpacedRepetition';
+import { error as logError, warn } from '../utils/logger';
 
 // Practice exercise types available in the system (kept for documentation)
 const EXERCISE_TYPES = {
@@ -67,7 +68,7 @@ export const EnhancedPracticePage: React.FC = () => {
 
         setExercises(generatedExercises);
       } catch (err) {
-        console.error('Failed to load exercises:', err);
+        logError('Failed to load exercises', err instanceof Error ? err : { error: err });
         setError('Failed to load practice exercises. Please try again later.');
       } finally {
         setLoading(false);
@@ -123,7 +124,7 @@ export const EnhancedPracticePage: React.FC = () => {
         });
       } catch (err) {
         // SRS recording is non-critical, log but continue
-        console.warn('Failed to record SRS review:', err);
+        warn('Failed to record SRS review', { error: err });
       }
     }
 

@@ -5,6 +5,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { audioService } from '../../services/audioService';
 import type { ExerciseResultCallback } from '../../types';
+import { error as logError } from '../../utils/logger';
 
 interface AudioOption {
   id: string;
@@ -57,7 +58,7 @@ export const AudioRecognitionExercise: React.FC<AudioRecognitionExerciseProps> =
         correctAnswer.pronunciation
       );
     } catch (error) {
-      console.error('Audio playback error:', error);
+      logError('Audio playback error', error instanceof Error ? error : { error });
     } finally {
       setIsPlaying(false);
     }

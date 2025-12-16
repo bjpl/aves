@@ -9,28 +9,9 @@ const options: swaggerJsdoc.Options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'AVES - Avian Visual Educational System API',
-      version: '1.0.0',
-      description: `
-        # AVES API Documentation
-
-        AVES (Avian Visual Educational System) is a bilingual educational platform for bird identification and vocabulary learning.
-
-        ## Features
-        - **AI-Powered Annotations**: Generate anatomical annotations using Claude Vision AI
-        - **Bilingual Learning**: Spanish-English vocabulary with progressive disclosure
-        - **Gamified Exercises**: Multiple exercise types with difficulty progression
-        - **Species Database**: Comprehensive bird species information
-        - **Review Workflow**: AI annotation approval/rejection system
-
-        ## Authentication
-        Most endpoints require JWT authentication. Include the token in the Authorization header:
-        \`Authorization: Bearer <your-jwt-token>\`
-
-        ## Rate Limiting
-        - General API: 100 requests per 15 minutes
-        - AI Generation: 50 requests per hour
-      `,
+      title: 'Aves API',
+      version: '0.1.1',
+      description: 'AI-powered visual Spanish bird learning platform API',
       contact: {
         name: 'AVES Development Team',
         url: 'https://github.com/bjpl/aves'
@@ -43,11 +24,11 @@ const options: swaggerJsdoc.Options = {
     servers: [
       {
         url: 'http://localhost:3001',
-        description: 'Local development server'
+        description: 'Development server'
       },
       {
         url: 'https://aves-production.up.railway.app',
-        description: 'Production server (Railway)'
+        description: 'Production server'
       }
     ],
     tags: [
@@ -347,10 +328,8 @@ const options: swaggerJsdoc.Options = {
       }
     }
   },
-  apis: [
-    './src/routes/*.ts', // Scan all route files for JSDoc annotations
-    './src/routes/**/*.ts'
-  ]
+  apis: ['./src/routes/**/*.ts']
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
+export default swaggerSpec;

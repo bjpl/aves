@@ -12,6 +12,7 @@ import {
 import { StaticLayer } from './layers/StaticLayer';
 import { InteractiveLayer } from './layers/InteractiveLayer';
 import { HoverLayer } from './layers/HoverLayer';
+import { debug } from '../../utils/logger';
 
 interface AnnotationCanvasProps {
   imageUrl: string;
@@ -146,25 +147,25 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
       case 'ArrowUp':
         e.preventDefault();
         // Move annotation up (visual feedback only, actual movement would need state management)
-        console.log('Move annotation up by', MOVE_AMOUNT);
+        debug('Move annotation up', { amount: MOVE_AMOUNT });
         handled = true;
         break;
       case 'ArrowDown':
         e.preventDefault();
         // Move annotation down
-        console.log('Move annotation down by', MOVE_AMOUNT);
+        debug('Move annotation down', { amount: MOVE_AMOUNT });
         handled = true;
         break;
       case 'ArrowLeft':
         e.preventDefault();
         // Move annotation left
-        console.log('Move annotation left by', MOVE_AMOUNT);
+        debug('Move annotation left', { amount: MOVE_AMOUNT });
         handled = true;
         break;
       case 'ArrowRight':
         e.preventDefault();
         // Move annotation right
-        console.log('Move annotation right by', MOVE_AMOUNT);
+        debug('Move annotation right', { amount: MOVE_AMOUNT });
         handled = true;
         break;
       case 'Escape':
@@ -178,7 +179,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
       case 'Backspace':
         e.preventDefault();
         // Delete annotation (would need to call parent handler)
-        console.log('Delete annotation', selectedAnnotation.id);
+        debug('Delete annotation', { annotationId: selectedAnnotation?.id });
         handled = true;
         break;
       case 'Tab':

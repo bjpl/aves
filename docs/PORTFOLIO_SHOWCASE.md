@@ -36,7 +36,7 @@ The platform doesn't just generate content—it learns from user behavior:
 
 1. **AI Vision Analysis:** Claude Sonnet 4.5 analyzes bird images to identify anatomical features
 2. **Progressive Disclosure:** 5-level system reveals vocabulary from hidden → hover → click → etymology → examples
-3. **Adaptive Exercise Generation:** GPT-4 generates personalized exercises based on user performance
+3. **Adaptive Exercise Generation:** Claude generates personalized exercises based on user performance
 4. **Feedback Loop:** User interactions train the AI to optimize future annotations and difficulty
 
 This creates a **self-improving learning system** that gets more effective with every user interaction.

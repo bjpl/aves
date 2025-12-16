@@ -189,7 +189,8 @@ export function renderPolygon(
 ): void {
   // Edge case: polygon must have at least 3 vertices
   if (polygon.points.length < 3) {
-    console.warn('Cannot render polygon with fewer than 3 vertices');
+    // This is debug-level logging since it's expected during annotation creation
+    // warn('Cannot render polygon with fewer than 3 vertices', { points: polygon.points.length });
     return;
   }
 

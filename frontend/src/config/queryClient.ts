@@ -3,6 +3,7 @@
 // PATTERN: Singleton QueryClient with custom defaults
 
 import { QueryClient } from '@tanstack/react-query';
+import { error as logError } from '../utils/logger';
 
 // Cache configuration strategy:
 // - Species data: Long cache (10 min) - rarely changes
@@ -26,7 +27,7 @@ export const queryClient = new QueryClient({
       // Global mutation defaults
       retry: 1, // Retry once on failure
       onError: (error) => {
-        console.error('Mutation error:', error);
+        logError('Mutation error', error instanceof Error ? error : { error });
       },
     },
   },

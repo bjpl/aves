@@ -1,13 +1,22 @@
+// CRITICAL: Sentry must be imported and initialized FIRST, before any other imports
+// This allows Sentry to properly instrument the application
+import dotenv from 'dotenv';
+
+// Load environment variables FIRST, before Sentry initialization
+dotenv.config();
+
+// Initialize Sentry immediately after loading environment variables
+import { initializeSentry, sentryRequestHandler, sentryTracingHandler, sentryErrorHandler } from './config/sentry';
+initializeSentry();
+
+// Now import the rest of the application
 import logger from './utils/logger';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
-
-// Load environment variables FIRST, before any other imports that might use them
-// Load dotenv for local development
-dotenv.config();
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger';
 
 // Log environment detection for debugging
 logger.info({
@@ -122,6 +131,11 @@ app.get('/health', (_req, res) => {
     database: dbConnectionStatus
   });
 });
+
+// Sentry request handler - MUST be early in middleware chain
+// This captures request context for error reports
+app.use(sentryRequestHandler);
+app.use(sentryTracingHandler);
 
 // Security middleware with enhanced CSP
 app.use(
@@ -249,6 +263,12 @@ app.get('/api/env-check', (_req, res) => {
   });
 });
 
+// Swagger UI - API documentation
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Aves API Documentation'
+}));
+
 // API routes
 app.use('/api/health', healthRouter);
 app.use('/api', docsRouter); // API documentation (Swagger UI)
@@ -271,6 +291,10 @@ app.use('/api/content', contentRouter);
 app.use('/api/srs', srsRouter);
 // Temporarily disabled - needs architecture fix (Pool vs Supabase client)
 // app.use('/api/annotation-exercises', annotationExercisesRouter);
+
+// Sentry error handler - MUST be before custom error handler
+// This captures errors and sends them to Sentry
+app.use(sentryErrorHandler);
 
 // Error handling middleware
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -321,3 +345,23 @@ startServer().catch((err) => {
   // Exit with error code to trigger Railway to show logs
   process.exit(1);
 });
+
+// Graceful shutdown handler
+async function gracefulShutdown(signal: string): Promise<void> {
+  info(`Received ${signal}. Starting graceful shutdown...`);
+
+  // Close database pool
+  try {
+    await pool.end();
+    info('Database pool closed successfully');
+  } catch (err) {
+    logError('Error closing database pool', err as Error);
+  }
+
+  // Exit
+  process.exit(0);
+}
+
+// Register shutdown handlers
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

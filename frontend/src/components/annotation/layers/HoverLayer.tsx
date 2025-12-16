@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { Annotation } from '../../../../../shared/types/annotation.types';
 import { CanvasPerformanceMonitor } from '../../canvas/CanvasLayer';
+import { debug } from '../../../utils/logger';
 
 interface HoverLayerProps {
   hoveredAnnotation: Annotation | null;
@@ -79,7 +80,7 @@ export const HoverLayer: React.FC<HoverLayerProps> = ({
 
       if (import.meta.env.DEV && performanceMonitor.shouldReport(performance.now())) {
         const metrics = performanceMonitor.getMetrics();
-        console.log('[Canvas Performance]', {
+        debug('[Canvas Performance]', {
           fps: metrics.currentFPS,
           avgFPS: metrics.averageFPS,
           drawCalls: metrics.drawCalls,

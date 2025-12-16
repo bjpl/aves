@@ -8,6 +8,7 @@ import { LearningPathSelector } from '../components/learn/LearningPathSelector';
 import { ReviewScheduleCard } from '../components/srs/ReviewScheduleCard';
 import { useLearnContent, useLearningModules, LearningModule } from '../hooks/useLearnContent';
 import { useSpacedRepetition } from '../hooks/useSpacedRepetition';
+import { debug } from '../utils/logger';
 
 // Fallback bird learning data for when API is unavailable
 const fallbackBirdLearningData = [
@@ -278,7 +279,7 @@ export const EnhancedLearnPage: React.FC = () => {
       await markDiscovered(annotation.id);
     } catch (err) {
       // Silently fail if not authenticated or network error
-      console.log('Could not track discovered term:', err);
+      debug('Could not track discovered term', { annotationId: annotation.id, error: err });
     }
   };
 

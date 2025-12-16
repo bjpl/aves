@@ -7,6 +7,7 @@
  */
 
 import axios from 'axios';
+import { debug, info, warn, error as logError } from '../utils/logger';
 
 // Determine environment and backend URL (with test-safe fallbacks)
 const isGitHubPages = typeof window !== 'undefined' && window.location?.hostname?.includes('github.io') || false;
@@ -28,7 +29,7 @@ if (isAdmin || !isGitHubPages) {
 }
 
 if (typeof window !== 'undefined' && import.meta.env.DEV) {
-  console.log('🔧 Axios Config:', {
+  debug('Axios Config', {
     isGitHubPages,
     isAdmin,
     apiUrl,
@@ -73,17 +74,17 @@ api.interceptors.request.use(
               accessToken = parsed?.access_token || null;
               if (accessToken) {
                 if (import.meta.env.DEV) {
-                  console.log('✅ Found auth token from key:', key);
+                  debug('Found auth token from key', { key });
                 }
                 break;
               } else {
-                console.warn('⚠️ Key matched pattern but no access_token field found:', key);
+                warn('Key matched pattern but no access_token field found', { key });
               }
             } catch (e) {
-              console.error('❌ Failed to parse auth token from key:', key, e);
+              logError('Failed to parse auth token from key', e instanceof Error ? e : { key, error: e });
             }
           } else {
-            console.warn('⚠️ Key matched pattern but value is null/empty:', key);
+            warn('Key matched pattern but value is null/empty', { key });
           }
         }
       }
@@ -92,8 +93,7 @@ api.interceptors.request.use(
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     } else {
-      console.error('❌ No auth token found - request will be unauthorized');
-      console.error('❌ Expected pattern: sb-*-auth-token or aves-auth-token');
+      logError('No auth token found - request will be unauthorized', { expectedPattern: 'sb-*-auth-token or aves-auth-token' });
     }
 
     return config;
@@ -105,12 +105,16 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     if (import.meta.env.DEV) {
-      console.log('✅ API Response:', response.status, response.config.url);
+      debug('API Response', { status: response.status, url: response.config.url });
     }
     return response;
   },
   (error) => {
-    console.error('❌ API Error:', error.response?.status, error.config?.url, error.message);
+    logError('API Error', {
+      status: error.response?.status,
+      url: error.config?.url,
+      message: error.message
+    });
     return Promise.reject(error);
   }
 );

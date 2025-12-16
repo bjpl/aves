@@ -120,8 +120,7 @@ export const useAIAnnotationStats = () => {
 
         return response.data.data;
       } catch (err) {
-        console.error('❌ STATS QUERY: Error fetching stats:', err);
-        logError('Error fetching AI annotation stats:', err instanceof Error ? err : new Error(String(err)));
+        logError('Error fetching AI annotation stats', err instanceof Error ? err : { error: err });
         return {
           total: 0,
           pending: 0,
@@ -151,8 +150,7 @@ export const useApproveAnnotation = () => {
 
         return response.data.data;
       } catch (error: any) {
-        console.error('❌ APPROVE MUTATION: Request failed!', {
-          error,
+        logError('Approve mutation request failed', {
           status: error.response?.status,
           data: error.response?.data,
           message: error.message
@@ -200,11 +198,11 @@ export const useApproveAnnotation = () => {
       });
     },
     onError: (err, annotationId, context) => {
-      console.error('❌ APPROVE MUTATION: onError called!', {
-        err,
+      logError('Approve mutation onError', {
         annotationId,
         hasContext: !!context,
-        hasPreviousData: !!context?.previousData
+        hasPreviousData: !!context?.previousData,
+        error: err
       });
 
       // Rollback on error

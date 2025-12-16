@@ -3,6 +3,7 @@
 // PATTERN: React error boundary with skip and retry functionality
 
 import { Component, ErrorInfo, ReactNode } from 'react';
+import { error as logError } from '../../utils/logger';
 
 interface Props {
   children: ReactNode;
@@ -37,9 +38,9 @@ export class ExerciseErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log error details for debugging
-    console.error('Exercise error boundary caught an error:', {
-      error,
-      errorInfo,
+    logError('Exercise error boundary caught an error', {
+      message: error.message,
+      stack: error.stack,
       exerciseType: this.props.exerciseType,
       componentStack: errorInfo.componentStack
     });

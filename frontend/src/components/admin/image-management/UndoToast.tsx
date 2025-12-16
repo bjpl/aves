@@ -7,6 +7,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { error as logError } from '../../../utils/logger';
 
 export interface UndoToastProps {
   operationId: string;
@@ -64,7 +65,7 @@ export const UndoToast: React.FC<UndoToastProps> = ({
       await onUndo(operationId);
       setIsDismissed(true);
     } catch (error) {
-      console.error('Failed to undo operation:', error);
+      logError('Failed to undo operation', error instanceof Error ? error : { error });
       setIsUndoing(false);
     }
   };

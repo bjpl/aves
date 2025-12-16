@@ -38,12 +38,16 @@ export const mockTestPool = {
   waitingCount: 0,
 };
 
+// Mock testConnection function
+export const mockTestConnection = jest.fn().mockResolvedValue(true);
+
 // Only mock database when NOT running integration tests
 if (!skipMocking) {
   // Mock the database connection module
   jest.mock('../../database/connection', () => ({
     pool: mockPool,
     testPool: mockTestPool,
+    testConnection: mockTestConnection,
     getPool: jest.fn(() => mockPool),
     executeQuery: jest.fn().mockResolvedValue(defaultQueryResponse),
     executeTransaction: jest.fn().mockResolvedValue(defaultQueryResponse),

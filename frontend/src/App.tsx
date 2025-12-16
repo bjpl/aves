@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import { SkipLink } from './components/ui/SkipLink';
+import { error as logError } from './utils/logger';
 import './App.css';
 
 // Navigation link component with active state and accessibility
@@ -49,7 +50,7 @@ const UserAccountButton = () => {
       await signOut();
       navigate('/');
     } catch (err) {
-      console.error('Logout failed:', err);
+      logError('Logout failed', err instanceof Error ? err : { error: err });
     }
   };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AnnotationPreviewModal } from './AnnotationPreviewModal';
+import { error as logError } from '../../utils/logger';
 
 interface Annotation {
   id: string;
@@ -77,7 +78,7 @@ const AnnotationPublishingPanel: React.FC = () => {
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to fetch modules';
-        console.error(message);
+        logError('Failed to fetch modules', err instanceof Error ? err : { error: err });
         alert(`Error: ${message}`);
       }
     };

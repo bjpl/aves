@@ -1,5 +1,12 @@
 # Aves - Visual Spanish Bird Learning Platform
 
+[![CI](https://github.com/bjpl/aves/actions/workflows/ci.yml/badge.svg)](https://github.com/bjpl/aves/actions/workflows/ci.yml)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18.2-61dafb?logo=react)](https://react.dev/)
+[![Claude AI](https://img.shields.io/badge/Claude-Sonnet%204.5-8B5CF6)](https://anthropic.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://bjpl.github.io/aves/)
+
 An AI-powered inductive learning platform for Spanish ornithological vocabulary acquisition through interactive photography.
 
 ## Table of Contents
@@ -17,7 +24,7 @@ An AI-powered inductive learning platform for Spanish ornithological vocabulary 
 
 Aves leverages visual-spatial memory, AI-powered annotations, and contextual discovery to teach Spanish bird terminology through an engaging, image-based interface. Built with modern web technologies and following SPARC methodology for systematic feature development.
 
-The platform combines GPT-4 Vision API for automatic bird feature detection with an interactive canvas-based annotation system, progressive vocabulary disclosure, and AI-powered exercise generation to create a comprehensive language learning experience.
+The platform combines Claude Sonnet 4.5 Vision API for automatic bird feature detection with an interactive canvas-based annotation system, progressive vocabulary disclosure, and AI-powered exercise generation to create a comprehensive language learning experience.
 
 **Version**: 0.1.1
 **Status**: ACTIVE - Production Deployment (December 2025)
@@ -31,14 +38,14 @@ The platform combines GPT-4 Vision API for automatic bird feature detection with
 
 **Deployed Application:** [View Live Demo](https://bjpl.github.io/aves/)
 
-This project demonstrates AI-powered educational software combining GPT-4 Vision API with interactive canvas-based learning interfaces. The implementation showcases integration of modern web technologies, AI APIs, and evidence-based language acquisition techniques.
+This project demonstrates AI-powered educational software combining Claude Sonnet 4.5 Vision API with interactive canvas-based learning interfaces. The implementation showcases integration of modern web technologies, AI APIs, and evidence-based language acquisition techniques.
 
 **For detailed technical analysis:** [Portfolio Deep Dive](docs/PORTFOLIO_SHOWCASE.md) | [Architecture Evaluation](docs/ARCHITECTURE_EVALUATION.md)
 
 ## Technical Overview
 
 **Key Technologies:**
-- GPT-4 Vision API for automatic feature detection and annotation generation
+- Claude Sonnet 4.5 Vision API for automatic feature detection and annotation generation
 - React with TypeScript for type-safe component architecture
 - Canvas API for high-performance interactive rendering
 - PostgreSQL 14+ with RESTful backend architecture
@@ -57,7 +64,7 @@ This project demonstrates AI-powered educational software combining GPT-4 Vision
 ## Features
 
 ### AI-Powered Vision Annotations
-- GPT-4 Vision API integration for automatic bird feature detection
+- Claude Sonnet 4.5 Vision API integration for automatic bird feature detection
 - Intelligent annotation generation for anatomy, colors, and behavior
 - Caching system to minimize API costs
 - Batch processing for multiple images
@@ -78,7 +85,7 @@ This project demonstrates AI-powered educational software combining GPT-4 Vision
 - Client-side state persistence with Zustand
 
 ### AI-Powered Exercise Generation
-- GPT-4-based intelligent exercise creation
+- Claude-powered intelligent exercise creation
 - Multiple exercise types: Visual Discrimination, Contextual Fill, Term Matching, Translation Practice
 - Adaptive difficulty based on user performance
 - Real-time feedback and progress tracking
@@ -126,7 +133,7 @@ aves/
 
 Those interested in the implementation details can explore:
 - `/frontend/src` for React components and AI integration
-- `/backend/src` for API architecture and GPT-4 Vision integration
+- `/backend/src` for API architecture and Claude Vision integration
 - `/docs/api` for comprehensive API documentation
 - Test suites demonstrating TDD practices
 
@@ -136,7 +143,7 @@ Those interested in the implementation details can explore:
 **Prerequisites:**
 - Node.js 18+ and npm 9+
 - PostgreSQL 14+ (for backend development)
-- OpenAI API key (for AI features)
+- Anthropic API key (for AI features)
 
 **Setup:**
 ```bash
@@ -230,8 +237,8 @@ The API follows RESTful conventions. Full documentation available in the docs/ap
 
 #### AI-Powered Endpoints
 ```
-POST   /api/ai/annotations/generate      # Generate annotations with GPT-4 Vision
-POST   /api/ai/exercises/generate        # Generate exercises with GPT-4
+POST   /api/ai/annotations/generate      # Generate annotations with Claude Vision
+POST   /api/ai/exercises/generate        # Generate exercises with Claude
 GET    /api/ai/annotations/:speciesId    # Get AI-generated annotations
 ```
 
@@ -254,6 +261,26 @@ Contributions are welcome. Please read the Contributing Guide for details on the
 4. Commit changes with meaningful messages
 5. Push to branch
 6. Open a Pull Request
+
+## Troubleshooting
+
+### Database Connection Issues
+**Error:** ECONNREFUSED localhost:5432
+**Solution:** Verify PostgreSQL is running and DATABASE_URL is correct
+
+### API Key Errors
+**Error:** Invalid API key for Anthropic
+**Solution:** Verify ANTHROPIC_API_KEY in backend/.env
+
+### Frontend Build Errors
+**Error:** Module not found
+**Solution:** Run npm install in frontend workspace
+
+### CORS Errors
+**Solution:** Ensure FRONTEND_URL in backend/.env matches your frontend URL
+
+### Rate Limiting Issues
+**Solution:** Check rate limit configuration in environment variables
 
 ## License
 

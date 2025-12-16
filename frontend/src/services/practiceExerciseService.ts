@@ -4,6 +4,7 @@
 
 import { api } from './apiAdapter';
 import { Species } from '../types';
+import { error as logError, warn } from '../utils/logger';
 
 export interface PracticeExercise {
   id: string;
@@ -96,7 +97,7 @@ class PracticeExerciseService {
       this.lastFetch = now;
       return this.speciesCache;
     } catch (error) {
-      console.error('Failed to fetch species:', error);
+      logError('Failed to fetch species', error instanceof Error ? error : { error });
       // Return cached data if available, otherwise empty array
       return this.speciesCache;
     }
@@ -125,7 +126,7 @@ class PracticeExerciseService {
     const allSpecies = await this.getRandomSpecies(count * 4); // Need extras for options
 
     if (allSpecies.length < 4) {
-      console.warn(`Not enough species for visual match exercises. Found ${allSpecies.length}, need at least 4.`);
+      warn('Not enough species for visual match exercises', { found: allSpecies.length, needed: 4 });
       return []; // Not enough species with images
     }
 
@@ -135,7 +136,7 @@ class PracticeExerciseService {
     );
 
     if (speciesWithImages.length < 4) {
-      console.warn(`Not enough species WITH IMAGES for visual match. Found ${speciesWithImages.length}`);
+      warn('Not enough species WITH IMAGES for visual match', { found: speciesWithImages.length });
       // Fall back to all species
     }
 
@@ -177,7 +178,7 @@ class PracticeExerciseService {
     const species = await this.getRandomSpecies(count * 4);
 
     if (species.length < 4) {
-      console.warn(`Not enough species for fill-blank exercises. Found ${species.length}, need at least 4.`);
+      warn('Not enough species for fill-blank exercises', { found: species.length, needed: 4 });
       return [];
     }
 
@@ -244,7 +245,7 @@ class PracticeExerciseService {
     const species = await this.getRandomSpecies(count * 4);
 
     if (species.length < 4) {
-      console.warn(`Not enough species for multiple choice exercises. Found ${species.length}, need at least 4.`);
+      warn('Not enough species for multiple choice exercises', { found: species.length, needed: 4 });
       return [];
     }
 
@@ -324,7 +325,7 @@ class PracticeExerciseService {
     const allExercises = [...visualMatch, ...fillBlank, ...multipleChoice];
 
     if (allExercises.length === 0) {
-      console.warn('No exercises could be generated. Species data may be missing or insufficient.');
+      warn('No exercises could be generated - species data may be missing or insufficient');
     }
 
     return allExercises.sort(() => Math.random() - 0.5).slice(0, totalCount);

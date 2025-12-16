@@ -14,6 +14,7 @@ import { BoundingBoxEditor } from './BoundingBoxEditor';
 import { AnnotationPreviewModal } from './AnnotationPreviewModal';
 import { AnnotationHistoryModal } from './AnnotationHistoryModal';
 import { RejectionCategoryValue } from '../../constants/annotationQuality';
+import { error as logError } from '../../utils/logger';
 
 export interface AnnotationReviewCardProps {
   annotation: AIAnnotation;
@@ -562,7 +563,7 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
               setShowEnhancedReject(false);
               onActionComplete?.();
             } catch (error) {
-              console.error('Rejection failed:', error);
+              logError('Rejection failed', error instanceof Error ? error : { error });
             }
           }}
           onCancel={() => setShowEnhancedReject(false)}
@@ -589,7 +590,11 @@ export const AnnotationReviewCard: React.FC<AnnotationReviewCardProps> = ({
               setShowBboxEditor(false);
               onActionComplete?.();
             } catch (error: any) {
-              console.error('❌ Failed to update bounding box:', error);
+              logError('Failed to update bounding box', {
+                error: error?.message || 'Unknown error',
+                status: error?.response?.status,
+                data: error?.response?.data
+              });
 
               // Show detailed error information
               const errorMessage = error?.response?.data?.error || error?.message || 'Unknown error';

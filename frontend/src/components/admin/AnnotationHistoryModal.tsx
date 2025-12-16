@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { Badge } from '../ui/Badge';
 import { Spinner } from '../ui/Spinner';
 import { Alert } from '../ui/Alert';
+import { error as logError } from '../../utils/logger';
 
 export interface AnnotationHistoryEntry {
   id: string;
@@ -52,7 +53,7 @@ export const AnnotationHistoryModal: React.FC<AnnotationHistoryModalProps> = ({
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
         setError(errorMessage);
-        console.error('Failed to fetch annotation history:', err);
+        logError('Failed to fetch annotation history', err instanceof Error ? err : { error: err });
       } finally {
         setIsLoading(false);
       }

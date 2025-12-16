@@ -13,6 +13,7 @@
 import React, { useState, useCallback } from 'react';
 import { LearningContent } from '../../hooks/useLearnContent';
 import { AudioPlayer } from '../audio/AudioPlayer';
+import { error as logError } from '../../utils/logger';
 
 interface LessonViewProps {
   content: LearningContent[];
@@ -178,7 +179,7 @@ export const LessonView: React.FC<LessonViewProps> = ({
             }`}
             onLoad={() => setImageLoaded(true)}
             onError={(e) => {
-              console.error('Image failed to load:', imageUrl);
+              logError('Image failed to load', { imageUrl });
               // Use a real bird image as fallback for better UX
               e.currentTarget.onerror = null; // Prevent infinite loop
               e.currentTarget.src = 'https://images.unsplash.com/photo-1444464666168-49d633b86797?w=800&h=600&fit=crop&q=80';

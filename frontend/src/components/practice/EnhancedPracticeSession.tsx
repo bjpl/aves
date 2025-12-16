@@ -14,6 +14,7 @@ import { ExerciseFeedback } from './ExerciseFeedback';
 import { SessionProgress } from './SessionProgress';
 import type { Exercise } from '../exercises/EnhancedExerciseGenerator';
 import type { Annotation, ExerciseResult } from '../../types';
+import { debug } from '../../utils/logger';
 
 interface EnhancedPracticeSessionProps {
   annotations: Annotation[];
@@ -115,7 +116,7 @@ export const EnhancedPracticeSession: React.FC<EnhancedPracticeSessionProps> = (
 
   // Handle skipping an exercise (when error boundary is triggered)
   const handleSkipExercise = useCallback(() => {
-    console.log(`Skipping exercise ${currentIndex + 1} due to error`);
+    debug(`Skipping exercise ${currentIndex + 1} due to error`);
 
     // Move to next exercise or show results
     if (currentIndex < totalExercises - 1) {

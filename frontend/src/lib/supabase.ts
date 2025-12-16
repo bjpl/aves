@@ -7,15 +7,17 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { error as logError } from '../utils/logger';
 
 // Supabase configuration from environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables');
-  console.error('VITE_SUPABASE_URL:', supabaseUrl ? 'Set' : 'Missing');
-  console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Set' : 'Missing');
+  logError('Missing Supabase environment variables', {
+    VITE_SUPABASE_URL: supabaseUrl ? 'Set' : 'Missing',
+    VITE_SUPABASE_ANON_KEY: supabaseAnonKey ? 'Set' : 'Missing'
+  });
 }
 
 // Create Supabase client instance
@@ -51,7 +53,7 @@ export const getCurrentUser = async () => {
   const { data: { user }, error } = await supabase.auth.getUser();
 
   if (error) {
-    console.error('Error getting current user:', error);
+    logError('Error getting current user', error);
     return null;
   }
 

@@ -2,6 +2,8 @@
 // WHY: Provides elegant pronunciation with fallbacks and caching
 // PATTERN: Service layer with Web Speech API and external TTS fallbacks
 
+import { warn } from '../utils/logger';
+
 type VoicePreference = 'spanish-spain' | 'spanish-mexico' | 'spanish-argentina' | 'spanish-any';
 
 interface TTSOptions {
@@ -38,7 +40,7 @@ class AudioService {
    */
   private initVoices(): void {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      console.warn('Speech synthesis not supported');
+      warn('Speech synthesis not supported');
       return;
     }
 
