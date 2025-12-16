@@ -1,6 +1,6 @@
 import type { Preview } from '@storybook/react';
 import { STORYBOOK_VIEWPORTS } from '../src/test-utils/viewports';
-import '../src/index.css';
+import '../src/App.css';
 
 const preview: Preview = {
   parameters: {
