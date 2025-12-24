@@ -1,0 +1,187 @@
+{
+  "birds": [
+    {
+      "spanishName": "Águila Imperial Ibérica",
+      "englishName": "Spanish Imperial Eagle",
+      "scientificName": "Aquila adalberti",
+      "description": "El águila imperial ibérica es una especie endémica de la península ibérica. Es una de las aves rapaces más emblemáticas de España, con una envergadura que puede alcanzar los 2.2 metros.",
+      "habitat": "Bosques mediterráneos, dehesas y zonas montañosas",
+      "size": "75-85 cm de longitud",
+      "diet": "Conejos, liebres, reptiles y aves medianas",
+      "conservationStatus": "vulnerable",
+      "difficulty": "advanced",
+      "regions": ["Andalucía", "Castilla-La Mancha", "Extremadura", "Madrid"],
+      "funFacts": [
+        "Puede vivir hasta 20 años en libertad",
+        "Las parejas son monógamas y mantienen el mismo territorio durante años",
+        "Es el símbolo de muchos escudos heráldicos españoles"
+      ],
+      "imageUrl": "https://example.com/aguila-imperial.jpg",
+      "soundUrl": "https://example.com/sounds/aguila-imperial.mp3"
+    },
+    {
+      "spanishName": "Gorrión Común",
+      "englishName": "House Sparrow",
+      "scientificName": "Passer domesticus",
+      "description": "El gorrión común es una de las aves más familiares en España. Pequeño y sociable, vive cerca de los humanos y se ha adaptado perfectamente a los entornos urbanos.",
+      "habitat": "Zonas urbanas, pueblos, parques y jardines",
+      "size": "14-16 cm de longitud",
+      "diet": "Semillas, insectos, restos de comida humana",
+      "conservationStatus": "least_concern",
+      "difficulty": "beginner",
+      "regions": ["Toda España"],
+      "funFacts": [
+        "Pueden formar bandadas de cientos de individuos",
+        "Los machos tienen una mancha negra en el pecho",
+        "Han convivido con humanos durante más de 10,000 años"
+      ],
+      "imageUrl": "https://example.com/gorrion.jpg",
+      "soundUrl": "https://example.com/sounds/gorrion.mp3"
+    },
+    {
+      "spanishName": "Flamenco Común",
+      "englishName": "Greater Flamingo",
+      "scientificName": "Phoenicopterus roseus",
+      "description": "El flamenco común es conocido por su distintivo color rosa y sus largas patas. Es una de las aves más icónicas de los humedales españoles.",
+      "habitat": "Lagunas salinas, marismas, salinas costeras",
+      "size": "110-150 cm de altura",
+      "diet": "Algas, pequeños crustáceos, moluscos",
+      "conservationStatus": "least_concern",
+      "difficulty": "intermediate",
+      "regions": ["Andalucía", "Murcia", "Cataluña", "Baleares"],
+      "funFacts": [
+        "Su color rosa proviene de los carotenoides en su dieta",
+        "Pueden vivir hasta 40 años",
+        "Duermen de pie sobre una sola pata"
+      ],
+      "imageUrl": "https://example.com/flamenco.jpg",
+      "soundUrl": "https://example.com/sounds/flamenco.mp3"
+    },
+    {
+      "spanishName": "Búho Real",
+      "englishName": "Eurasian Eagle-Owl",
+      "scientificName": "Bubo bubo",
+      "description": "El búho real es el búho más grande de Europa. Es un depredador nocturno formidable con una vista y oído excepcionales.",
+      "habitat": "Acantilados, bosques rocosos, canteras abandonadas",
+      "size": "60-75 cm de longitud",
+      "diet": "Mamíferos medianos, aves, reptiles",
+      "conservationStatus": "least_concern",
+      "difficulty": "advanced",
+      "regions": ["Toda España excepto Canarias"],
+      "funFacts": [
+        "Sus ojos naranjas pueden ver en casi completa oscuridad",
+        "Puede girar la cabeza hasta 270 grados",
+        "Su ulular puede escucharse a 5 km de distancia"
+      ],
+      "imageUrl": "https://example.com/buho-real.jpg",
+      "soundUrl": "https://example.com/sounds/buho-real.mp3"
+    },
+    {
+      "spanishName": "Jilguero",
+      "englishName": "European Goldfinch",
+      "scientificName": "Carduelis carduelis",
+      "description": "El jilguero es un pequeño pájaro cantor muy apreciado por su colorido plumaje y su melodioso canto. Es muy común en toda España.",
+      "habitat": "Campos abiertos, jardines, parques, bordes de bosques",
+      "size": "12-13 cm de longitud",
+      "diet": "Semillas de cardos, dientes de león, girasol",
+      "conservationStatus": "least_concern",
+      "difficulty": "beginner",
+      "regions": ["Toda España"],
+      "funFacts": [
+        "Su nombre viene de su canto que suena como 'jil-jil'",
+        "Es el protagonista de muchas canciones populares españolas",
+        "Puede extraer semillas de lugares que otras aves no pueden alcanzar"
+      ],
+      "imageUrl": "https://example.com/jilguero.jpg",
+      "soundUrl": "https://example.com/sounds/jilguero.mp3"
+    }
+  ],
+  "lessons": [
+    {
+      "title": "Introducción a las Aves de España",
+      "description": "Aprende sobre la diversidad de aves en España y por qué es importante conocerlas.",
+      "objectives": [
+        "Entender la importancia de las aves en el ecosistema",
+        "Conocer las principales familias de aves españolas",
+        "Aprender vocabulario básico de ornitología"
+      ],
+      "content": "<h2>La Riqueza Ornitológica de España</h2><p>España es uno de los países europeos con mayor diversidad de aves, con más de 600 especies registradas. Esta riqueza se debe a su posición geográfica, variedad de climas y hábitats.</p><h3>¿Por qué estudiar las aves?</h3><p>Las aves son indicadores de la salud ambiental y juegan roles cruciales en los ecosistemas: control de plagas, polinización, dispersión de semillas.</p>",
+      "difficulty": "beginner",
+      "duration": 15,
+      "order": 1,
+      "category": "identification",
+      "birdIds": [2, 5],
+      "quizzes": [
+        {
+          "question": "¿Cuántas especies de aves aproximadamente hay en España?",
+          "type": "multiple_choice",
+          "options": ["Más de 200", "Más de 400", "Más de 600", "Más de 800"],
+          "correctAnswer": "Más de 600",
+          "explanation": "España tiene registradas más de 600 especies de aves, siendo uno de los países europeos con mayor diversidad ornitológica.",
+          "points": 10,
+          "difficulty": "easy"
+        },
+        {
+          "question": "Las aves son importantes indicadores de la salud ambiental",
+          "type": "true_false",
+          "correctAnswer": true,
+          "explanation": "Las aves son excelentes bioindicadores porque responden rápidamente a cambios ambientales.",
+          "points": 10,
+          "difficulty": "easy"
+        }
+      ]
+    },
+    {
+      "title": "Aves Urbanas: Nuestros Vecinos Alados",
+      "description": "Descubre las aves que viven en nuestras ciudades y aprende a identificarlas.",
+      "objectives": [
+        "Identificar las 5 aves urbanas más comunes",
+        "Entender las adaptaciones urbanas de las aves",
+        "Aprender a observar aves en la ciudad"
+      ],
+      "content": "<h2>Aves en la Ciudad</h2><p>Las ciudades albergan una sorprendente variedad de aves que se han adaptado a vivir junto a los humanos. Estas especies han desarrollado comportamientos únicos para sobrevivir en entornos urbanos.</p><h3>El Gorrión Común</h3><p>El gorrión es quizás el ave urbana más conocida. Su éxito se debe a su capacidad de adaptación y su dieta omnívora.</p>",
+      "difficulty": "beginner",
+      "duration": 20,
+      "order": 2,
+      "category": "habitat",
+      "birdIds": [2, 5],
+      "quizzes": [
+        {
+          "question": "¿Cuál es el ave urbana más común en España?",
+          "type": "multiple_choice",
+          "options": ["Paloma", "Gorrión", "Gaviota", "Mirlo"],
+          "correctAnswer": "Gorrión",
+          "explanation": "El gorrión común es el ave urbana más extendida en las ciudades españolas.",
+          "points": 10,
+          "difficulty": "easy"
+        }
+      ]
+    },
+    {
+      "title": "Rapaces Ibéricas: Los Señores del Cielo",
+      "description": "Explora el fascinante mundo de las aves rapaces de la península ibérica.",
+      "objectives": [
+        "Identificar las principales rapaces ibéricas",
+        "Comprender su papel ecológico",
+        "Conocer su estado de conservación"
+      ],
+      "content": "<h2>Las Rapaces de España</h2><p>España alberga algunas de las rapaces más impresionantes de Europa, incluyendo especies endémicas como el águila imperial ibérica.</p><h3>Características de las Rapaces</h3><p>Las rapaces se caracterizan por su vista aguda, garras poderosas y picos curvos adaptados para desgarrar carne.</p>",
+      "difficulty": "intermediate",
+      "duration": 25,
+      "order": 3,
+      "category": "identification",
+      "birdIds": [1, 4],
+      "quizzes": [
+        {
+          "question": "¿Cuál es la rapaz endémica de la península ibérica?",
+          "type": "multiple_choice",
+          "options": ["Águila real", "Águila imperial ibérica", "Halcón peregrino", "Buitre negro"],
+          "correctAnswer": "Águila imperial ibérica",
+          "explanation": "El águila imperial ibérica (Aquila adalberti) es endémica de la península ibérica.",
+          "points": 15,
+          "difficulty": "medium"
+        }
+      ]
+    }
+  ]
+}

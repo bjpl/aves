@@ -1,0 +1,92 @@
+{
+  "kind": "collectionType",
+  "collectionName": "birds",
+  "info": {
+    "singularName": "bird",
+    "pluralName": "birds",
+    "displayName": "Bird",
+    "description": "Spanish bird species for learning"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "spanishName": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "englishName": {
+      "type": "string",
+      "required": true
+    },
+    "scientificName": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "richtext",
+      "required": true
+    },
+    "habitat": {
+      "type": "string"
+    },
+    "size": {
+      "type": "string"
+    },
+    "diet": {
+      "type": "string"
+    },
+    "conservationStatus": {
+      "type": "enumeration",
+      "enum": [
+        "least_concern",
+        "near_threatened",
+        "vulnerable",
+        "endangered",
+        "critically_endangered",
+        "extinct_in_wild",
+        "extinct"
+      ]
+    },
+    "images": {
+      "type": "media",
+      "multiple": true,
+      "required": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "sounds": {
+      "type": "media",
+      "multiple": true,
+      "required": false,
+      "allowedTypes": [
+        "audios"
+      ]
+    },
+    "difficulty": {
+      "type": "enumeration",
+      "enum": [
+        "beginner",
+        "intermediate",
+        "advanced"
+      ],
+      "default": "beginner"
+    },
+    "regions": {
+      "type": "json",
+      "required": false
+    },
+    "funFacts": {
+      "type": "json"
+    },
+    "lessons": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::lesson.lesson",
+      "inversedBy": "birds"
+    }
+  }
+}
