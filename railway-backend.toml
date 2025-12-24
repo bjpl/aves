@@ -1,0 +1,13 @@
+[build]
+builder = "nixpacks"
+buildCommand = "npm ci && npm run build --workspace=backend"
+
+[deploy]
+startCommand = "npm run start --workspace=backend"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+
+[variables]
+NODE_ENV = "production"
